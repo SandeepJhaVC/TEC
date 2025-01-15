@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Home from './components/Home.jsx'
-import Header from './components/Header.jsx'
-import Footer from './components/Footer.jsx';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Home from './components/Home';
+import Header from './components/Header';
+import Footer from './components/Footer';
 
 function App() {
   return (
@@ -9,10 +10,7 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
-        {/* <Route path='/videos' element={<Videos />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} /> */}
-      </Routes>  
+      </Routes>
       <Footer />
     </Router>
   );
