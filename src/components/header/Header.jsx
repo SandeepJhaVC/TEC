@@ -12,6 +12,8 @@ export default function Header() {
                 <a href="#">Projects</a>
                 <a href="#">Partners</a>
             </div>
+
+            <div class="cta"><a href="#">Join Us</a></div>
         </div>
     )
 }

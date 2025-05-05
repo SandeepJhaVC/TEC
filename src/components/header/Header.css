@@ -19,7 +19,7 @@
     transition: 0.3s ease-in-out;
 }
 
-.logo img:hover{
+.logo img:hover {
     height: 80%;
     padding: 0px 20px;
     background-color: black;
@@ -44,4 +44,19 @@
     color: white;
     padding: 5px 20px;
     border-radius: 8px;
+}
+
+/*CTA*/
+.cta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.cta a {
+    background-color: black;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
 }
