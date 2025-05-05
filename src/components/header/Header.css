@@ -1,0 +1,62 @@
+.header {
+    display: flex;
+    width: 90%;
+    margin: auto;
+    justify-content: space-between;
+    height: 60px;
+}
+
+/*LOGO*/
+.logo {
+    width: 20%;
+    display: flex;
+    align-items: center;
+}
+
+.logo img {
+    height: 90%;
+    border-radius: 100%;
+    transition: 0.3s ease-in-out;
+}
+
+.logo img:hover {
+    height: 80%;
+    padding: 0px 20px;
+    background-color: black;
+    border-radius: 8px;
+}
+
+/*NAVLINKS*/
+.navlinks {
+    width: 40%;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+}
+
+.navlinks a {
+    font-weight: 500;
+    transition: 0.3s ease-in-out;
+}
+
+.navlinks a:hover {
+    background-color: black;
+    color: white;
+    padding: 5px 20px;
+    border-radius: 8px;
+}
+
+/*CTA*/
+.cta {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.cta a {
+    background-color: black;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+}
