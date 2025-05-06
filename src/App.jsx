@@ -10,6 +10,11 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
+        <div>
+          <h1>Intro to TEC placeholder</h1>
+          <p>Basic ELement Placeholder</p>
+          <a>CTA BUTTON</a>
+        </div>
       </Routes>
       <Footer />
     </Router>
