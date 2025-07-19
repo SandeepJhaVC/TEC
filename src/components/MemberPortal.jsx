@@ -19,6 +19,23 @@ const members = [
     ],
     tagline: 'For those who echo change.'
   },
+  {
+    id: 'S34K78',
+    name: 'Sandeep',
+    joinDate: 'july 2025',
+    status: 'Active Member',
+    certificates: [
+      {
+        name: 'Certificate of Excellence',
+        file: '/dummy-certificate.pdf', // Placeholder path
+      },
+      {
+        name: 'Tech Symposium 2025',
+        file: '/dummy-certificate.pdf', // Placeholder path
+      },
+    ],
+    tagline: 'For those who echo change.'
+  },
   // Add more members as needed
 ];
 
