@@ -1,40 +1,47 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient'; // Make sure this path is correct
 
-const initialMembers = [
-  {
-    id: 'M2K8N9',
-    name: 'Tanvi Saini',
-    joinDate: 'Aug 2025',
-    status: 'Active Member',
-    certificates: [
-      {
-        name: 'Certificate of Excellence',
-        file: '/dummy-certificate.pdf',
-      },
-      {
-        name: 'Tech Symposium 2025',
-        file: '/dummy-certificate.pdf',
-      },
-    ],
-    tagline: 'For those who echo change.'
-  },
-  // Add more members as needed
-];
-
+// ADDED: New fields to match the schema
 const emptyMember = {
-  id: '',
   name: '',
-  joinDate: '',
-  status: '',
+  joined_at: null,
+  status: 'Active Member',
   certificates: [],
-  tagline: '',
+  sap_id: '',
+  pers_email: '',
+  clg_email: '',
+  batch: '',
+  year: '',
+  course: '',
 };
 
 const AdminPanel = () => {
-  const [members, setMembers] = useState(initialMembers);
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [members, setMembers] = useState([]);
+  const [editingMemberId, setEditingMemberId] = useState(null);
   const [form, setForm] = useState(emptyMember);
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getMembers();
+  }, []);
+
+  const getMembers = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('members')
+        .select('*')
+        .order('name', { ascending: true });
+      
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error) {
+      console.error("Error fetching members:", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -42,109 +49,174 @@ const AdminPanel = () => {
   };
 
   const handleCertChange = (e) => {
-    // Certificates as comma-separated names
-    const certNames = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
-    setForm({
-      ...form,
-      certificates: certNames.map(name => ({ name, file: '/dummy-certificate.pdf' })),
-    });
+    setForm({ ...form, certificates: e.target.value });
   };
 
   const handleAdd = () => {
     setForm(emptyMember);
-    setEditingIndex(null);
+    setEditingMemberId(null);
     setShowForm(true);
   };
 
-  const handleEdit = (idx) => {
-    setForm({
-      ...members[idx],
-      certificates: members[idx].certificates.map(c => c.name).join(', '),
-    });
-    setEditingIndex(idx);
+  const handleEdit = (member) => {
+    const certString = member.certificates.join(', ');
+    setForm({ ...member, certificates: certString });
+    setEditingMemberId(member.id);
     setShowForm(true);
   };
+  
+  const handleDelete = async (memberId) => {
+    if (window.confirm("Are you sure you want to delete this member?")) {
+      try {
+        const { error } = await supabase.from('members').delete().eq('id', memberId);
+        if (error) throw error;
+        getMembers();
+      } catch (error) {
+        console.error("Error deleting member:", error.message);
+      }
+    }
+  };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
     const certNames = typeof form.certificates === 'string'
       ? form.certificates.split(',').map(s => s.trim()).filter(Boolean)
-      : form.certificates;
-    const memberData = {
-      ...form,
-      certificates: certNames.map(name => ({ name, file: '/dummy-certificate.pdf' })),
+      : [];
+      
+    // ADDED: New fields to the payload sent to Supabase
+    const payload = {
+      name: form.name,
+      status: form.status,
+      certificates: certNames,
+      sap_id: form.sap_id,
+      pers_email: form.pers_email,
+      clg_email: form.clg_email,
+      batch: form.batch,
+      year: form.year,
+      course: form.course,
     };
-    if (editingIndex !== null) {
-      // Edit
-      const updated = [...members];
-      updated[editingIndex] = memberData;
-      setMembers(updated);
-    } else {
-      // Add
-      setMembers([...members, memberData]);
+
+    if (editingMemberId) {
+      payload.joined_at = form.joined_at;
     }
-    setShowForm(false);
-    setForm(emptyMember);
-    setEditingIndex(null);
+
+    try {
+      let error;
+      if (editingMemberId) {
+        ({ error } = await supabase.from('members').update(payload).eq('id', editingMemberId));
+      } else {
+        ({ error } = await supabase.from('members').insert([payload]));
+      }
+      
+      if (error) throw error;
+      getMembers();
+      setShowForm(false);
+      setForm(emptyMember);
+      setEditingMemberId(null);
+    } catch (error) {
+        alert(error.message);
+        console.error("Error saving member:", error.message);
+    }
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      timeZone: 'UTC', // Handle date as UTC to avoid timezone shifts
+      month: 'short', year: 'numeric', day: 'numeric'
+    });
+  };
+
+  if (loading) return <div>Loading members...</div>;
+
   return (
-    <div style={{ maxWidth: 700, margin: '40px auto', padding: 24, background: '#f5f5f5', borderRadius: 12 }}>
-      <h2>Admin Panel</h2>
-      <button onClick={handleAdd} style={{ marginBottom: 20, padding: '8px 16px', borderRadius: 6, background: '#1de9b6', border: 'none', color: '#222', fontWeight: 'bold' }}>Add New Member</button>
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 24 }}>
-        <thead>
-          <tr style={{ background: '#e0f7fa' }}>
-            <th>Name</th>
-            <th>Member ID</th>
-            <th>Join Date</th>
-            <th>Status</th>
-            <th>Certificates</th>
-            <th>Edit</th>
-          </tr>
-        </thead>
-        <tbody>
-          {members.map((m, idx) => (
-            <tr key={m.id} style={{ background: idx % 2 ? '#fff' : '#e0f7fa' }}>
-              <td>{m.name}</td>
-              <td>{m.id}</td>
-              <td>{m.joinDate}</td>
-              <td>{m.status}</td>
-              <td>{m.certificates.map(c => c.name).join(', ')}</td>
-              <td>
-                <button onClick={() => handleEdit(idx)} style={{ padding: '4px 12px', borderRadius: 4, background: '#ffd600', border: 'none', color: '#222', fontWeight: 'bold' }}>Edit</button>
-              </td>
+    <div style={{ maxWidth: 1200, margin: '40px auto', padding: 24, background: '#f5f5f5', borderRadius: 12 }}>
+      {/* <h2>Admin Panel</h2> */}
+      <button onClick={handleAdd} style={{ marginBottom: 20, padding: '8px 16px', borderRadius: 6, background: '#1de9b6', border: 'none', color: '#222', fontWeight: 'bold', marginRight: 12 }}>Add New Member</button>
+      
+      <div style={{overflowX: 'auto'}}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 24 }}>
+          <thead>
+            <tr style={{ background: '#e0f7fa' }}>
+              <th style={{padding: 8}}>ID</th>
+              <th style={{padding: 8}}>Name</th>
+              <th style={{padding: 8}}>SAP ID</th>
+              <th style={{padding: 8}}>Course</th>
+              <th style={{padding: 8}}>Joined At</th>
+              <th style={{padding: 8}}>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {members.map((m) => (
+              <tr key={m.id} style={{ background: '#fff', borderBottom: '1px solid #eee' }}>
+                <td style={{padding: 8}}>{m.id}</td>
+                <td style={{padding: 8}}>{m.name}</td>
+                <td style={{padding: 8}}>{m.sap_id}</td>
+                <td style={{padding: 8}}>{m.course}</td>
+                <td style={{padding: 8}}>{formatDate(m.joined_at)}</td>
+                <td style={{padding: 8}}>
+                  <button onClick={() => handleEdit(m)} style={{ padding: '8px 16px', borderRadius: 6, background: '#1de9b6', border: 'none', color: '#222', fontWeight: 'bold', marginRight: 12 }}>Edit</button>
+                  <button onClick={() => handleDelete(m.id)} style={{ padding: '8px 16px', borderRadius: 6, background: '#ccc', border: 'none', color: '#222', fontWeight: 'bold' }}>Delete</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
       {showForm && (
-        <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 24, borderRadius: 8, boxShadow: '0 2px 8px #ccc', marginBottom: 24 }}>
-          <h3>{editingIndex !== null ? 'Edit Member' : 'Add Member'}</h3>
-          <div style={{ marginBottom: 12 }}>
-            <label>Name: <input name="name" value={form.name} onChange={handleInputChange} required style={{ marginLeft: 8 }} /></label>
+        <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 24, borderRadius: 8, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <h3 style={{gridColumn: '1 / -1'}}>{editingMemberId ? 'Edit Member' : 'Add Member'}</h3>
+          
+          {/* Column 1 */}
+          <div>
+            <div style={{ marginBottom: 12 }}>
+              <label>Name: <input name="name" value={form.name} onChange={handleInputChange} required /></label>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label>SAP ID: <input type="number" name="sap_id" value={form.sap_id} onChange={handleInputChange} /></label>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label>Course: <input name="course" value={form.course} onChange={handleInputChange} /></label>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label>Batch: <input type="number" name="batch" value={form.batch} onChange={handleInputChange} /></label>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label>Year: <input type="number" name="year" value={form.year} onChange={handleInputChange} /></label>
+            </div>
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Member ID: <input name="id" value={form.id} onChange={handleInputChange} required style={{ marginLeft: 8 }} /></label>
+
+          {/* Column 2 */}
+          <div>
+            <div style={{ marginBottom: 12 }}>
+              <label>Personal Email: <input type="email" name="pers_email" value={form.pers_email} onChange={handleInputChange} /></label>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label>College Email: <input type="email" name="clg_email" value={form.clg_email} onChange={handleInputChange} /></label>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label>Status: <input name="status" value={form.status} onChange={handleInputChange} required /></label>
+            </div>
+            {editingMemberId && (
+              <div style={{ marginBottom: 12 }}>
+                <label>Joined At: <input type="date" name="joined_at" value={form.joined_at || ''} onChange={handleInputChange} required /></label>
+              </div>
+            )}
+            <div style={{ marginBottom: 12 }}>
+              <label>Certificates (comma separated): <input name="certificates" value={form.certificates} onChange={handleCertChange} /></label>
+            </div>
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Join Date: <input name="joinDate" value={form.joinDate} onChange={handleInputChange} required style={{ marginLeft: 8 }} /></label>
+          
+          <div style={{gridColumn: '1 / -1'}}>
+            <button type="submit" style={{ padding: '8px 16px', borderRadius: 6, background: '#1de9b6', border: 'none', color: '#222', fontWeight: 'bold', marginRight: 12 }}>Save</button>
+          <button type="button" onClick={() => setShowForm(false)} style={{ padding: '8px 16px', borderRadius: 6, background: '#ccc', border: 'none', color: '#222', fontWeight: 'bold' }}>Cancel</button>
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Status: <input name="status" value={form.status} onChange={handleInputChange} required style={{ marginLeft: 8 }} /></label>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Certificates (comma separated): <input name="certificates" value={typeof form.certificates === 'string' ? form.certificates : form.certificates.map(c => c.name).join(', ')} onChange={handleCertChange} style={{ marginLeft: 8, width: 220 }} /></label>
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Tagline: <input name="tagline" value={form.tagline} onChange={handleInputChange} style={{ marginLeft: 8, width: 220 }} /></label>
-          </div>
-          <button type="submit" style={{ padding: '8px 16px', borderRadius: 6, background: '#1de9b6', border: 'none', color: '#222', fontWeight: 'bold', marginRight: 12 }}>Save</button>
-          <button type="button" onClick={() => setShowForm(false)} style={{ padding: '8px 16px', borderRadius: 6, background: '#ff4081', border: 'none', color: '#fff', fontWeight: 'bold' }}>Cancel</button>
         </form>
       )}
     </div>
   );
 };
 
-export default AdminPanel; 
+export default AdminPanel;

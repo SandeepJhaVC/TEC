@@ -1,63 +1,48 @@
 import React, { useState } from 'react';
-
-// Hardcoded members data
-const members = [
-  {
-    id: 'M2K8N9',
-    name: 'Tanvi Saini',
-    joinDate: 'Aug 2025',
-    status: 'Active Member',
-    certificates: [
-      {
-        name: 'Certificate of Excellence',
-        file: '/dummy-certificate.pdf', // Placeholder path
-      },
-      {
-        name: 'Tech Symposium 2025',
-        file: '/dummy-certificate.pdf', // Placeholder path
-      },
-    ],
-    tagline: 'For those who echo change.'
-  },
-  {
-    id: 'S34K78',
-    name: 'Sandeep',
-    joinDate: 'july 2025',
-    status: 'Active Member',
-    certificates: [
-      {
-        name: 'Certificate of Excellence',
-        file: '/dummy-certificate.pdf', // Placeholder path
-      },
-      {
-        name: 'Tech Symposium 2025',
-        file: '/dummy-certificate.pdf', // Placeholder path
-      },
-    ],
-    tagline: 'For those who echo change.'
-  },
-  // Add more members as needed
-];
+import { supabase } from '../supabaseClient'; // Import the Supabase client
 
 const MemberPortal = () => {
   const [memberId, setMemberId] = useState('');
   const [member, setMember] = useState(null);
   const [error, setError] = useState('');
   const [selectedCert, setSelectedCert] = useState(null);
+  const [loading, setLoading] = useState(false); // Add a loading state
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const found = members.find(m => m.id.toLowerCase() === memberId.trim().toLowerCase());
-    if (found) {
-      setMember(found);
-      setError('');
-    } else {
-      setMember(null);
-      setError('Member not found. Please check your Member ID.');
+    setLoading(true);
+    setMember(null);
+    setError('');
+
+    try {
+      // Fetch data from the 'members' table in Supabase
+      const { data, error: fetchError } = await supabase
+        .from('members')
+        .select('*')
+        .eq('id', memberId.trim().toUpperCase()) // Ensure ID case matches what's in DB
+        .single(); // .single() returns one object or null
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        // PGRST116 means no rows were found, which we handle as "Member not found"
+        throw fetchError;
+      }
+      
+      if (data) {
+        setMember(data);
+      } else {
+        setError('Member not found. Please check your Member ID.');
+      }
+    } catch (err) {
+      setError('An error occurred while fetching data. Please try again.');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleCertClick = (cert) => {
+    // For a real app, you'd get a public URL from Supabase Storage
+    // For example: const { data } = supabase.storage.from('certificates').getPublicUrl(cert.file);
     setSelectedCert(cert);
   };
 
@@ -76,11 +61,13 @@ const MemberPortal = () => {
           onChange={e => setMemberId(e.target.value)}
           style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #ccc', marginRight: 8 }}
         />
-        <button type="submit" style={{ padding: '8px 16px', borderRadius: 6, background: '#1de9b6', border: 'none', color: '#222', fontWeight: 'bold' }}>
-          Check Details
+        <button type="submit" disabled={loading} style={{ padding: '8px 16px', borderRadius: 6, background: '#1de9b6', border: 'none', color: '#222', fontWeight: 'bold' }}>
+          {loading ? 'Checking...' : 'Check Details'}
         </button>
       </form>
       {error && <div style={{ color: 'crimson', marginBottom: 16 }}>{error}</div>}
+      
+      {/* The rest of your component's JSX remains the same */}
       {member && (
         <div style={{
           border: '2px solid #1de9b6',
@@ -92,12 +79,13 @@ const MemberPortal = () => {
           fontFamily: 'monospace',
           boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
         }}>
-          <div style={{ marginBottom: 8, fontWeight: 'bold', fontSize: 18 }}>
+          {/* ... Your existing member card JSX ... */}
+           <div style={{ marginBottom: 8, fontWeight: 'bold', fontSize: 18 }}>
             TEC/25 ★ {member.id} ★ ECHO
           </div>
           <div style={{ margin: '16px 0' }}>
             <div style={{ color: '#ffb300', marginBottom: 4 }}>🧑‍💻 <span style={{ color: '#ff4081' }}>Name:</span> <span style={{ color: '#fff' }}>{member.name}</span></div>
-            <div style={{ color: '#00bcd4', marginBottom: 4 }}>🔗 <span style={{ color: '#ff4081' }}>Join Date:</span> <span style={{ color: '#fff' }}>{member.joinDate}</span></div>
+            <div style={{ color: '#00bcd4', marginBottom: 4 }}>🔗 <span style={{ color: '#ff4081' }}>Join Date:</span> <span style={{ color: '#fff' }}>{member.joined_at}</span></div>
             <div style={{ color: '#00e676', marginBottom: 4 }}>🪪 <span style={{ color: '#ff4081' }}>Status:</span> <span style={{ color: '#fff' }}>{member.status}</span></div>
             <div style={{ color: '#ffd600', marginBottom: 4 }}>
               📜 <span style={{ color: '#ff4081' }}>Certificates:</span> {' '}
@@ -130,9 +118,9 @@ const MemberPortal = () => {
           </div>
         </div>
       )}
-      {/* Certificate Modal */}
+      {/* ... Your existing modal JSX ... */}
       {selectedCert && (
-        <div style={{
+         <div style={{
           position: 'fixed',
           top: 0,
           left: 0,
@@ -155,7 +143,6 @@ const MemberPortal = () => {
           }}>
             <h3>{selectedCert.name}</h3>
             <div style={{ margin: '24px 0' }}>
-              {/* Placeholder for certificate preview */}
               <div style={{
                 width: 260,
                 height: 180,
@@ -173,7 +160,7 @@ const MemberPortal = () => {
               </div>
             </div>
             <a
-              href={selectedCert.file}
+              href={selectedCert.file} // This would be a public URL from Supabase Storage
               download={selectedCert.name.replace(/\s+/g, '_') + '.pdf'}
               style={{
                 display: 'inline-block',
@@ -209,4 +196,4 @@ const MemberPortal = () => {
   );
 };
 
-export default MemberPortal; 
+export default MemberPortal;
