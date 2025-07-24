@@ -73,6 +73,7 @@ export default function Header() {
                 <a href="/#about">About</a>
                 <a href="/#projects">Projects</a>
                 <a href="#">Partners</a>
+                <a href="/events">Events</a>
                 <a href="/member">Members</a>
                 <a href="/admin">Admin</a>
             </div>
