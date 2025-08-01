@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './components/Home';
 import Header from './components/header/Header';
 import Footer from './components/Footer';
+import MemberPortal from './components/MemberPortal';
+import AdminPanel from './components/AdminPanel';
+import EventsPage from './components/Events';
 
 function App() {
   return (
@@ -10,11 +13,9 @@ function App() {
       <Header />
       <Routes>
         <Route path="/" element={<Home />} />
-        <div>
-          <h1>Intro to TEC placeholder</h1>
-          <p>Basic ELement Placeholder</p>
-          <a>CTA BUTTON</a>
-        </div>
+        <Route path="/member" element={<MemberPortal />} />
+        <Route path="/admin" element={<AdminPanel />} />
+        <Route path="/events" element={<EventsPage />} />
       </Routes>
       <Footer />
     </Router>
