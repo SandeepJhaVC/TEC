@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient'; // Make sure this path is correct
+import { supabase } from '../supabaseClient';
+import { useNavigate } from 'react-router-dom';
 
 // ADDED: New fields to match the schema
 const emptyMember = {
@@ -21,8 +22,16 @@ const AdminPanel = () => {
   const [form, setForm] = useState(emptyMember);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate('/login'); // Redirect to login if not authenticated
+      }
+    };
+    checkAuth();
     getMembers();
   }, []);
 
