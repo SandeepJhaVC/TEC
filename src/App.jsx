@@ -22,20 +22,22 @@ function App() {
     <AuthProvider>
       <Router>
         <Header />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/discounts" element={<Discounts />} />
-          <Route path="/map" element={<Map />} />
-          <Route path="/assignments" element={<Assignments />} />
-          <Route path="/listings" element={<Listings />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/poll" element={<Poll />} />
-          <Route path="/member" element={<MemberPortal />} />
-          <Route path="/admin" element={<ProtectedRoute minRole="admin"><AdminPanel /></ProtectedRoute>} />
-          <Route path="/events" element={<EventsPage />} />
-          <Route path="/builds" element={<Builds />} />
-          <Route path="/login" element={<Login />} />
-        </Routes>
+        <div className="app-content">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/discounts" element={<Discounts />} />
+            <Route path="/map" element={<Map />} />
+            <Route path="/assignments" element={<Assignments />} />
+            <Route path="/listings" element={<Listings />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/poll" element={<Poll />} />
+            <Route path="/member" element={<MemberPortal />} />
+            <Route path="/admin" element={<ProtectedRoute minRole="admin"><AdminPanel /></ProtectedRoute>} />
+            <Route path="/events" element={<EventsPage />} />
+            <Route path="/builds" element={<Builds />} />
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </div>
         <Footer />
       </Router>
     </AuthProvider>

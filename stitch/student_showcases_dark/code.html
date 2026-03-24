@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TEC Terminal | Student Showcases</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-dim": "#9c48ea",
+              "on-secondary-container": "#ecfaff",
+              "primary-container": "#c284ff",
+              "on-secondary-fixed": "#003a45",
+              "surface": "#0e0e0e",
+              "surface-container": "#1a1919",
+              "outline-variant": "#494847",
+              "inverse-primary": "#842cd3",
+              "surface-container-highest": "#262626",
+              "surface-dim": "#0e0e0e",
+              "surface-container-lowest": "#000000",
+              "primary-fixed-dim": "#b971ff",
+              "background": "#0e0e0e",
+              "on-error": "#490013",
+              "tertiary-container": "#fe7e8e",
+              "on-primary": "#47007c",
+              "on-surface": "#ffffff",
+              "error-container": "#a70138",
+              "tertiary-fixed-dim": "#fa7c8b",
+              "secondary-container": "#00687a",
+              "tertiary-fixed": "#ff909c",
+              "on-tertiary": "#680921",
+              "on-surface-variant": "#adaaaa",
+              "on-secondary": "#004b58",
+              "on-primary-container": "#360061",
+              "on-error-container": "#ffb2b9",
+              "surface-bright": "#2c2c2c",
+              "surface-container-low": "#131313",
+              "secondary": "#53ddfc",
+              "error-dim": "#d73357",
+              "primary": "#cc97ff",
+              "inverse-surface": "#fcf8f8",
+              "on-background": "#ffffff",
+              "on-tertiary-container": "#570018",
+              "surface-tint": "#cc97ff",
+              "surface-variant": "#262626",
+              "on-primary-fixed-variant": "#430076",
+              "tertiary-dim": "#f47786",
+              "on-tertiary-fixed-variant": "#711227",
+              "on-primary-fixed": "#000000",
+              "inverse-on-surface": "#565554",
+              "tertiary": "#ff95a0",
+              "secondary-fixed-dim": "#48d4f3",
+              "secondary-dim": "#40ceed",
+              "surface-container-high": "#201f1f",
+              "on-secondary-fixed-variant": "#005969",
+              "secondary-fixed": "#65e1ff",
+              "primary-fixed": "#c284ff",
+              "outline": "#777575",
+              "error": "#ff6e84",
+              "on-tertiary-fixed": "#39000d"
+            },
+            fontFamily: {
+              "headline": ["Lexend"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .neon-glow-primary {
+            box-shadow: 0 0 20px rgba(204, 151, 255, 0.15);
+        }
+        .glass-panel {
+            background: rgba(38, 38, 38, 0.6);
+            backdrop-filter: blur(24px);
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary/30">
+<!-- TopNavBar -->
+<nav class="fixed top-0 w-full z-50 bg-[#0E0E0E]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_20px_rgba(204,151,255,0.05)] flex justify-between items-center px-6 h-16 w-full">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black tracking-tighter text-[#CC97FF] italic font-headline">TEC</span>
+<div class="hidden md:flex gap-6 items-center">
+<a class="text-[#ADAAAA] hover:text-[#53DDFC] transition-colors duration-300 font-['Lexend'] tracking-tighter active:scale-95 transition-transform" href="#">Bazaar</a>
+<a class="text-[#CC97FF] font-bold hover:text-[#53DDFC] transition-colors duration-300 font-['Lexend'] tracking-tighter active:scale-95 transition-transform" href="#">Builds</a>
+<a class="text-[#ADAAAA] hover:text-[#53DDFC] transition-colors duration-300 font-['Lexend'] tracking-tighter active:scale-95 transition-transform" href="#">Explore</a>
+<a class="text-[#ADAAAA] hover:text-[#53DDFC] transition-colors duration-300 font-['Lexend'] tracking-tighter active:scale-95 transition-transform" href="#">Terminal</a>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="bg-surface-container-lowest border border-outline-variant/30 rounded-full pl-10 pr-4 py-1.5 text-sm focus:border-secondary transition-all outline-none w-64" placeholder="Search Kernel..." type="text"/>
+</div>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors">settings</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="close-up portrait of a young developer with neon lighting reflecting on glasses" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAh0b3gS3nGe33MdUkQS6qv8ndJTS7h6wlwOZNeb_TbkBo7z11pWFJ-y_Y5vbRc1NVY0C8SNgz0RpV29WHCSEbMOrPZ-PFLUCByQoIC_fRczKD16JWcCXxKRgI1DxJXcmRum02faNeEsiKHw0Mi-JaeyV6CcXBR9vkS3kRbe9rsRO6-i93gC8Jw44eyHnDR3K8vTEy9kvhvm9VXhxSUq_2AwkMm4Mu8MLYQPKW1ZGqmcC8UmsvU4bUrc6vAToUMBnRx0DaC3jc2zRE"/>
+</div>
+</div>
+</nav>
+<!-- SideNavBar (Desktop Only) -->
+<aside class="fixed left-0 top-0 pt-20 pb-10 flex flex-col h-screen w-64 hidden lg:flex border-r border-white/5 bg-[#0E0E0E]">
+<div class="px-6 mb-8">
+<h2 class="text-[#CC97FF] font-bold font-headline">TEC Terminal</h2>
+<p class="text-[10px] text-on-surface-variant tracking-widest uppercase">V2.0.4-Stable</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-4 px-6 py-3 text-[#ADAAAA] hover:text-white hover:bg-[#262626] transition-all font-['Lexend'] text-sm uppercase tracking-widest group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">storefront</span>
+<span>Bazaar</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-[#CC97FF] border-r-2 border-[#CC97FF] bg-[#CC97FF]/5 font-['Lexend'] text-sm uppercase tracking-widest group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">construction</span>
+<span>Builds</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-[#ADAAAA] hover:text-white hover:bg-[#262626] transition-all font-['Lexend'] text-sm uppercase tracking-widest group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">explore</span>
+<span>Explore</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-[#ADAAAA] hover:text-white hover:bg-[#262626] transition-all font-['Lexend'] text-sm uppercase tracking-widest group" href="#">
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">terminal</span>
+<span>Terminal</span>
+</a>
+</nav>
+<div class="px-6">
+<button class="w-full py-4 bg-gradient-to-br from-primary to-primary-dim text-on-primary-fixed font-bold rounded-xl active:scale-95 transition-transform shadow-[0_0_30px_rgba(204,151,255,0.2)]">
+                Deploy Build
+            </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="lg:ml-64 pt-24 pb-32 px-6 min-h-screen">
+<div class="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-12 gap-8">
+<!-- Showcase Feed (Center) -->
+<div class="xl:col-span-8 space-y-10">
+<header class="space-y-2">
+<h1 class="text-4xl md:text-6xl font-black font-headline tracking-tighter italic text-primary">PROJECT_SHOWCASE</h1>
+<p class="text-on-surface-variant max-w-2xl text-lg">Visualizing the next generation of kinetic logic. Direct from the student kernel.</p>
+</header>
+<!-- Filter Bar -->
+<div class="flex items-center gap-4 overflow-x-auto hide-scrollbar pb-2">
+<button class="px-6 py-2 rounded-full bg-primary text-on-primary-fixed text-sm font-bold whitespace-nowrap">Latest_Builds</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-highest text-on-surface-variant hover:text-secondary transition-colors text-sm font-medium whitespace-nowrap">Trending</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-highest text-on-surface-variant hover:text-secondary transition-colors text-sm font-medium whitespace-nowrap">Web3_Protocols</button>
+<button class="px-6 py-2 rounded-full bg-surface-container-highest text-on-surface-variant hover:text-secondary transition-colors text-sm font-medium whitespace-nowrap">AI_Systems</button>
+</div>
+<!-- Bento Showcase Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<!-- Project Card 1: Large Featured -->
+<div class="md:col-span-2 group relative bg-surface-container-low rounded-lg overflow-hidden hover:bg-surface-container transition-all duration-500">
+<div class="aspect-[21/9] w-full relative">
+<img class="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-700" data-alt="abstract 3D render of flowing neon purple and cyan data streams in a dark technical environment" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJtEzHsBfJyRWw-TuEbiBrE0MHKrUiPDjUFwpgKuhuiDP-U0piC-P4K485HKvs9nMU8Ln-jaDRE0F5t3fpf7-Jef6xKv1pUDePIUEuCweS7jdN1djxSoVUuDlrOWZmKbRsDLqpsV6-kjGzAtyl1jczCxbjXzlH9DFagazolYJcM4b9imgTVrYER9wCbfrygShr0yP9D3qmdRUgxt2n5_t94R8cN6KGgGiymS3uxppSvxPDmqDvq0-QVLBVXQ_GCTM4FjS9Qytx4yE"/>
+<div class="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"></div>
+<div class="absolute top-4 right-4 flex gap-2">
+<span class="bg-secondary/20 text-secondary border border-secondary/30 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase backdrop-blur-md animate-pulse">LIVE_DEPLOY</span>
+</div>
+</div>
+<div class="p-8 space-y-4">
+<div class="flex justify-between items-start">
+<div>
+<h3 class="text-3xl font-bold font-headline tracking-tight text-on-surface">KINETIC_FLOW_ENGINE</h3>
+<p class="text-on-surface-variant mt-2 max-w-lg italic">A high-velocity animation library optimized for low-latency terminal interfaces.</p>
+</div>
+<div class="flex gap-3">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-white">terminal</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-white">hub</button>
+</div>
+</div>
+<div class="flex flex-wrap gap-2 pt-4">
+<span class="bg-surface-container-highest text-on-secondary px-3 py-1 rounded-md text-xs font-mono">React v18</span>
+<span class="bg-surface-container-highest text-on-secondary px-3 py-1 rounded-md text-xs font-mono">Three.js</span>
+<span class="bg-surface-container-highest text-on-secondary px-3 py-1 rounded-md text-xs font-mono">Tailwind_JIT</span>
+<span class="bg-surface-container-highest text-on-secondary px-3 py-1 rounded-md text-xs font-mono">GSAP</span>
+</div>
+</div>
+</div>
+<!-- Project Card 2: Medium -->
+<div class="bg-surface-container-low rounded-lg overflow-hidden hover:bg-surface-container transition-all group p-6 space-y-6 flex flex-col">
+<div class="h-48 rounded-md overflow-hidden relative">
+<img class="w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-500" data-alt="close up of glowing server rack indicators in a dark data center room with neon reflections" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBIx5KIiYSMUFf3V4O5s11qG8HdzalpuztYqBKJt5AewjDtARfWXDzK5rOIu2xiEhZNUKCreadaN5_tqijr_lwap_n-TaNLceRkWSz-tr0YecJHKR_y3IVER0pxH4czugBQ0E-YnFQgu4T9vqgk3S6-Wpr2yEtICUaTRs5Ph12Sc09uGsrB7y6AcsESbv0ta4-On9tKRSWt4XPkGNm8aWmZHfM3V-XncffiGsmkurK8tH2de4tCGSMDzYhgjqFGXuJrRjQ9aZjLld0"/>
+<div class="absolute top-3 left-3">
+<span class="bg-tertiary/20 text-tertiary border border-tertiary/30 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase backdrop-blur-md">BETA_V0.8</span>
+</div>
+</div>
+<div class="flex-1 space-y-2">
+<h4 class="text-xl font-bold font-headline tracking-tight">OS_TERMINAL_UI</h4>
+<p class="text-sm text-on-surface-variant line-clamp-2">Recreating the aesthetic of 90s hacking interfaces with modern accessibility standards.</p>
+</div>
+<div class="flex items-center justify-between border-t border-white/5 pt-4">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full border border-surface bg-primary/20 flex items-center justify-center text-[8px] font-bold">TS</div>
+<div class="w-6 h-6 rounded-full border border-surface bg-secondary/20 flex items-center justify-center text-[8px] font-bold">NV</div>
+</div>
+<button class="text-xs font-bold text-secondary flex items-center gap-1 group/btn">
+                                VIEW_REPO <span class="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">arrow_right_alt</span>
+</button>
+</div>
+</div>
+<!-- Project Card 3: Medium -->
+<div class="bg-surface-container-low rounded-lg overflow-hidden hover:bg-surface-container transition-all group p-6 space-y-6 flex flex-col">
+<div class="h-48 rounded-md overflow-hidden relative">
+<img class="w-full h-full object-cover opacity-40 group-hover:scale-110 transition-transform duration-500" data-alt="abstract digital artwork showing glowing blue neural network patterns on a dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_wN8yBTwR7L-t4lWmnpkNkKXfRlC9R8k_mNoFZftmPHqNgoIb154cVsx3Muf2Vua8C3xcxfEnT2AocRJWcWIuddtVkFt_fw4ZtF2i3CAloBvArLOrrCh_XnKFBONT5SMMIV-zMqvtcbap7OKZ2-9-YYkDYI2VkvRcSRJkWYhQjzxNbrSJIgwVorEJ_8jgVb3-HowBatV71feBg1FjhnFNLmCkFzsc3N4WK5zqKgJnSiRvKuLkw4bNpxybmC7P4yfwGCTJhyysDxw"/>
+<div class="absolute top-3 right-3">
+<span class="material-symbols-outlined text-secondary text-lg" style="font-variation-settings: 'FILL' 1;">stars</span>
+</div>
+</div>
+<div class="flex-1 space-y-2">
+<h4 class="text-xl font-bold font-headline tracking-tight">NEURAL_NET_VIS</h4>
+<p class="text-sm text-on-surface-variant line-clamp-2">Real-time visualization of weight adjustments during ML model training cycles.</p>
+</div>
+<div class="flex items-center justify-between border-t border-white/5 pt-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-on-surface-variant">history</span>
+<span class="text-[10px] text-on-surface-variant uppercase font-mono tracking-widest">Pushed 2h ago</span>
+</div>
+<button class="text-xs font-bold text-primary flex items-center gap-1 group/btn">
+                                LAUNCH <span class="material-symbols-outlined text-sm group-hover/btn:translate-y-[-2px] transition-transform">open_in_new</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Sidebar (Right) -->
+<div class="xl:col-span-4 space-y-8">
+<!-- Activity Feed -->
+<section class="bg-surface-container-low rounded-lg p-6 space-y-6 border-l-2 border-primary/20">
+<div class="flex items-center justify-between">
+<h3 class="text-sm font-black tracking-widest uppercase text-on-surface flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-ping"></span>
+                            LIVE_ACTIVITY
+                        </h3>
+<span class="text-[10px] text-secondary font-mono">12 NODES ONLINE</span>
+</div>
+<div class="space-y-6">
+<div class="flex gap-4 group">
+<div class="flex-shrink-0 w-8 h-8 rounded-md bg-surface-container-highest flex items-center justify-center border border-white/10 group-hover:border-primary transition-colors">
+<span class="material-symbols-outlined text-sm text-primary">commit</span>
+</div>
+<div class="space-y-1">
+<p class="text-sm font-medium"><span class="text-primary">@novax</span> pushed to <span class="text-secondary">main</span></p>
+<p class="text-xs text-on-surface-variant font-mono">fix(core): optimized vertex buffer arrays</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-tighter">04:22 UTC</p>
+</div>
+</div>
+<div class="flex gap-4 group">
+<div class="flex-shrink-0 w-8 h-8 rounded-md bg-surface-container-highest flex items-center justify-center border border-white/10 group-hover:border-tertiary transition-colors">
+<span class="material-symbols-outlined text-sm text-tertiary">rocket_launch</span>
+</div>
+<div class="space-y-1">
+<p class="text-sm font-medium"><span class="text-tertiary">@cyan_drifter</span> deployed v1.2</p>
+<p class="text-xs text-on-surface-variant font-mono">Showcasing: "Cyber_Vault_Security"</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-tighter">03:45 UTC</p>
+</div>
+</div>
+<div class="flex gap-4 group">
+<div class="flex-shrink-0 w-8 h-8 rounded-md bg-surface-container-highest flex items-center justify-center border border-white/10 group-hover:border-secondary transition-colors">
+<span class="material-symbols-outlined text-sm text-secondary">forum</span>
+</div>
+<div class="space-y-1">
+<p class="text-sm font-medium"><span class="text-secondary">@delta_root</span> commented</p>
+<p class="text-xs text-on-surface-variant font-mono">"The lighting shaders are incredible!"</p>
+<p class="text-[10px] text-on-surface-variant uppercase tracking-tighter">02:10 UTC</p>
+</div>
+</div>
+</div>
+<button class="w-full py-2 text-xs font-bold text-on-surface-variant hover:text-white transition-colors bg-surface-container hover:bg-surface-container-highest rounded-md uppercase tracking-widest">View Terminal Logs</button>
+</section>
+<!-- Upcoming Events -->
+<section class="bg-surface-container-low rounded-lg p-6 space-y-6">
+<h3 class="text-sm font-black tracking-widest uppercase text-on-surface">KERNEL_UPGRADES</h3>
+<div class="space-y-4">
+<div class="p-4 rounded-md bg-surface-container-highest border border-white/5 space-y-2 hover:border-primary/50 transition-colors cursor-pointer">
+<div class="flex justify-between items-center">
+<span class="text-[10px] font-bold text-primary tracking-widest">HACKATHON</span>
+<span class="text-[10px] text-on-surface-variant font-mono">OCT 24</span>
+</div>
+<h4 class="font-bold text-sm">Low-Level Logic Sprint</h4>
+<p class="text-xs text-on-surface-variant">Optimize memory management for real-time physics engines.</p>
+</div>
+<div class="p-4 rounded-md bg-surface-container-highest border border-white/5 space-y-2 hover:border-secondary/50 transition-colors cursor-pointer">
+<div class="flex justify-between items-center">
+<span class="text-[10px] font-bold text-secondary tracking-widest">WORKSHOP</span>
+<span class="text-[10px] text-on-surface-variant font-mono">OCT 26</span>
+</div>
+<h4 class="font-bold text-sm">Shaders for the Void</h4>
+<p class="text-xs text-on-surface-variant">Master GLSL for creating atmospheric dark-mode effects.</p>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 w-full lg:hidden rounded-t-[2rem] bg-[#0E0E0E]/90 backdrop-blur-2xl border-t border-white/10 shadow-[0_-10px_30px_rgba(204,151,255,0.1)] flex justify-around items-center h-20 pb-safe px-4 z-50">
+<a class="flex flex-col items-center gap-1 text-[#ADAAAA] active:bg-white/5 active:scale-90 transition-all group" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium font-['Inter']">Home</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#ADAAAA] active:bg-white/5 active:scale-90 transition-all group" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<span class="text-[10px] font-medium font-['Inter']">Bazaar</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#CC97FF] scale-110 active:bg-white/5 active:scale-90 transition-all group" href="#">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="text-[10px] font-medium font-['Inter']">Add</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#CC97FF] scale-110 active:bg-white/5 active:scale-90 transition-all group" href="#">
+<span class="material-symbols-outlined">construction</span>
+<span class="text-[10px] font-medium font-['Inter']">Builds</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#ADAAAA] active:bg-white/5 active:scale-90 transition-all group" href="#">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium font-['Inter']">Profile</span>
+</a>
+</nav>
+<!-- Footer -->
+<footer class="w-full py-12 bg-[#0E0E0E] border-t border-white/5">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-8 opacity-60 font-['Inter'] text-[12px] uppercase tracking-[0.2em]">
+<span class="text-[#CC97FF] mb-4 md:mb-0">© 2024 TEC KINETIC OS</span>
+<div class="flex gap-8">
+<a class="text-[#ADAAAA] hover:text-[#FF95A0] transition-colors underline-offset-4 hover:underline" href="#">Protocol</a>
+<a class="text-[#ADAAAA] hover:text-[#FF95A0] transition-colors underline-offset-4 hover:underline" href="#">Kernel</a>
+<a class="text-[#ADAAAA] hover:text-[#FF95A0] transition-colors underline-offset-4 hover:underline" href="#">Security</a>
+<a class="text-[#ADAAAA] hover:text-[#FF95A0] transition-colors underline-offset-4 hover:underline" href="#">Manual</a>
+</div>
+</div>
+</footer>
+</body></html>

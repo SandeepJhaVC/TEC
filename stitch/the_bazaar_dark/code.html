@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary-dim": "#9c48ea",
+              "on-secondary-container": "#ecfaff",
+              "primary-container": "#c284ff",
+              "on-secondary-fixed": "#003a45",
+              "surface": "#0e0e0e",
+              "surface-container": "#1a1919",
+              "outline-variant": "#494847",
+              "inverse-primary": "#842cd3",
+              "surface-container-highest": "#262626",
+              "surface-dim": "#0e0e0e",
+              "surface-container-lowest": "#000000",
+              "primary-fixed-dim": "#b971ff",
+              "background": "#0e0e0e",
+              "on-error": "#490013",
+              "tertiary-container": "#fe7e8e",
+              "on-primary": "#47007c",
+              "on-surface": "#ffffff",
+              "error-container": "#a70138",
+              "tertiary-fixed-dim": "#fa7c8b",
+              "secondary-container": "#00687a",
+              "tertiary-fixed": "#ff909c",
+              "on-tertiary": "#680921",
+              "on-surface-variant": "#adaaaa",
+              "on-secondary": "#004b58",
+              "on-primary-container": "#360061",
+              "on-error-container": "#ffb2b9",
+              "surface-bright": "#2c2c2c",
+              "surface-container-low": "#131313",
+              "secondary": "#53ddfc",
+              "error-dim": "#d73357",
+              "primary": "#cc97ff",
+              "inverse-surface": "#fcf8f8",
+              "on-background": "#ffffff",
+              "on-tertiary-container": "#570018",
+              "surface-tint": "#cc97ff",
+              "surface-variant": "#262626",
+              "on-primary-fixed-variant": "#430076",
+              "tertiary-dim": "#f47786",
+              "on-tertiary-fixed-variant": "#711227",
+              "on-primary-fixed": "#000000",
+              "inverse-on-surface": "#565554",
+              "tertiary": "#ff95a0",
+              "secondary-fixed-dim": "#48d4f3",
+              "secondary-dim": "#40ceed",
+              "surface-container-high": "#201f1f",
+              "on-secondary-fixed-variant": "#005969",
+              "secondary-fixed": "#65e1ff",
+              "primary-fixed": "#c284ff",
+              "outline": "#777575",
+              "error": "#ff6e84",
+              "on-tertiary-fixed": "#39000d"
+            },
+            fontFamily: {
+              "headline": ["Lexend"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      .glass-card {
+        background: rgba(38, 38, 38, 0.6);
+        backdrop-filter: blur(24px);
+      }
+      .neon-glow-primary {
+        box-shadow: 0 0 20px rgba(204, 151, 255, 0.15);
+      }
+      .neon-glow-secondary {
+        box-shadow: 0 0 20px rgba(83, 221, 252, 0.1);
+      }
+      ::-webkit-scrollbar {
+        width: 4px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0e0e0e;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #262626;
+        border-radius: 10px;
+      }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary/30">
+<!-- TopNavBar -->
+<header class="fixed top-0 w-full z-50 bg-[#0E0E0E]/80 backdrop-blur-xl border-b border-white/10 shadow-[0_0_20px_rgba(204,151,255,0.05)]">
+<div class="flex justify-between items-center px-6 h-16 w-full max-w-[1920px] mx-auto">
+<div class="flex items-center gap-8">
+<span class="text-2xl font-black tracking-tighter text-[#CC97FF] italic font-['Lexend']">TEC</span>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="text-[#CC97FF] font-bold font-['Lexend'] tracking-tighter hover:text-[#53DDFC] transition-colors duration-300" href="#">Bazaar</a>
+<a class="text-[#ADAAAA] font-['Lexend'] tracking-tighter hover:text-[#53DDFC] transition-colors duration-300" href="#">Builds</a>
+<a class="text-[#ADAAAA] font-['Lexend'] tracking-tighter hover:text-[#53DDFC] transition-colors duration-300" href="#">Explore</a>
+</nav>
+</div>
+<div class="flex-1 max-w-xl px-8 hidden sm:block">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant/30 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-secondary transition-all" placeholder="Search protocol bazaar..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors active:scale-95">notifications</button>
+<button class="material-symbols-outlined text-on-surface-variant hover:text-primary transition-colors active:scale-95">settings</button>
+<div class="h-8 w-8 rounded-full bg-surface-container-highest border border-primary/20 overflow-hidden">
+<img alt="User Profile Avatar" data-alt="Close up portrait of a futuristic tech-focused student with neon highlights on clothing and cool lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA-4jm425a2vtybtycnPzsZygiDqi4UdMC0gJtcQihHCYpWRQt0RnW2lcedtv30feBgBYik1fluuuB6As4133hIuFvfa4DSojSE3YpUOjhkG19DP6v_x8ni_nJqAy51d1gd87hNH6FHiBLc9gqifCFvXVYsi5kOdVLX42cLf3mwdXiTP9rTx28M2zt4_cvy2XZ2JIA7ORSRZo-i2pk1oL4oNsTI_h9SCPgDSOEmPaGYVUBO-z0bzuMPIIusjWySmLRalJxt9Xmyp8Y"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex pt-16 min-h-screen">
+<!-- SideNavBar (Desktop) -->
+<aside class="fixed left-0 top-0 pt-20 pb-10 flex flex-col h-screen w-64 hidden lg:flex border-r border-white/5 bg-[#0E0E0E]">
+<div class="px-6 mb-8">
+<h2 class="text-[#CC97FF] font-bold font-['Lexend'] text-sm uppercase tracking-widest">TEC Terminal</h2>
+<p class="text-[10px] text-on-surface-variant font-['Lexend']">V2.0.4-Stable</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-4 px-6 py-3 text-[#CC97FF] border-r-2 border-[#CC97FF] bg-[#CC97FF]/5 font-['Lexend'] text-sm uppercase tracking-widest transition-all" href="#">
+<span class="material-symbols-outlined">storefront</span>
+<span>Bazaar</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-[#ADAAAA] hover:text-white hover:bg-[#262626] font-['Lexend'] text-sm uppercase tracking-widest transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">construction</span>
+<span>Builds</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-[#ADAAAA] hover:text-white hover:bg-[#262626] font-['Lexend'] text-sm uppercase tracking-widest transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span>Explore</span>
+</a>
+<a class="flex items-center gap-4 px-6 py-3 text-[#ADAAAA] hover:text-white hover:bg-[#262626] font-['Lexend'] text-sm uppercase tracking-widest transition-all hover:translate-x-1" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span>Terminal</span>
+</a>
+</nav>
+<div class="px-6 mt-auto">
+<button class="w-full bg-gradient-to-r from-primary to-primary-dim text-on-primary-fixed py-3 rounded-lg font-bold text-sm uppercase tracking-wider flex items-center justify-center gap-2 active:scale-95 transition-transform neon-glow-primary">
+<span class="material-symbols-outlined text-sm">rocket_launch</span>
+                    Deploy Build
+                </button>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 lg:ml-64 p-6 md:p-10">
+<!-- Hero / Filter Section -->
+<section class="mb-12">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6">
+<div>
+<h1 class="text-4xl md:text-5xl font-headline font-extrabold tracking-tighter text-white mb-2">Protocol <span class="text-primary italic">Bazaar</span></h1>
+<p class="text-on-surface-variant max-w-xl">Exchange hardware, academic assets, and technical services within the campus perimeter.</p>
+</div>
+<div class="flex items-center gap-3">
+<div class="flex -space-x-3">
+<img alt="user" class="w-8 h-8 rounded-full border-2 border-surface" data-alt="Avatar of a student" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCLVakaAC11xOtHI0Riok82-vVNaDtRIP0JOa2MmT_LhkVR8I-UKe0HhuY5rq3HEOno4RLQbFpqyCSsMCdfbRAeqKGq7imdNAx5B_S2AypwufuIO8mHxFYsJvhS0Aw8DWlnSldFHCr2ChzsnwZ115N41YRylmZlPjgIAeBgn3BmVor4fln4YEyXLh78tIiAhrDtWd-vrXkUizkDdGADe1VI86jHDFA21ep9skPjC48YuKrmjnRoOgq7NexP23xd-CPvVNQqyoNxYNw"/>
+<img alt="user" class="w-8 h-8 rounded-full border-2 border-surface" data-alt="Avatar of a student" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFB8U88oyXLUrgd0sch7H0K4Wl-f5NLg6BYtrJjKAwhAX50ab4hzZNCVyXOF19syaz5trNXopDTzRwPLS8bQ0kssXdYVKz_GQC9of7ZnGM42SeO_Eyoqa1aqqI65qwyt5rDlGb6WXdf4iMxg_JJeGV8ZaZZ8bDaba95-Og1l8ndMIcFxfvn7mm-wMIUaGNZay65cgjMTP5kmAIiwmIYdca093rzUa9knR_jDjIx81TCexQmARDGoRlJkq_L405vSuUwuF4iTQjhXM"/>
+<img alt="user" class="w-8 h-8 rounded-full border-2 border-surface" data-alt="Avatar of a student" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCakyR0srKnnX4Wf2lh3P2pXcppW4xIUNo0Nj54JXc4tqb-WiG_r8kHUJHWspyr9mxHxLKFq3_3TKdkBY3o4C70C-cp1NEPxZyn2AkG7oCwVFYKYpREV6gDudM65_bG4w97Hpmof9NSExY2yULKo4x7z_djMirZ5l9ky6BdeSBGhXNDOI7jr182Y8DPlUvm_ObazxMTvQWyS9Uo0ZQU32QItFqctE2zlYVwf_81TUfROj8TJ0Mx44zhkzopw2l3cySMehw-GDZZUmg"/>
+<div class="w-8 h-8 rounded-full bg-surface-container-highest border-2 border-surface flex items-center justify-center text-[10px] text-secondary font-bold">+242</div>
+</div>
+<span class="text-xs font-bold text-secondary uppercase tracking-widest">Active nodes</span>
+</div>
+</div>
+<!-- Technical Filter Bar -->
+<div class="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-2 bg-surface-container-low rounded-xl border border-white/5">
+<div class="relative">
+<label class="absolute top-2 left-4 text-[10px] uppercase tracking-widest text-secondary font-bold">Category</label>
+<select class="w-full bg-transparent pt-6 pb-2 px-4 text-sm text-white appearance-none focus:ring-0 border-none cursor-pointer">
+<option>Hardware &amp; Components</option>
+<option>Study Sessions</option>
+<option>Digital Assets</option>
+<option>Lab Equipment</option>
+</select>
+</div>
+<div class="relative">
+<label class="absolute top-2 left-4 text-[10px] uppercase tracking-widest text-secondary font-bold">Price Range</label>
+<select class="w-full bg-transparent pt-6 pb-2 px-4 text-sm text-white appearance-none focus:ring-0 border-none cursor-pointer">
+<option>0 - 50 TEC</option>
+<option>50 - 200 TEC</option>
+<option>200 - 500 TEC</option>
+<option>500+ TEC</option>
+</select>
+</div>
+<div class="relative">
+<label class="absolute top-2 left-4 text-[10px] uppercase tracking-widest text-secondary font-bold">Condition</label>
+<select class="w-full bg-transparent pt-6 pb-2 px-4 text-sm text-white appearance-none focus:ring-0 border-none cursor-pointer">
+<option>Factory New</option>
+<option>Minimal Wear</option>
+<option>Field-Tested</option>
+</select>
+</div>
+<button class="bg-surface-container-highest hover:bg-surface-bright transition-colors rounded-lg flex items-center justify-center gap-2 text-on-surface-variant font-bold text-xs uppercase tracking-widest border border-white/5">
+<span class="material-symbols-outlined text-sm">filter_alt</span>
+                        Apply Parameters
+                    </button>
+</div>
+</section>
+<!-- Bento Grid Marketplace -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+<!-- Item 1: Hardware -->
+<article class="glass-card rounded-lg border border-white/5 overflow-hidden group flex flex-col">
+<div class="relative aspect-video overflow-hidden">
+<img alt="RTX GPU" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" data-alt="High-end computer graphics card with glowing RGB lighting on a dark reflective surface, cinematic tech lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-JihaUJLlxeAu6EbecuCrWlLDQkcWc0THyFKabG-kBNEdvSkSDajgIFjtP3Pw1euU_qbhchpAm82NUsnK4YDu1L2qd4uWY2NnkU45kFH-kZ3CeTkfbXWx2qldeI21BA95slkftwRfH9vbSkaenmS2Uzp8_fX3Tv3zXXaCWGfzZw4BWOdpFLkmqwPIgHjJ4SZ31h2Wtm7sxLYljXgfPVDmQc6yXLylig-CVplaFjhy6EX_c13BeYTtC9BPJXzB_9oSR341CrP39F8"/>
+<div class="absolute top-3 right-3 bg-black/80 backdrop-blur-md px-3 py-1 rounded-full border border-primary/30">
+<span class="text-primary font-bold text-sm">450 TEC</span>
+</div>
+<div class="absolute bottom-3 left-3 flex gap-2">
+<span class="bg-secondary/20 backdrop-blur-md text-secondary text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border border-secondary/30">Hardware</span>
+</div>
+</div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="flex justify-between items-start mb-2">
+<h3 class="font-headline font-bold text-xl text-white">NVIDIA RTX 3080 Ti</h3>
+<span class="text-[10px] text-tertiary font-bold uppercase tracking-widest flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse"></span> Live
+                            </span>
+</div>
+<p class="text-on-surface-variant text-sm mb-6 flex-1">Minimal wear, used for machine learning rendering tasks only. Original box and thermals intact.</p>
+<div class="flex gap-3">
+<button class="flex-1 bg-gradient-to-r from-primary to-primary-dim text-on-primary-fixed py-2.5 rounded-md font-bold text-xs uppercase tracking-widest active:scale-95 transition-all neon-glow-primary">Contact Seller</button>
+<button class="p-2.5 rounded-md border border-outline-variant/30 hover:bg-white/5 transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-sm">bookmark</span>
+</button>
+</div>
+</div>
+</article>
+<!-- Item 2: Service/Session -->
+<article class="bg-surface-container-low rounded-lg border border-white/5 overflow-hidden flex flex-col relative">
+<div class="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent pointer-events-none"></div>
+<div class="p-6 flex-1 flex flex-col">
+<div class="flex items-center gap-4 mb-6">
+<div class="w-14 h-14 rounded-full border-2 border-secondary/50 p-1">
+<img alt="Mentor" class="w-full h-full rounded-full" data-alt="Portrait of a young computer science mentor with glasses and tech accessories" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlVeE288h1fF44i3_uooL7_IUNv1qxVmnEuHyhXr21HvJMeSeGXDY8NqmcOj6upXiyH0KasBPEgN58u9vzNBs56fD_OQSLoo7mGldTSPB97g6CTvSta50fJ9E_q2WjYXy8Gf1EskCr454z7jhFQll8OMPUYQ8aX3ewHLAsL0EkEROSdCi9dNxUx0ktqCZCpEFqP7IHZSp4jJ5fApS_M677Vae3mpHildk8NPHxj6-WoqZcfNz4eUNcPp3yQSLYnLZAQR_4fMxjkUU"/>
+</div>
+<div>
+<h4 class="text-white font-bold">Alex Rivera</h4>
+<p class="text-[10px] text-secondary font-bold uppercase tracking-widest">Senior Kernel Architect</p>
+</div>
+</div>
+<h3 class="font-headline font-bold text-xl text-white mb-2">OS Kernel Debugging Session</h3>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-sm text-secondary">schedule</span>
+<span class="text-xs text-on-surface-variant">Today @ 19:00 - 21:00</span>
+</div>
+<div class="bg-surface-container-highest/50 rounded-md p-4 mb-6 border-l-2 border-secondary">
+<p class="text-xs font-mono text-secondary"># Topics: Memory management, process scheduling, syscall optimization.</p>
+</div>
+<div class="mt-auto flex items-center justify-between gap-4">
+<div class="flex flex-col">
+<span class="text-[10px] text-on-surface-variant uppercase tracking-widest">Entry Fee</span>
+<span class="text-lg font-bold text-white">25 TEC</span>
+</div>
+<button class="bg-secondary text-on-secondary py-2.5 px-6 rounded-md font-bold text-xs uppercase tracking-widest active:scale-95 transition-all neon-glow-secondary">Join Session</button>
+</div>
+</div>
+</article>
+<!-- Item 3: Digital Asset -->
+<article class="glass-card rounded-lg border border-white/5 overflow-hidden group flex flex-col">
+<div class="relative h-48 bg-surface-container-highest flex items-center justify-center group">
+<span class="material-symbols-outlined text-6xl text-primary/20 group-hover:scale-110 transition-transform duration-500">terminal</span>
+<div class="absolute inset-0 bg-gradient-to-t from-surface to-transparent opacity-60"></div>
+<div class="absolute top-3 left-3 bg-tertiary/20 backdrop-blur-md text-tertiary text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border border-tertiary/30">Protocol</div>
+</div>
+<div class="p-6 flex-1 flex flex-col">
+<h3 class="font-headline font-bold text-xl text-white mb-2">Distributed Ledger V4 Base</h3>
+<p class="text-on-surface-variant text-sm mb-6 flex-1">Full source access to the V4 consensus module. Optimized for low-latency campus networks.</p>
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">verified_user</span>
+<span class="text-xs text-on-surface-variant">Verified Kernel</span>
+</div>
+<span class="text-primary font-bold">120 TEC</span>
+</div>
+<button class="w-full bg-surface-container-highest hover:bg-white/10 text-white py-2.5 rounded-md font-bold text-xs uppercase tracking-widest border border-white/5 transition-all active:scale-95">View Details</button>
+</div>
+</article>
+<!-- Item 4: Study Assets -->
+<article class="glass-card rounded-lg border border-white/5 overflow-hidden group flex flex-col md:col-span-2">
+<div class="flex flex-col md:flex-row h-full">
+<div class="w-full md:w-1/3 relative">
+<img alt="Notes" class="h-full w-full object-cover" data-alt="Stack of technical books and a digital tablet with complex diagrams in a dimly lit dark room with cyan highlights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYUczI3UqnHkb4L3ECq7ooSahwCe4UdfK2wiMIyH8Y28w5M7O_zUOFIhZEIbWYgJQ4dgltVSiINsaa8j6PlWpeQzGeDe4OlMa8YTySGXHiMbMyneWKsQKAqICP32b8jVoMqym8VASjEFk3iNdnkip1gfA_7bjp9-zr1Zasrv8E89s4wYH6xMPNG26Tg7fg1TffJHjl4ASVCs-uMcZMcZpzoVmZ6JDa1TAws3EvtYII3JzhgIk6d0bU2UtmREP7BExjL39aHzUsDW4"/>
+<div class="absolute inset-0 bg-gradient-to-r from-transparent to-surface-container/100 hidden md:block"></div>
+</div>
+<div class="p-8 flex-1">
+<div class="flex justify-between items-start mb-4">
+<div>
+<span class="bg-secondary/10 text-secondary text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded border border-secondary/20 mb-2 inline-block">Academic Asset</span>
+<h3 class="font-headline font-bold text-2xl text-white">Quantum Computing Final Review</h3>
+</div>
+<span class="text-xl font-bold text-primary italic">15 TEC</span>
+</div>
+<p class="text-on-surface-variant mb-6">Complete set of annotated notes, practice exams, and visual derivation sheets for the advanced Physics 402 final. Guaranteed accuracy.</p>
+<div class="flex flex-wrap gap-4 mb-8">
+<div class="flex items-center gap-2 bg-surface-container-highest px-3 py-1.5 rounded-full border border-white/5">
+<span class="material-symbols-outlined text-[14px] text-secondary">description</span>
+<span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">42 Pages PDF</span>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-highest px-3 py-1.5 rounded-full border border-white/5">
+<span class="material-symbols-outlined text-[14px] text-secondary">video_library</span>
+<span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest">3 Recap Videos</span>
+</div>
+</div>
+<div class="flex gap-4">
+<button class="bg-primary text-on-primary py-3 px-8 rounded-lg font-bold text-xs uppercase tracking-widest active:scale-95 transition-all neon-glow-primary">Purchase Access</button>
+<button class="flex items-center gap-2 text-on-surface-variant hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">
+<span class="material-symbols-outlined">visibility</span>
+                                    Sample View
+                                </button>
+</div>
+</div>
+</div>
+</article>
+<!-- Item 5: Quick Tech Tip -->
+<article class="bg-gradient-to-br from-primary/10 via-surface-container-low to-surface-container-low rounded-lg border border-primary/20 p-6 flex flex-col justify-center">
+<span class="material-symbols-outlined text-primary text-3xl mb-4">lightbulb</span>
+<h4 class="font-headline font-bold text-white mb-2">Market Insight</h4>
+<p class="text-on-surface-variant text-sm mb-6">GPU prices are currently trending down by 12% in the North Campus Bazaar. Buy now for upcoming rendering projects.</p>
+<a class="text-primary text-[10px] font-bold uppercase tracking-widest hover:underline flex items-center gap-2" href="#">
+                        Market Dashboard
+                        <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</a>
+</article>
+</div>
+</main>
+</div>
+<!-- Footer -->
+<footer class="w-full py-12 border-t border-white/5 bg-[#0E0E0E]">
+<div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center px-8 opacity-60">
+<div class="flex flex-col items-center md:items-start mb-6 md:mb-0">
+<span class="text-[#CC97FF] font-black font-['Lexend'] tracking-tighter mb-2">TEC KINETIC OS</span>
+<p class="text-[#ADAAAA] font-['Inter'] text-[12px] uppercase tracking-[0.2em]">© 2024 TEC KINETIC OS</p>
+</div>
+<div class="flex gap-8">
+<a class="text-[#ADAAAA] font-['Inter'] text-[12px] uppercase tracking-[0.2em] hover:text-[#FF95A0] transition-colors underline-offset-4 hover:underline" href="#">Protocol</a>
+<a class="text-[#ADAAAA] font-['Inter'] text-[12px] uppercase tracking-[0.2em] hover:text-[#FF95A0] transition-colors underline-offset-4 hover:underline" href="#">Kernel</a>
+<a class="text-[#ADAAAA] font-['Inter'] text-[12px] uppercase tracking-[0.2em] hover:text-[#FF95A0] transition-colors underline-offset-4 hover:underline" href="#">Security</a>
+<a class="text-[#ADAAAA] font-['Inter'] text-[12px] uppercase tracking-[0.2em] hover:text-[#FF95A0] transition-colors underline-offset-4 hover:underline" href="#">Manual</a>
+</div>
+</div>
+</footer>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="fixed bottom-0 w-full lg:hidden rounded-t-[2rem] bg-[#0E0E0E]/90 backdrop-blur-2xl border-t border-white/10 shadow-[0_-10px_30px_rgba(204,151,255,0.1)] z-50">
+<div class="flex justify-around items-center h-20 pb-safe px-4">
+<button class="flex flex-col items-center gap-1 text-[#ADAAAA] active:scale-90 transition-all active:bg-white/5 px-4 py-2 rounded-xl">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium font-['Inter']">Home</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-[#CC97FF] scale-110 active:scale-90 transition-all active:bg-white/5 px-4 py-2 rounded-xl">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">storefront</span>
+<span class="text-[10px] font-medium font-['Inter']">Bazaar</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-[#ADAAAA] active:scale-90 transition-all active:bg-white/5 px-4 py-2 rounded-xl">
+<span class="material-symbols-outlined text-primary text-3xl">add_circle</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-[#ADAAAA] active:scale-90 transition-all active:bg-white/5 px-4 py-2 rounded-xl">
+<span class="material-symbols-outlined">construction</span>
+<span class="text-[10px] font-medium font-['Inter']">Builds</span>
+</button>
+<button class="flex flex-col items-center gap-1 text-[#ADAAAA] active:scale-90 transition-all active:bg-white/5 px-4 py-2 rounded-xl">
+<span class="material-symbols-outlined">person</span>
+<span class="text-[10px] font-medium font-['Inter']">Profile</span>
+</button>
+</div>
+</nav>
+</body></html>
