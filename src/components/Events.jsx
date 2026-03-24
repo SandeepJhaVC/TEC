@@ -37,22 +37,23 @@ const EventsPage = () => {
   };
 
   if (loading) {
-    return <div style={{ textAlign: 'center', marginTop: '40px' }}>Loading events...</div>;
+    return <div style={{ textAlign: 'center', marginTop: '80px', color: '#8b949e', fontFamily: 'var(--font)' }}>Loading events...</div>;
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: '40px auto', padding: '0 20px' }}>
-      <h1>Upcoming Events</h1>
+    <div style={{ maxWidth: 720, margin: '0 auto', padding: '60px 20px 80px', background: '#0d1117', minHeight: '100vh' }}>
+      <h1 style={{ fontSize: 32, fontWeight: 800, color: '#e6edf3', marginBottom: 4, fontFamily: '"Mona Sans", var(--font)' }}>Upcoming Events</h1>
+      <p style={{ color: '#8b949e', marginBottom: 32, fontSize: 14 }}>Campus events near you — add to your calendar.</p>
       {events.length === 0 ? (
-        <p>No upcoming events found.</p>
+        <p style={{ color: '#8b949e', padding: '40px 0' }}>No upcoming events found.</p>
       ) : (
         <div>
           {events.map((event) => (
-            <div key={event.id} style={{ background: '#fff', border: '1px solid #ddd', borderRadius: '8px', padding: '24px', marginBottom: '24px' }}>
-              <h2 style={{ marginTop: 0 }}>{event.title}</h2>
-              <p><strong>When:</strong> {formatDate(event.start_time)}</p>
-              <p><strong>Where:</strong> {event.location}</p>
-              <p>{event.description}</p>
+            <div key={event.id} style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: 6, padding: '24px', marginBottom: '16px' }}>
+              <h2 style={{ marginTop: 0, color: '#e6edf3', fontSize: 18, fontWeight: 700 }}>{event.title}</h2>
+              <p style={{ color: '#8b949e', fontSize: 13 }}><strong style={{ color: '#58a6ff' }}>When:</strong> {formatDate(event.start_time)}</p>
+              <p style={{ color: '#8b949e', fontSize: 13 }}><strong style={{ color: '#58a6ff' }}>Where:</strong> {event.location}</p>
+              <p style={{ color: '#8b949e', fontSize: 14, lineHeight: 1.6, marginBottom: 16 }}>{event.description}</p>
 
               {/* The magic button! */}
               <AddToCalendarButton
@@ -64,7 +65,7 @@ const EventsPage = () => {
                 endTime={event.end_time.split('T')[1].substring(0, 5)}
                 timeZone="Asia/Kolkata" // Set to your event's timezone
                 location={event.location}
-                options={['Apple','Google','Outlook.com']}
+                options={['Apple', 'Google', 'Outlook.com']}
                 buttonStyle="round"
                 styleLight="--btn-background: #1de9b6; --btn-text: #222;"
               />

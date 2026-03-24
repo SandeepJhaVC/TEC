@@ -1,11 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/download.jpeg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Echo</title>
-  </head>
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/download.jpeg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TEC — The Echo Community</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,300..900;1,300..900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    :root {
+      --bg: #0d1117; --surface: #161b22; --surface2: #21262d; --border: #30363d;
+      --text: #e6edf3; --text-muted: #8b949e; --link: #58a6ff;
+      --green: #238636; --green-em: #3fb950; --orange: #e3b341; --red: #f85149;
+      --ig: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
+    }
+    body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; font-size: 14px; line-height: 1.5; }
+    h1, h2, h3, h4, h5, h6 { font-family: "Mona Sans", var(--font); color: var(--text); }
+    a { text-decoration: none; color: inherit; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+    .gh-card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; transition: border-color 0.15s; }
+    .gh-card:hover { border-color: var(--text-muted); }
+    .btn-primary { display: inline-flex; align-items: center; gap: 6px; padding: 7px 18px; background: var(--green); border: 1px solid rgba(240,246,252,0.1); border-radius: 6px; color: #fff; font-weight: 600; font-size: 14px; font-family: var(--font); cursor: pointer; transition: background 0.15s, box-shadow 0.15s; text-decoration: none; }
+    .btn-primary:hover { background: #2ea043; box-shadow: 0 0 0 3px rgba(46,160,67,0.15); }
+    .btn-secondary { display: inline-flex; align-items: center; gap: 6px; padding: 7px 18px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-weight: 600; font-size: 14px; font-family: var(--font); cursor: pointer; transition: background 0.15s, border-color 0.15s; text-decoration: none; }
+    .btn-secondary:hover { background: #30363d; border-color: var(--text-muted); }
+    .btn-ig { display: inline-flex; align-items: center; gap: 6px; padding: 8px 22px; background: var(--ig); border: none; border-radius: 6px; color: #fff; font-weight: 700; font-size: 14px; font-family: var(--font); cursor: pointer; transition: opacity 0.15s, transform 0.15s; text-decoration: none; }
+    .btn-ig:hover { opacity: 0.88; transform: translateY(-1px); }
+    .gh-input { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font); font-size: 14px; padding: 6px 12px; outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+    .gh-input:focus { border-color: var(--link); box-shadow: 0 0 0 3px rgba(88,166,255,0.12); }
+    .gh-select { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: var(--font); font-size: 14px; padding: 6px 12px; outline: none; cursor: pointer; }
+    .tag { display: inline-block; padding: 0 8px; height: 20px; line-height: 20px; border-radius: 2em; font-size: 12px; font-weight: 500; background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); }
+    .lift { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+    .lift:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+    .page-wrap { max-width: 1200px; margin: 0 auto; padding: 32px 20px 80px; }
+    .section-eyebrow { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+    .stars { color: var(--orange); font-size: 13px; }
+    .dot-green { width: 8px; height: 8px; background: var(--green-em); border-radius: 50%; display: inline-block; }
+    .ig-ring { padding: 2px; border-radius: 50%; background: var(--ig); display: inline-flex; }
+    .ig-ring-inner { background: var(--surface); border-radius: 50%; padding: 3px; }
+    .code-chip { font-family: var(--font-mono); font-size: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; color: var(--text-muted); }
+    .gh-divider { border: none; border-top: 1px solid var(--border); }
+  </style>
+</head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/index.jsx"></script>

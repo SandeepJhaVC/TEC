@@ -26,7 +26,7 @@ const MemberPortal = () => {
         // PGRST116 means no rows were found, which we handle as "Member not found"
         throw fetchError;
       }
-      
+
       if (data) {
         setMember(data);
       } else {
@@ -51,36 +51,38 @@ const MemberPortal = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 40 }}>
-      <h2>Member Portal</h2>
-      <form onSubmit={handleSubmit} style={{ marginBottom: 24 }}>
+    <div style={{ background: '#0d1117', minHeight: '100vh', padding: '60px 20px 80px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <h2 style={{ color: '#e6edf3', fontSize: 28, fontWeight: 800, marginBottom: 6, fontFamily: '"Mona Sans", var(--font)' }}>Member Portal</h2>
+      <p style={{ color: '#8b949e', fontSize: 14, marginBottom: 28 }}>Enter your member ID to view your profile and certificates.</p>
+      <form onSubmit={handleSubmit} style={{ marginBottom: 24, display: 'flex', gap: 10 }}>
         <input
+          className="gh-input"
           type="text"
           placeholder="Enter your Member ID"
           value={memberId}
           onChange={e => setMemberId(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid #ccc', marginRight: 8 }}
+          style={{ width: 220 }}
         />
-        <button type="submit" disabled={loading} style={{ padding: '8px 16px', borderRadius: 6, background: '#1de9b6', border: 'none', color: '#222', fontWeight: 'bold' }}>
+        <button type="submit" disabled={loading} className="btn-primary" style={{ whiteSpace: 'nowrap' }}>
           {loading ? 'Checking...' : 'Check Details'}
         </button>
       </form>
-      {error && <div style={{ color: 'crimson', marginBottom: 16 }}>{error}</div>}
-      
+      {error && <div style={{ color: '#f85149', marginBottom: 16, fontSize: 13 }}>{error}</div>}
+
       {/* The rest of your component's JSX remains the same */}
       {member && (
         <div style={{
-          border: '2px solid #1de9b6',
-          borderRadius: 12,
+          border: '1px solid #30363d',
+          borderRadius: 6,
           padding: 28,
           minWidth: 340,
-          background: '#101c1c',
-          color: '#1de9b6',
-          fontFamily: 'monospace',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.2)',
+          background: '#161b22',
+          color: '#e6edf3',
+          fontFamily: 'var(--font-mono)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         }}>
           {/* ... Your existing member card JSX ... */}
-           <div style={{ marginBottom: 8, fontWeight: 'bold', fontSize: 18 }}>
+          <div style={{ marginBottom: 8, fontWeight: 'bold', fontSize: 18 }}>
             TEC/25 ★ {member.id} ★ ECHO
           </div>
           <div style={{ margin: '16px 0' }}>
@@ -120,7 +122,7 @@ const MemberPortal = () => {
       )}
       {/* ... Your existing modal JSX ... */}
       {selectedCert && (
-         <div style={{
+        <div style={{
           position: 'fixed',
           top: 0,
           left: 0,

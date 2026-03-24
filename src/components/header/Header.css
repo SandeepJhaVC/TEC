@@ -1,73 +1,168 @@
+/* -- TEC Header (GitHub style) -- */
 .header {
     display: flex;
-    width: 90%;
-    margin: auto;
+    width: 100%;
+    padding: 0 24px;
+    margin: 0;
     justify-content: space-between;
-    height: 60px;
+    align-items: center;
+    height: 62px;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(8px);
 }
 
-/*LOGO*/
+.main {
+    position: sticky;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+}
+
+/* Logo */
 .logo {
-    width: 20%;
     display: flex;
     align-items: center;
-    cursor: pointer;
+    gap: 10px;
+    text-decoration: none;
+    flex-shrink: 0;
 }
 
 .logo img {
-    height: 60px;
-    width: auto;
-    border-radius: 100%;
-    transition: 0.3s ease-in-out;
-    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
-.logo img:hover {
-    height: 60px;
-    width: auto;
-    padding: 0px 20px;
-    background-color: black;
-    border-radius: 8px;
+.logo-text {
+    font-family: "Mona Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 17px;
+    font-weight: 800;
+    color: #e6edf3;
+    letter-spacing: -0.02em;
 }
 
-/*NAVLINKS*/
+/* Nav links */
 .navlinks {
-    width: 40%;
     display: flex;
-    justify-content: space-evenly;
     align-items: center;
+    gap: 4px;
 }
 
 .navlinks a {
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
     font-weight: 500;
-    transition: 0.3s ease-in-out;
+    color: #8b949e;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.12s, background 0.12s;
 }
 
 .navlinks a:hover {
-    font-weight: 600;
-    background-color: black;
-    color: white;
-    padding: 5px 20px;
-    border-radius: 8px;
+    color: #e6edf3;
+    background: #21262d;
 }
 
-/*CTA*/
+.navlinks a.active {
+    color: #e6edf3;
+    background: #21262d;
+}
+
+/* CTA */
 .cta {
-    width: 20%;
     display: flex;
-    justify-content: center;
     align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
 }
 
 .cta a {
-    background-color: black;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-weight: 600;
-    transition: 0.3s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 18px;
+    background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.15s;
+    white-space: nowrap;
 }
 
-.cta a:hover{
-    padding: 10px 35px;
+.cta a:hover {
+    opacity: 0.88;
+}
+
+/* Hamburger */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 6px;
+}
+
+.hamburger:hover { background: #21262d; }
+
+.hamburger span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: #8b949e;
+    border-radius: 2px;
+    transition: background 0.12s;
+}
+
+.hamburger:hover span { background: #e6edf3; }
+
+/* Mobile nav */
+.mobile-nav {
+    display: none;
+    flex-direction: column;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    padding: 12px 16px;
+    gap: 4px;
+    position: sticky;
+    top: 62px;
+    z-index: 99;
+}
+
+.mobile-nav.open { display: flex; }
+
+.mobile-nav a {
+    padding: 9px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: #8b949e;
+    text-decoration: none;
+    transition: color 0.12s, background 0.12s;
+}
+
+.mobile-nav a:hover { color: #e6edf3; background: #21262d; }
+.mobile-nav a.active { color: #e6edf3; background: #21262d; }
+
+/* -- Responsive ----------------------------- */
+@media (max-width: 900px) {
+    .navlinks { display: none; }
+    .hamburger { display: flex; }
+}
+
+@media (max-width: 480px) {
+    .header { padding: 0 16px; }
 }

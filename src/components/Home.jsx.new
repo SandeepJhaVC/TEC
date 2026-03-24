@@ -1,0 +1,190 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
+
+const STORIES = [
+  { icon: '🗺️', label: 'Map', to: '/map', color: '#58a6ff' },
+  { icon: '🏷️', label: 'Deals', to: '/discounts', color: '#f09433' },
+  { icon: '🏠', label: 'Listings', to: '/listings', color: '#3fb950' },
+  { icon: '📋', label: 'Board', to: '/assignments', color: '#e3b341' },
+  { icon: '🗳️', label: 'Poll', to: '/poll', color: '#bc1888' },
+  { icon: '🎉', label: 'Events', to: '/events', color: '#58a6ff' },
+];
+
+const FEATURES = [
+  {
+    icon: '🗺️', label: 'map', title: 'Campus Navigator',
+    desc: 'Interactive map from Pondha to Bidholi. Find PGs, restaurants, hospitals, ATMs, pharmacies.',
+    to: '/map', lang: 'OpenStreetMap', stars: 42, color: '#58a6ff',
+  },
+  {
+    icon: '🏷️', label: 'discounts', title: 'Discounts Board',
+    desc: 'Exclusive student deals on food, transport, study supplies, and local stays.',
+    to: '/discounts', lang: 'Community', stars: 38, color: '#f09433',
+  },
+  {
+    icon: '🏠', label: 'listings', title: 'Local Listings',
+    desc: 'Rated PGs, hostels, restaurants, hangout spots, and weekend activities.',
+    to: '/listings', lang: 'Rated', stars: 61, color: '#3fb950',
+  },
+  {
+    icon: '📋', label: 'assignments', title: 'Student Board',
+    desc: 'Craigslist-style board for books, tutoring, project partners, and gigs.',
+    to: '/assignments', lang: 'Peer2Peer', stars: 27, color: '#e3b341',
+  },
+  {
+    icon: '🗳️', label: 'poll', title: 'Area Polls',
+    desc: 'Problem statements and polls per district. Upvote issues that matter to you.',
+    to: '/poll', lang: 'Civic', stars: 19, color: '#bc1888',
+  },
+  {
+    icon: '🏫', label: 'about', title: 'About TEC',
+    desc: 'Mission, business model, pricing tiers, and our 4-phase community roadmap.',
+    to: '/about', lang: 'Roadmap', stars: 11, color: '#8b949e',
+  },
+];
+
+const STATS = [
+  { n: '500+', label: 'students' },
+  { n: '50+', label: 'deals' },
+  { n: '200+', label: 'listings' },
+  { n: '4', label: 'areas' },
+];
+
+const fade = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } };
+
+export default function Home() {
+  const [hovered, setHovered] = useState(null);
+
+  return (
+    <div style={{ background: '#0d1117', minHeight: '100vh' }}>
+      {/* ── HERO ─────────────────────────────────────────── */}
+      <section style={{ maxWidth: 860, margin: '0 auto', padding: '72px 24px 48px' }}>
+        <motion.div initial="hidden" animate="show" variants={fade} transition={{ duration: 0.4 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 18 }}>
+            <span className="dot-green" />
+            <span style={{ fontSize: 13, color: '#3fb950', fontWeight: 600 }}>500+ students across Uttarakhand</span>
+          </div>
+
+          <h1 style={{ fontSize: 'clamp(32px, 5vw, 60px)', fontWeight: 900, lineHeight: 1.1, letterSpacing: '-0.03em', color: '#e6edf3', marginBottom: 18 }}>
+            Campus life,{' '}
+            <span style={{ backgroundImage: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+              amplified.
+            </span>
+          </h1>
+
+          <p style={{ fontSize: 17, color: '#8b949e', maxWidth: 540, lineHeight: 1.65, marginBottom: 28 }}>
+            TEC is the student OS for Uttarakhand — find places, grab deals, trade books,
+            solve campus problems, and build community together.
+          </p>
+
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <Link to="/member" className="btn-primary" style={{ fontSize: 15, padding: '9px 22px' }}>
+              Join the community →
+            </Link>
+            <Link to="/map" className="btn-secondary" style={{ fontSize: 15, padding: '9px 22px' }}>
+              Explore the map
+            </Link>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ── STORY RINGS ─────────────────────────────────── */}
+      <section style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px 48px' }}>
+        <motion.div
+          initial="hidden" animate="show" variants={fade} transition={{ duration: 0.4, delay: 0.12 }}
+          style={{ display: 'flex', gap: 20, overflowX: 'auto', paddingBottom: 8 }}
+        >
+          {STORIES.map((s) => (
+            <Link key={s.to} to={s.to} style={{ textDecoration: 'none', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7 }}>
+              <div style={{ padding: 3, borderRadius: '50%', background: 'linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)', display: 'flex' }}>
+                <div style={{ background: '#0d1117', borderRadius: '50%', padding: 3, display: 'flex' }}>
+                  <div style={{
+                    width: 52, height: 52, borderRadius: '50%', background: '#161b22',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 22, border: '1px solid #30363d',
+                  }}>
+                    {s.icon}
+                  </div>
+                </div>
+              </div>
+              <span style={{ fontSize: 11, color: '#8b949e', fontWeight: 500 }}>{s.label}</span>
+            </Link>
+          ))}
+        </motion.div>
+      </section>
+
+      <div style={{ maxWidth: 860, margin: '0 auto', borderTop: '1px solid #21262d' }} />
+
+      {/* ── FEATURE CARDS (GitHub repo grid) ───────────── */}
+      <section style={{ maxWidth: 860, margin: '0 auto', padding: '40px 24px 48px' }}>
+        <p className="section-eyebrow" style={{ marginBottom: 16 }}>what's on TEC</p>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+          gap: 16,
+        }}>
+          {FEATURES.map((f, i) => (
+            <motion.div key={f.label}
+              initial="hidden" animate="show" variants={fade}
+              transition={{ duration: 0.35, delay: 0.15 + i * 0.06 }}
+            >
+              <Link to={f.to} style={{ textDecoration: 'none', display: 'block' }}
+                onMouseEnter={() => setHovered(i)} onMouseLeave={() => setHovered(null)}>
+                <div style={{
+                  background: '#161b22',
+                  border: `1px solid ${hovered === i ? '#58a6ff' : '#30363d'}`,
+                  borderLeft: `3px solid ${f.color}`,
+                  borderRadius: 6, padding: '16px 18px',
+                  transition: 'border-color 0.15s',
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+                    <h3 style={{ fontSize: 15, fontWeight: 700, color: '#58a6ff', fontFamily: '"Mona Sans", var(--font)' }}>{f.title}</h3>
+                    <span style={{ fontSize: 18 }}>{f.icon}</span>
+                  </div>
+                  <p style={{ fontSize: 13, color: '#8b949e', lineHeight: 1.55, marginBottom: 14 }}>{f.desc}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 12, color: '#8b949e', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: f.color, display: 'inline-block' }} />
+                      {f.lang}
+                    </span>
+                    <span style={{ fontSize: 12, color: '#8b949e' }}>⭐ {f.stars}</span>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── STATS ────────────────────────────────────────── */}
+      <section style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px 64px' }}>
+        <div style={{ background: '#161b22', border: '1px solid #30363d', borderRadius: 6, padding: '24px 32px', display: 'flex', gap: 40, flexWrap: 'wrap', justifyContent: 'center' }}>
+          {STATS.map(s => (
+            <div key={s.label} style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 26, fontWeight: 800, color: '#e6edf3', fontFamily: '"Mona Sans", var(--font)', lineHeight: 1 }}>{s.n}</div>
+              <div style={{ fontSize: 12, color: '#8b949e', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── CTA ──────────────────────────────────────────── */}
+      <section style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px 96px', textAlign: 'center' }}>
+        <div style={{ border: '1px solid #30363d', borderRadius: 6, padding: '48px 32px', background: '#161b22' }}>
+          <h2 style={{ fontSize: 'clamp(22px, 3vw, 36px)', fontWeight: 800, color: '#e6edf3', marginBottom: 12, letterSpacing: '-0.02em' }}>
+            Build Uttarakhand's student OS — together.
+          </h2>
+          <p style={{ fontSize: 15, color: '#8b949e', marginBottom: 28, maxWidth: 440, margin: '0 auto 28px' }}>
+            Join TEC, contribute listings, share deals, and make campus life work for everyone.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/member" className="btn-ig" style={{ fontSize: 15, padding: '10px 28px' }}>Join TEC →</Link>
+            <Link to="/about" className="btn-secondary" style={{ fontSize: 15, padding: '10px 24px' }}>Read the roadmap</Link>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
