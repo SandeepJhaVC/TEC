@@ -1,6 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import Home from './components/Home';
+import Login from './components/Login';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import Header from './components/header/Header';
 import Footer from './components/Footer';
 import MemberPortal from './components/MemberPortal';
@@ -16,23 +19,26 @@ import Builds from './components/Builds';
 
 function App() {
   return (
-    <Router>
-      <Header />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/discounts" element={<Discounts />} />
-        <Route path="/map" element={<Map />} />
-        <Route path="/assignments" element={<Assignments />} />
-        <Route path="/listings" element={<Listings />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/poll" element={<Poll />} />
-        <Route path="/member" element={<MemberPortal />} />
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/events" element={<EventsPage />} />
-        <Route path="/builds" element={<Builds />} />
-      </Routes>
-      <Footer />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Header />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/discounts" element={<Discounts />} />
+          <Route path="/map" element={<Map />} />
+          <Route path="/assignments" element={<Assignments />} />
+          <Route path="/listings" element={<Listings />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/poll" element={<Poll />} />
+          <Route path="/member" element={<MemberPortal />} />
+          <Route path="/admin" element={<ProtectedRoute minRole="admin"><AdminPanel /></ProtectedRoute>} />
+          <Route path="/events" element={<EventsPage />} />
+          <Route path="/builds" element={<Builds />} />
+          <Route path="/login" element={<Login />} />
+        </Routes>
+        <Footer />
+      </Router>
+    </AuthProvider>
   );
 }
 

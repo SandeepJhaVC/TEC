@@ -1,6 +1,10 @@
 import './Header.css';
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+
+const ROLE_COLORS = { admin: '#f85149', moderator: '#e3b341', builder: '#a78bfa', student: '#3fb950' };
+const ROLE_BG = { admin: 'rgba(248,81,73,0.18)', moderator: 'rgba(227,179,65,0.18)', builder: 'rgba(167,139,250,0.18)', student: 'rgba(63,185,80,0.18)' };
 
 const navLinks = [
     { label: 'Map', to: '/map' },
@@ -28,8 +32,15 @@ function getCurrentDateString() {
 
 export default function Header() {
     const location = useLocation();
+    const navigate = useNavigate();
+    const { user, logout } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [showModal, setShowModal] = useState(false);
+
+    const handleLogout = async () => {
+        await logout();
+        setMobileOpen(false);
+    };
     const [form, setForm] = useState({ name: '', sapId: '', personalEmail: '', collegeEmail: '', batch: '', year: '', course: '', phone: '' });
     const [memberId, setMemberId] = useState('');
     const [success, setSuccess] = useState(false);
@@ -67,7 +78,25 @@ export default function Header() {
 
                 {/* CTA + hamburger */}
                 <div className="cta">
-                    <a href="#" onClick={e => { e.preventDefault(); setShowModal(true); }}>Join Us</a>
+                    {user ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, color: ROLE_COLORS[user.role] || '#3fb950', letterSpacing: '0.06em' }}>{(user.role || 'student').toUpperCase()}</span>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: ROLE_BG[user.role] || ROLE_BG.student, border: '1.5px solid ' + (ROLE_COLORS[user.role] || ROLE_COLORS.student), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: ROLE_COLORS[user.role] || ROLE_COLORS.student, flexShrink: 0 }}>
+                                {(user.avatarLetter || (user.name || 'U')[0]).toUpperCase()}
+                            </div>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
+                            <button onClick={handleLogout} style={{ padding: '5px 12px', borderRadius: 6, background: 'transparent', border: '1px solid #30363d', color: '#8b949e', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.14s' }}
+                                onMouseEnter={e => { e.currentTarget.style.borderColor = '#f85149'; e.currentTarget.style.color = '#f85149'; }}
+                                onMouseLeave={e => { e.currentTarget.style.borderColor = '#30363d'; e.currentTarget.style.color = '#8b949e'; }}>
+                                Sign out
+                            </button>
+                        </div>
+                    ) : (
+                        <>
+                            <Link to="/login" style={{ fontSize: 13, color: '#8b949e', textDecoration: 'none', fontWeight: 600 }}>Sign in</Link>
+                            <a href="#" onClick={e => { e.preventDefault(); setShowModal(true); }}>Join Us</a>
+                        </>
+                    )}
                     <button className="hamburger" onClick={() => setMobileOpen(o => !o)} aria-label="Menu">
                         <span /><span /><span />
                     </button>
@@ -80,7 +109,25 @@ export default function Header() {
                 {navLinks.map(link => (
                     <Link key={link.to} to={link.to} onClick={() => setMobileOpen(false)} className={location.pathname === link.to ? 'active' : ''}>{link.label}</Link>
                 ))}
-                <a href="#" style={{ color: '#58a6ff', marginTop: 8 }} onClick={e => { e.preventDefault(); setShowModal(true); setMobileOpen(false); }}>+ Join TEC</a>
+                {user ? (
+                    <div style={{ borderTop: '1px solid #21262d', paddingTop: 12, marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: '50%', background: ROLE_BG[user.role] || ROLE_BG.student, border: '1.5px solid ' + (ROLE_COLORS[user.role] || ROLE_COLORS.student), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: ROLE_COLORS[user.role] || ROLE_COLORS.student }}>
+                                {(user.avatarLetter || (user.name || 'U')[0]).toUpperCase()}
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: '#e6edf3' }}>{user.name}</div>
+                                <div style={{ fontSize: 10, fontWeight: 800, color: ROLE_COLORS[user.role] || '#3fb950', letterSpacing: '0.06em' }}>{(user.role || 'student').toUpperCase()}</div>
+                            </div>
+                        </div>
+                        <button onClick={handleLogout} style={{ textAlign: 'left', padding: '6px 0', background: 'transparent', border: 'none', color: '#f85149', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>Sign out</button>
+                    </div>
+                ) : (
+                    <>
+                        <Link to="/login" onClick={() => setMobileOpen(false)} style={{ color: '#58a6ff', marginTop: 8 }}>Sign in</Link>
+                        <a href="#" style={{ color: '#58a6ff' }} onClick={e => { e.preventDefault(); setShowModal(true); setMobileOpen(false); }}>+ Join TEC</a>
+                    </>
+                )}
             </div>
 
             {/* Join Modal */}
