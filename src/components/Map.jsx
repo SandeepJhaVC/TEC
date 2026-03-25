@@ -1,30 +1,41 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
 
+/* ── GTA V-inspired dark map palette ── */
 const MAP_STYLE = {
     version: 8,
     sources: {
         myarea: { type: 'geojson', data: '/map.geojson' }
     },
     layers: [
-        { id: 'background', type: 'background', paint: { 'background-color': '#0e0f0b' } },
+        /* near-black warm ground */
+        { id: 'background', type: 'background', paint: { 'background-color': '#09090a' } },
+        /* blocks/fill — barely lighter than background, keep it moody */
         {
             id: 'landuse-residential', type: 'fill', source: 'myarea',
             filter: ['==', ['get', 'landuse'], 'residential'],
-            paint: { 'fill-color': '#1a1c14' }
+            paint: { 'fill-color': '#0f100d' }
         },
         {
             id: 'landuse-commercial', type: 'fill', source: 'myarea',
             filter: ['==', ['get', 'landuse'], 'commercial'],
-            paint: { 'fill-color': '#1e2016' }
+            paint: { 'fill-color': '#131410' }
         },
+        {
+            id: 'landuse-industrial', type: 'fill', source: 'myarea',
+            filter: ['in', ['get', 'landuse'], ['literal', ['industrial', 'railway', 'construction']]],
+            paint: { 'fill-color': '#111210' }
+        },
+        /* parks — dark olive, GTA signature */
         {
             id: 'landuse-park', type: 'fill', source: 'myarea',
             filter: ['any',
-                ['in', ['get', 'landuse'], ['literal', ['park', 'forest', 'grass', 'meadow']]],
-                ['in', ['get', 'leisure'], ['literal', ['park', 'garden', 'pitch']]]
+                ['in', ['get', 'landuse'], ['literal', ['park', 'forest', 'grass', 'meadow', 'farmland', 'orchard']]],
+                ['in', ['get', 'leisure'], ['literal', ['park', 'garden', 'pitch', 'golf_course']]],
+                ['==', ['get', 'natural'], 'wood']
             ],
-            paint: { 'fill-color': '#1e2d12' }
+            paint: { 'fill-color': '#0c1509' }
         },
+        /* water — dark navy-black, subtle */
         {
             id: 'water-fill', type: 'fill', source: 'myarea',
             filter: ['all',
@@ -35,7 +46,7 @@ const MAP_STYLE = {
                     ['in', ['get', 'waterway'], ['literal', ['riverbank', 'dock']]]
                 ]
             ],
-            paint: { 'fill-color': '#0d1a24', 'fill-opacity': 1 }
+            paint: { 'fill-color': '#070e1a', 'fill-opacity': 1 }
         },
         {
             id: 'water-line', type: 'line', source: 'myarea',
@@ -45,51 +56,57 @@ const MAP_STYLE = {
             ],
             layout: { 'line-cap': 'round', 'line-join': 'round' },
             paint: {
-                'line-color': '#0d1a24',
-                'line-width': ['interpolate', ['linear'], ['zoom'], 10, 1.5, 16, 6]
+                'line-color': '#0a1828',
+                'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 8]
             }
         },
+        /* ── Road casings (black outline for depth) ── */
         {
             id: 'roads-motorway-casing', type: 'line', source: 'myarea',
             filter: ['in', ['get', 'highway'], ['literal', ['motorway', 'trunk']]],
             layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: { 'line-color': '#000000', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 7, 16, 22] }
+            paint: { 'line-color': '#050505', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 9, 16, 26] }
         },
         {
             id: 'roads-primary-casing', type: 'line', source: 'myarea',
             filter: ['in', ['get', 'highway'], ['literal', ['primary', 'secondary']]],
             layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: { 'line-color': '#000000', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 4, 16, 16] }
+            paint: { 'line-color': '#050505', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 6, 16, 18] }
         },
         {
             id: 'roads-tertiary-casing', type: 'line', source: 'myarea',
-            filter: ['in', ['get', 'highway'], ['literal', ['tertiary', 'residential', 'unclassified']]],
+            filter: ['in', ['get', 'highway'], ['literal', ['tertiary', 'residential', 'unclassified', 'living_street']]],
             layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: { 'line-color': '#000000', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 2.5, 16, 10] }
+            paint: { 'line-color': '#050505', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 3.5, 16, 12] }
         },
+        /* ── Road fills — GTA's signature light-on-dark palette ── */
+        /* Motorway: bright cream/sand — dominant, GTA highways glow */
         {
             id: 'roads-motorway', type: 'line', source: 'myarea',
             filter: ['in', ['get', 'highway'], ['literal', ['motorway', 'trunk']]],
             layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: { 'line-color': '#c8c9b2', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 4, 16, 16] }
+            paint: { 'line-color': '#e2d8a8', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 5, 16, 18] }
         },
+        /* Primary: warm gray-tan */
         {
             id: 'roads-primary', type: 'line', source: 'myarea',
             filter: ['in', ['get', 'highway'], ['literal', ['primary', 'secondary']]],
             layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: { 'line-color': '#b8b9a4', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2, 16, 10] }
+            paint: { 'line-color': '#c0b888', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 16, 12] }
         },
+        /* Tertiary: medium gray */
         {
             id: 'roads-tertiary', type: 'line', source: 'myarea',
-            filter: ['in', ['get', 'highway'], ['literal', ['tertiary', 'residential', 'unclassified']]],
+            filter: ['in', ['get', 'highway'], ['literal', ['tertiary', 'residential', 'unclassified', 'living_street']]],
             layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: { 'line-color': '#a0a190', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1, 16, 6] }
+            paint: { 'line-color': '#7e7860', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1.2, 16, 7] }
         },
+        /* Small/service paths: dark, barely visible */
         {
             id: 'roads-small', type: 'line', source: 'myarea',
-            filter: ['in', ['get', 'highway'], ['literal', ['service', 'footway', 'path', 'track']]],
+            filter: ['in', ['get', 'highway'], ['literal', ['service', 'footway', 'path', 'track', 'steps', 'pedestrian']]],
             layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: { 'line-color': '#787868', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.5, 16, 3] }
+            paint: { 'line-color': '#403e30', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.6, 16, 3] }
         }
     ]
 };
@@ -135,12 +152,21 @@ const LOCATIONS = {
     ],
 };
 
+const ZONES = [
+    { name: "32 Bigha", color: "#1a3020", accent: "#4ade80", desc: "Agricultural zone — upper ridge" },
+    { name: "Maggie Point", color: "#1a2030", accent: "#53DDFC", desc: "Scenic overlook — east valley" },
+    { name: "District 3", color: "#2a1a10", accent: "#FF95A0", desc: "Residential sector — western slopes" },
+    { name: "Aravali", color: "#201020", accent: "#CC97FF", desc: "Dense canopy — forest boundary" },
+];
 
 export default function Map() {
     const [cat, setCat] = useState("Colleges");
     const [activePin, setPin] = useState(null);
+    const [activeZone, setActiveZone] = useState(null);
     const mapContainerRef = useRef(null);
     const mapInstance = useRef(null);
+
+    const [coords, setCoords] = useState({ lng: '—', lat: '—', zoom: '—' });
 
     useEffect(() => {
         if (!mapContainerRef.current || !window.maplibregl) return;
@@ -149,8 +175,11 @@ export default function Map() {
             style: MAP_STYLE,
             center: [0, 0],
             zoom: 2,
+            /* disable default map controls — we provide our own */
+            attributionControl: false,
         });
         map.on('load', () => {
+            /* ── Fit to road network ── */
             fetch('/map.geojson')
                 .then(r => r.json())
                 .then(data => {
@@ -170,220 +199,454 @@ export default function Map() {
                     }
                     data.features.forEach(f => processGeom(f.geometry));
                     if (minLng !== Infinity) {
-                        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 40 });
+                        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60 });
                     }
                 })
                 .catch(() => { });
+
+            /* ── Zone fills & outlines ── */
+            map.addSource('zones', { type: 'geojson', data: '/zones.geojson' });
+
+            /* Fill layer — use color from feature property */
+            map.addLayer({
+                id: 'zones-fill',
+                type: 'fill',
+                source: 'zones',
+                paint: {
+                    'fill-color': ['get', 'color'],
+                    'fill-opacity': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false], 0.55,
+                        0.35
+                    ],
+                },
+            });
+
+            /* Outline layer */
+            map.addLayer({
+                id: 'zones-outline',
+                type: 'line',
+                source: 'zones',
+                layout: { 'line-cap': 'round', 'line-join': 'round' },
+                paint: {
+                    'line-color': ['get', 'color'],
+                    'line-width': [
+                        'case',
+                        ['boolean', ['feature-state', 'hover'], false], 2.5,
+                        1.5
+                    ],
+                    'line-opacity': 0.9,
+                },
+            });
+
+            /* Hover state */
+            let hoveredZoneId = null;
+            map.on('mousemove', 'zones-fill', e => {
+                if (e.features.length > 0) {
+                    if (hoveredZoneId !== null) {
+                        map.setFeatureState({ source: 'zones', id: hoveredZoneId }, { hover: false });
+                    }
+                    hoveredZoneId = e.features[0].id;
+                    map.setFeatureState({ source: 'zones', id: hoveredZoneId }, { hover: true });
+                    map.getCanvas().style.cursor = 'pointer';
+                }
+            });
+            map.on('mouseleave', 'zones-fill', () => {
+                if (hoveredZoneId !== null) {
+                    map.setFeatureState({ source: 'zones', id: hoveredZoneId }, { hover: false });
+                }
+                hoveredZoneId = null;
+                map.getCanvas().style.cursor = '';
+            });
         });
+        const updateCoords = () => {
+            const c = map.getCenter();
+            setCoords({
+                lng: c.lng.toFixed(4),
+                lat: c.lat.toFixed(4),
+                zoom: map.getZoom().toFixed(1),
+            });
+        };
+        map.on('move', updateCoords);
+        map.on('zoom', updateCoords);
         mapInstance.current = map;
         return () => { map.remove(); };
     }, []);
 
+    const isZoneView = cat === 'Zones';
     const catMeta = CATS.find(c => c.id === cat) || CATS[0];
-    const thumb = THUMB[cat];
+    const thumb = THUMB[cat] || THUMB['Colleges'];
     const locations = LOCATIONS[cat] || [];
+
+    /* Fly to zone bounds when a zone card is clicked */
+    function flyToZone(zoneName) {
+        const next = zoneName === activeZone ? null : zoneName;
+        setActiveZone(next);
+        if (!next || !mapInstance.current) return;
+        fetch('/zones.geojson')
+            .then(r => r.json())
+            .then(data => {
+                const feat = data.features.find(f => f.properties.name === next);
+                if (!feat) return;
+                let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+                feat.geometry.coordinates[0].forEach(([lng, lat]) => {
+                    if (lng < minLng) minLng = lng; if (lng > maxLng) maxLng = lng;
+                    if (lat < minLat) minLat = lat; if (lat > maxLat) maxLat = lat;
+                });
+                mapInstance.current.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 80, duration: 700 });
+            }).catch(() => { });
+    }
 
     return (
         <div style={{
             display: "flex", flexDirection: "column",
             height: "calc(100vh - var(--topnav-h))",
-            overflow: "hidden", background: "#080808",
+            overflow: "hidden", background: "#09090a",
         }}>
 
             {/* ── main row ── */}
             <div className="map-main-row" style={{ flex: 1, overflow: "hidden" }}>
-                {/* ──── Sidebar ──── */}
+
+                {/* ──────────────── Sidebar ──────────────── */}
                 <div className="map-panel" style={{
-                    width: 272, flexShrink: 0,
-                    background: "rgba(10,10,10,0.97)",
-                    borderRight: "1px solid rgba(255,255,255,0.05)",
+                    width: 280, flexShrink: 0,
+                    background: "#0c0c0d",
+                    borderRight: "1px solid rgba(255,255,255,0.06)",
                     display: "flex", flexDirection: "column", overflow: "hidden",
                 }}>
 
-                    {/* Search */}
-                    <div style={{ padding: "18px 14px 12px" }}>
+                    {/* Sidebar header */}
+                    <div style={{
+                        padding: "16px 16px 0",
+                        borderBottom: "1px solid rgba(255,255,255,0.05)",
+                        paddingBottom: 14,
+                    }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 16, color: "#CC97FF" }}>radar</span>
+                                <span style={{
+                                    fontFamily: "var(--font-display)", fontWeight: 800,
+                                    fontSize: 13, color: "#fff", letterSpacing: "0.06em",
+                                }}>EXPLORE</span>
+                            </div>
+                            <span style={{
+                                fontSize: 9, fontWeight: 700, color: "#53DDFC",
+                                fontFamily: "var(--font-mono)", letterSpacing: "0.08em",
+                                background: "rgba(83,221,252,0.08)",
+                                border: "1px solid rgba(83,221,252,0.2)",
+                                borderRadius: 4, padding: "2px 7px",
+                            }}>LIVE</span>
+                        </div>
+                        {/* Search */}
                         <div style={{ position: "relative" }}>
                             <span className="material-symbols-outlined" style={{
-                                position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
-                                fontSize: 15, color: "rgba(255,255,255,0.28)", pointerEvents: "none",
+                                position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)",
+                                fontSize: 14, color: "rgba(255,255,255,0.25)", pointerEvents: "none",
                             }}>search</span>
                             <input
                                 className="neon-input"
-                                placeholder="Scan coordinates..."
-                                style={{ paddingLeft: 34, borderRadius: 9999, fontSize: 12, height: 36 }}
+                                placeholder="Search locations..."
+                                style={{
+                                    paddingLeft: 32, borderRadius: 8, fontSize: 12, height: 34,
+                                    background: "rgba(255,255,255,0.04)",
+                                    border: "1px solid rgba(255,255,255,0.07)",
+                                }}
                             />
                         </div>
                     </div>
 
-                    {/* Category chips */}
-                    <div style={{ display: "flex", gap: 5, padding: "0 14px 14px", flexWrap: "wrap" }}>
-                        {CATS.map(c => (
+                    {/* Category tabs — 4 place tabs + 1 zone tab */}
+                    <div style={{
+                        display: "flex",
+                        borderBottom: "1px solid rgba(255,255,255,0.05)",
+                        flexShrink: 0, overflowX: "auto",
+                    }}>
+                        {[...CATS, { id: 'Zones', color: '#e3b341' }].map(c => (
                             <button key={c.id} onClick={() => setCat(c.id)} style={{
-                                padding: "4px 11px", borderRadius: 9999, cursor: "pointer",
-                                fontFamily: "var(--font-display)", fontSize: 10, fontWeight: 800,
-                                letterSpacing: "0.07em", border: `1px solid ${cat === c.id ? c.color : "rgba(255,255,255,0.1)"}`,
-                                background: cat === c.id ? `${c.color}18` : "transparent",
-                                color: cat === c.id ? c.color : "rgba(255,255,255,0.38)",
-                                transition: "all 0.13s",
+                                flex: 1, minWidth: 0,
+                                padding: "10px 4px", cursor: "pointer",
+                                fontFamily: "var(--font-display)", fontSize: 9, fontWeight: 800,
+                                letterSpacing: "0.05em",
+                                background: "transparent",
+                                color: cat === c.id ? c.color : "rgba(255,255,255,0.28)",
+                                border: "none",
+                                borderBottom: cat === c.id ? `2px solid ${c.color}` : "2px solid transparent",
+                                transition: "all 0.15s", whiteSpace: "nowrap",
                             }}>{c.id.toUpperCase()}</button>
                         ))}
                     </div>
 
-                    {/* Cards */}
-                    <div style={{ flex: 1, overflowY: "auto", padding: "0 8px", display: "flex", flexDirection: "column", gap: 3 }}>
-                        {locations.map((loc, i) => (
-                            <div key={i} onClick={() => setPin(loc.name)} style={{
-                                borderRadius: 12, padding: 12, cursor: "pointer", transition: "all 0.13s",
-                                background: activePin === loc.name ? "rgba(255,255,255,0.045)" : "rgba(255,255,255,0.018)",
-                                border: `1px solid ${activePin === loc.name ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.05)"}`,
-                            }}>
-                                {/* Card header */}
-                                <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                                    {/* Thumbnail */}
+                    {/* Count row */}
+                    <div style={{ padding: "10px 16px 6px", flexShrink: 0 }}>
+                        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", fontFamily: "var(--font-mono)" }}>
+                            {isZoneView
+                                ? `${ZONES.length} ZONES MAPPED`
+                                : `${locations.length} LOCATION${locations.length !== 1 ? 'S' : ''} FOUND`
+                            }
+                        </span>
+                    </div>
+
+                    {/* ── Zone cards (shown when Zones tab active) ── */}
+                    {isZoneView && (
+                        <div style={{ flex: 1, overflowY: "auto", padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                            {ZONES.map((zone) => (
+                                <div key={zone.name} onClick={() => flyToZone(zone.name)} style={{
+                                    borderRadius: 10, padding: "12px", cursor: "pointer",
+                                    transition: "background 0.12s, border-color 0.12s",
+                                    background: activeZone === zone.name ? `${zone.accent}10` : "rgba(255,255,255,0.02)",
+                                    border: `1px solid ${activeZone === zone.name ? `${zone.accent}40` : "rgba(255,255,255,0.05)"}`,
+                                    display: "flex", gap: 11, alignItems: "center",
+                                }}>
+                                    {/* Color swatch */}
                                     <div style={{
-                                        width: 46, height: 46, borderRadius: 10, flexShrink: 0,
-                                        background: thumb.grad,
+                                        width: 38, height: 38, borderRadius: 8, flexShrink: 0,
+                                        background: zone.color,
+                                        border: `2px solid ${zone.accent}50`,
                                         display: "flex", alignItems: "center", justifyContent: "center",
-                                        border: `1px solid ${thumb.accent}20`,
                                     }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 22, color: thumb.accent }}>{thumb.icon}</span>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: zone.accent }}>terrain</span>
                                     </div>
                                     {/* Text */}
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6 }}>
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 3 }}>
                                             <span style={{
                                                 fontFamily: "var(--font-display)", fontWeight: 700,
-                                                fontSize: 12.5, color: "#fff", lineHeight: 1.25,
-                                            }}>{loc.name}</span>
-                                            <span style={{
-                                                fontSize: 10, fontWeight: 700, flexShrink: 0,
-                                                color: catMeta.color, fontFamily: "var(--font-mono)",
-                                                background: `${catMeta.color}18`,
-                                                border: `1px solid ${catMeta.color}30`,
-                                                borderRadius: 9999, padding: "2px 7px",
-                                            }}>{loc.dist}</span>
+                                                fontSize: 12.5, color: "#fff",
+                                            }}>{zone.name}</span>
+                                            {activeZone === zone.name && (
+                                                <span style={{
+                                                    fontSize: 8, fontWeight: 800, color: zone.accent,
+                                                    background: `${zone.accent}12`,
+                                                    border: `1px solid ${zone.accent}30`,
+                                                    borderRadius: 3, padding: "1px 5px",
+                                                    letterSpacing: "0.06em", flexShrink: 0,
+                                                }}>VIEWING</span>
+                                            )}
                                         </div>
-                                        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.36)", marginTop: 3 }}>{loc.sub}</div>
+                                        <span style={{ fontSize: 10.5, color: "rgba(255,255,255,0.3)" }}>{zone.desc}</span>
                                     </div>
                                 </div>
+                            ))}
+                        </div>
+                    )}
 
-                                {/* Card footer */}
-                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-                                    <span style={{ fontSize: 11, color: "#e3b341" }}>★ {loc.rating}</span>
-                                    <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
-                                        {loc.live && (
+                    {/* ── Location cards (shown for all non-zone tabs) ── */}
+                    {!isZoneView && (
+                        <div style={{ flex: 1, overflowY: "auto", padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
+                            {locations.map((loc, i) => (
+                                <div key={i} onClick={() => setPin(loc.name === activePin ? null : loc.name)} style={{
+                                    borderRadius: 10, padding: "10px 12px", cursor: "pointer",
+                                    transition: "background 0.12s, border-color 0.12s",
+                                    background: activePin === loc.name ? `${catMeta.color}0e` : "rgba(255,255,255,0.02)",
+                                    border: `1px solid ${activePin === loc.name ? `${catMeta.color}35` : "rgba(255,255,255,0.05)"}`,
+                                    display: "flex", gap: 10, alignItems: "center",
+                                }}>
+                                    {/* Icon */}
+                                    <div style={{
+                                        width: 38, height: 38, borderRadius: 8, flexShrink: 0,
+                                        background: thumb.grad,
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                        border: `1px solid ${thumb.accent}18`,
+                                    }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: thumb.accent }}>{thumb.icon}</span>
+                                    </div>
+                                    {/* Text */}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 2 }}>
                                             <span style={{
-                                                fontSize: 9, fontWeight: 700, color: "#53DDFC",
-                                                border: "1px solid rgba(83,221,252,0.3)", borderRadius: 4,
-                                                padding: "1px 6px", letterSpacing: "0.05em",
-                                                display: "flex", alignItems: "center", gap: 3,
-                                            }}>
-                                                <span style={{ width: 4, height: 4, borderRadius: "50%", background: "#53DDFC", display: "inline-block" }} />
-                                                LIVE
-                                            </span>
-                                        )}
+                                                fontFamily: "var(--font-display)", fontWeight: 700,
+                                                fontSize: 12, color: "#fff", lineHeight: 1.3,
+                                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                                            }}>{loc.name}</span>
+                                            {loc.live && (
+                                                <span style={{
+                                                    fontSize: 8, fontWeight: 800, color: "#53DDFC",
+                                                    background: "rgba(83,221,252,0.1)",
+                                                    border: "1px solid rgba(83,221,252,0.25)",
+                                                    borderRadius: 3, padding: "1px 5px",
+                                                    letterSpacing: "0.06em", flexShrink: 0,
+                                                }}>LIVE</span>
+                                            )}
+                                        </div>
+                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                                            <span style={{ fontSize: 10.5, color: "rgba(255,255,255,0.3)" }}>{loc.sub}</span>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                                                <span style={{ fontSize: 10, color: "#e3b341", flexShrink: 0 }}>★ {loc.rating}</span>
+                                                <span style={{
+                                                    fontSize: 10, fontWeight: 700, color: catMeta.color,
+                                                    fontFamily: "var(--font-mono)", flexShrink: 0,
+                                                }}>{loc.dist}</span>
+                                            </div>
+                                        </div>
                                         {loc.badge && (
-                                            <span style={{
-                                                fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.38)",
-                                                border: "1px solid rgba(255,255,255,0.1)", borderRadius: 4,
-                                                padding: "1px 6px", letterSpacing: "0.04em",
-                                            }}>{loc.badge}</span>
+                                            <div style={{ marginTop: 4 }}>
+                                                <span style={{
+                                                    fontSize: 8.5, fontWeight: 700,
+                                                    color: "rgba(255,255,255,0.32)",
+                                                    border: "1px solid rgba(255,255,255,0.08)",
+                                                    borderRadius: 3, padding: "1px 6px",
+                                                    letterSpacing: "0.05em",
+                                                }}>{loc.badge}</span>
+                                            </div>
                                         )}
                                     </div>
                                 </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Sidebar footer */}
+                    <div style={{
+                        borderTop: "1px solid rgba(255,255,255,0.05)",
+                        padding: "11px 16px",
+                        display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
+                        flexShrink: 0, gap: 0,
+                    }}>
+                        {[{ label: "NODES", val: "42", color: "#53DDFC" },
+                        { label: "STATUS", val: "Online", color: "#4ade80" },
+                        { label: "ZONES", val: `${ZONES.length}`, color: "#e3b341" }].map(s => (
+                            <div key={s.label}>
+                                <div style={{ fontSize: 8.5, color: "rgba(255,255,255,0.25)", letterSpacing: "0.07em", fontFamily: "var(--font-display)", marginBottom: 2 }}>{s.label}</div>
+                                <div style={{ fontSize: 11, fontWeight: 800, color: s.color, fontFamily: "var(--font-display)" }}>{s.val}</div>
                             </div>
                         ))}
                     </div>
-
-                    {/* Sidebar footer: connected status */}
-                    <div style={{
-                        borderTop: "1px solid rgba(255,255,255,0.05)",
-                        padding: "13px 16px", display: "flex", gap: 28, flexShrink: 0,
-                    }}>
-                        <div>
-                            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-display)", marginBottom: 2 }}>Connected</div>
-                            <div style={{ fontSize: 13, fontWeight: 800, color: "#53DDFC", fontFamily: "var(--font-display)" }}>42 Nodes</div>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "var(--font-display)", marginBottom: 2 }}>Status</div>
-                            <div style={{ fontSize: 13, fontWeight: 800, color: "#53DDFC", fontFamily: "var(--font-display)" }}>Operational</div>
-                        </div>
-                    </div>
                 </div>
 
-                {/* ──── Map area ──── */}
-                <div className="map-area" style={{ flex: 1, position: "relative", background: "#0e0f0b", overflow: "hidden" }}>
+                {/* ──────────────── Map area ──────────────── */}
+                <div className="map-area" style={{ flex: 1, position: "relative", background: "#09090a", overflow: "hidden" }}>
+
                     {/* MapLibre GL container */}
                     <div ref={mapContainerRef} style={{ position: "absolute", inset: 0 }} />
 
-                    {/* my_location — top right */}
-                    <button onClick={() => mapInstance.current && mapInstance.current.flyTo({ zoom: mapInstance.current.getZoom() })} style={{
-                        position: "absolute", top: 14, right: 14, zIndex: 20,
-                        width: 38, height: 38, borderRadius: "50%",
-                        background: "rgba(16,16,16,0.92)", backdropFilter: "blur(10px)",
-                        border: "1px solid rgba(255,255,255,0.1)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        cursor: "pointer", color: "rgba(255,255,255,0.65)",
-                    }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>my_location</span>
-                    </button>
-
-                    {/* Zoom controls — right center */}
+                    {/* ── GTA-style crosshair overlay ── */}
                     <div style={{
-                        position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)",
+                        position: "absolute", inset: 0,
+                        pointerEvents: "none", zIndex: 10,
+                    }}>
+                        {/* Horizontal arm — left */}
+                        <div style={{
+                            position: "absolute",
+                            top: "50%", left: 0,
+                            width: "calc(50% - 10px)",
+                            height: 1,
+                            background: "linear-gradient(to right, transparent, rgba(255,255,255,0.12))",
+                            transform: "translateY(-0.5px)",
+                        }} />
+                        {/* Horizontal arm — right */}
+                        <div style={{
+                            position: "absolute",
+                            top: "50%", right: 0,
+                            width: "calc(50% - 10px)",
+                            height: 1,
+                            background: "linear-gradient(to left, transparent, rgba(255,255,255,0.12))",
+                            transform: "translateY(-0.5px)",
+                        }} />
+                        {/* Vertical arm — top */}
+                        <div style={{
+                            position: "absolute",
+                            left: "50%", top: 0,
+                            height: "calc(50% - 10px)",
+                            width: 1,
+                            background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.12))",
+                            transform: "translateX(-0.5px)",
+                        }} />
+                        {/* Vertical arm — bottom */}
+                        <div style={{
+                            position: "absolute",
+                            left: "50%", bottom: 0,
+                            height: "calc(50% - 10px)",
+                            width: 1,
+                            background: "linear-gradient(to top, transparent, rgba(255,255,255,0.12))",
+                            transform: "translateX(-0.5px)",
+                        }} />
+                        {/* Center dot */}
+                        <div style={{
+                            position: "absolute",
+                            top: "50%", left: "50%",
+                            transform: "translate(-50%, -50%)",
+                            width: 6, height: 6, borderRadius: "50%",
+                            background: "rgba(255,255,255,0.85)",
+                            boxShadow: "0 0 0 2px rgba(0,0,0,0.6), 0 0 8px rgba(255,255,255,0.35)",
+                        }} />
+                    </div>
+
+                    {/* Zoom controls — bottom right */}
+                    <div style={{
+                        position: "absolute", right: 14, bottom: 14,
                         display: "flex", flexDirection: "column", zIndex: 20,
-                        overflow: "hidden", borderRadius: 10,
-                        border: "1px solid rgba(255,255,255,0.1)",
+                        gap: 2,
                     }}>
                         {[["add", () => mapInstance.current && mapInstance.current.zoomIn()],
-                        ["remove", () => mapInstance.current && mapInstance.current.zoomOut()]].map(([icon, handler], idx) => (
+                        ["remove", () => mapInstance.current && mapInstance.current.zoomOut()]].map(([icon, handler]) => (
                             <button key={icon} onClick={handler} style={{
-                                width: 38, height: 38,
-                                background: "rgba(16,16,16,0.92)", backdropFilter: "blur(10px)",
-                                border: "none",
-                                borderBottom: idx === 0 ? "1px solid rgba(255,255,255,0.08)" : "none",
+                                width: 34, height: 34, borderRadius: 8,
+                                background: "rgba(12,12,13,0.92)",
+                                border: "1px solid rgba(255,255,255,0.1)",
                                 display: "flex", alignItems: "center", justifyContent: "center",
-                                cursor: "pointer", color: "rgba(255,255,255,0.65)",
-                            }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{icon}</span>
+                                cursor: "pointer", color: "rgba(255,255,255,0.6)",
+                                transition: "background 0.12s, color 0.12s",
+                            }}
+                                onMouseEnter={e => { e.currentTarget.style.background = "rgba(30,30,32,0.95)"; e.currentTarget.style.color = "#fff"; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = "rgba(12,12,13,0.92)"; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
+                            >
+                                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{icon}</span>
                             </button>
                         ))}
                     </div>
 
+                    {/* Re-center / my_location — bottom right above zoom */}
+                    <button
+                        onClick={() => {
+                            if (!mapInstance.current) return;
+                            fetch('/map.geojson').then(r => r.json()).then(data => {
+                                let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+                                function pc(c) { if (c[0] < minLng) minLng = c[0]; if (c[0] > maxLng) maxLng = c[0]; if (c[1] < minLat) minLat = c[1]; if (c[1] > maxLat) maxLat = c[1]; }
+                                function pg(g) { if (!g) return; if (g.type === 'LineString') g.coordinates.forEach(pc); else if (g.type === 'Polygon') g.coordinates[0].forEach(pc); else if (g.type === 'MultiLineString') g.coordinates.forEach(r => r.forEach(pc)); else if (g.type === 'MultiPolygon') g.coordinates.forEach(p => p[0].forEach(pc)); }
+                                data.features.forEach(f => pg(f.geometry));
+                                if (minLng !== Infinity) mapInstance.current.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, duration: 800 });
+                            }).catch(() => { });
+                        }}
+                        style={{
+                            position: "absolute", right: 14, bottom: 90, zIndex: 20,
+                            width: 34, height: 34, borderRadius: 8,
+                            background: "rgba(12,12,13,0.92)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            cursor: "pointer", color: "rgba(255,255,255,0.6)",
+                            transition: "background 0.12s, color 0.12s",
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(30,30,32,0.95)"; e.currentTarget.style.color = "#fff"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "rgba(12,12,13,0.92)"; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
+                    >
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>center_focus_strong</span>
+                    </button>
+
                 </div>
             </div>
 
-            {/* ──── Full-width bottom bar ──── */}
+            {/* ──── Bottom status bar ──── */}
             <div style={{
-                flexShrink: 0, background: "rgba(7,7,7,0.97)",
-                borderTop: "1px solid rgba(255,255,255,0.05)",
-                padding: "7px 20px",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
+                flexShrink: 0,
+                background: "#0c0c0d",
+                borderTop: "1px solid rgba(255,255,255,0.06)",
+                padding: "7px 18px",
+                display: "flex", alignItems: "center", gap: 0,
             }}>
-                <span style={{
-                    fontSize: 10, color: "rgba(255,255,255,0.22)",
-                    fontFamily: "var(--font-display)", letterSpacing: "0.06em",
-                }}>© 2024 TEC KINETIC OS</span>
-                <div style={{ display: "flex", gap: 24 }} className="map-bottom-nav">
-                    {["PROTOCOL", "KERNEL", "SECURITY", "MANUAL"].map(item => (
-                        <span key={item} style={{
-                            fontSize: 10, color: "rgba(255,255,255,0.22)",
-                            fontFamily: "var(--font-display)", letterSpacing: "0.07em",
-                            cursor: "pointer", transition: "color 0.13s",
-                        }}
-                            onMouseEnter={e => e.target.style.color = "rgba(255,255,255,0.6)"}
-                            onMouseLeave={e => e.target.style.color = "rgba(255,255,255,0.22)"}
-                        >{item}</span>
+                {/* Coords */}
+                <div style={{ display: "flex", gap: 20, flex: 1 }}>
+                    {[{ label: "LNG", val: coords.lng }, { label: "LAT", val: coords.lat }, { label: "ZOOM", val: coords.zoom }].map(c => (
+                        <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 8.5, color: "rgba(255,255,255,0.22)", fontFamily: "var(--font-display)", letterSpacing: "0.08em" }}>{c.label}</span>
+                            <span style={{ fontSize: 10.5, color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-mono)" }}>{c.val}</span>
+                        </div>
                     ))}
                 </div>
-                <div style={{
-                    width: 32, height: 32, borderRadius: "50%",
-                    background: "linear-gradient(135deg,#CC97FF,#9C48EA)",
-                    display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer",
-                    boxShadow: "0 0 12px rgba(204,151,255,0.4)",
-                }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 16, color: "#fff" }}>navigation</span>
-                </div>
+                {/* Branding */}
+                <span style={{
+                    fontSize: 9, color: "rgba(255,255,255,0.15)",
+                    fontFamily: "var(--font-display)", letterSpacing: "0.08em",
+                }}>TEC KINETIC OS · EXPLORE v2</span>
             </div>
 
         </div>
