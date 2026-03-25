@@ -9,8 +9,8 @@ const ROLE_COLORS = {
 const NAV = [
     { icon: 'storefront', label: 'Bazaar', to: '/assignments' },
     { icon: 'construction', label: 'Builds', to: '/builds' },
-    { icon: 'explore', label: 'Explore', to: '/map' },
-    { icon: 'campaign', label: 'Feed', to: '/' },
+    { icon: 'explore', label: 'Explore', to: '/' },
+    { icon: 'campaign', label: 'Feed', to: '/feed' },
     { icon: 'sell', label: 'Deals', to: '/discounts' },
     { icon: 'location_city', label: 'Listings', to: '/listings' },
     { icon: 'how_to_vote', label: 'Pulse', to: '/poll' },
@@ -70,8 +70,8 @@ export default function Header() {
 
                 {/* Desktop nav links — hidden on mobile */}
                 <div className="desktop-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    {['/', '/map', '/assignments', '/builds'].map((to, i) => {
-                        const labels = ['Feed', 'Explore', 'Bazaar', 'Builds'];
+                    {['/', '/feed', '/assignments', '/builds'].map((to, i) => {
+                        const labels = ['Explore', 'Feed', 'Bazaar', 'Builds'];
                         return (
                             <Link key={to} to={to} style={{
                                 padding: '5px 12px', borderRadius: 8, fontFamily: 'var(--font-display)',

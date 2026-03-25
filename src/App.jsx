@@ -19,7 +19,7 @@ import Builds from './components/Builds';
 import SplashScreen from './components/SplashScreen';
 
 /* Routes where the page is full-viewport (no footer, no outer scroll) */
-const FULLSCREEN_ROUTES = ['/map'];
+const FULLSCREEN_ROUTES = ['/', '/map'];
 
 function AppShell() {
   const location = useLocation();
@@ -32,7 +32,8 @@ function AppShell() {
       <Header />
       <div className="app-content">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Map />} />
+          <Route path="/feed" element={<Home />} />
           <Route path="/discounts" element={<Discounts />} />
           <Route path="/map" element={<Map />} />
           <Route path="/assignments" element={<Assignments />} />

@@ -1,5 +1,71 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
 
+const ANIM_CSS = `
+@keyframes tecScanLine {
+  0%   { top: -4px; opacity: 1; }
+  88%  { top: calc(100% - 4px); opacity: 0.7; }
+  100% { top: 100%; opacity: 0; }
+}
+@keyframes tecBracketIn {
+  from { opacity: 0; transform: scale(0.78) translate(var(--bx,0), var(--by,0)); }
+  to   { opacity: 1; transform: scale(1) translate(0,0); }
+}
+@keyframes tecLogoIn {
+  0%   { opacity: 0; letter-spacing: 0.6em; filter: blur(8px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; letter-spacing: -0.04em; filter: blur(0); }
+}
+@keyframes tecSubIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes tecFromLeft {
+  from { opacity: 0; transform: translateX(-22px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes tecFromRight {
+  from { opacity: 0; transform: translateX(22px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes tecFromTop {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes tecFromBottom {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes tecPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%       { opacity: 1;   transform: scale(1.2); }
+}
+@keyframes tecLockPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(255,110,132,0.12), 0 4px 16px rgba(0,0,0,0.5); }
+  50%       { box-shadow: 0 0 22px rgba(255,110,132,0.35), 0 4px 16px rgba(0,0,0,0.5); }
+}
+@keyframes tecSoonPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(227,179,65,0.12), 0 4px 16px rgba(0,0,0,0.5); }
+  50%       { box-shadow: 0 0 22px rgba(227,179,65,0.32), 0 4px 16px rgba(0,0,0,0.5); }
+}
+@keyframes tecVignetteIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.tec-cat-pill { transition: all 0.15s ease; }
+.tec-cat-pill:hover { transform: translateY(-1px); }
+.tec-explore-hud { left: 14px; }
+@media (min-width: 1024px) { .tec-explore-hud { left: 270px; } }
+.tec-cat-pills { left: 50%; }
+@media (min-width: 1024px) { .tec-cat-pills { left: calc(50% + 128px); } }
+`;
+
+const GLASS = {
+    background: 'rgba(9,9,10,0.84)',
+    backdropFilter: 'blur(24px)',
+    WebkitBackdropFilter: 'blur(24px)',
+    border: '1px solid rgba(255,255,255,0.09)',
+};
+
 /* ── GTA V-inspired dark map palette ── */
 const MAP_STYLE = {
     version: 8,
@@ -159,6 +225,39 @@ const ZONES = [
     { name: "Aravali", color: "#2a1040", accent: "#CC97FF", desc: "Dense canopy — forest boundary" },
 ];
 
+/* ── Locked / coming-soon areas overlaid on the map ── */
+const LOCKED_ZONES = [
+    {
+        id: "north-corridor",
+        label: "NORTH CORRIDOR",
+        status: "locked",          /* "locked" | "soon" */
+        reason: "Restricted access",
+        /* rough bounding box center + size for the overlay chip */
+        chipStyle: { top: '18%', left: '38%' },
+    },
+    {
+        id: "delta-sector",
+        label: "DELTA SECTOR",
+        status: "soon",
+        reason: "Coming Q2 2026",
+        chipStyle: { top: '62%', left: '20%' },
+    },
+    {
+        id: "east-ridge",
+        label: "EAST RIDGE",
+        status: "locked",
+        reason: "TEC members only",
+        chipStyle: { top: '40%', left: '70%' },
+    },
+    {
+        id: "summit-lab",
+        label: "SUMMIT LAB",
+        status: "soon",
+        reason: "Opening soon",
+        chipStyle: { top: '78%', left: '55%' },
+    },
+];
+
 /* Ray-cast point-in-polygon — returns true if [lng, lat] is inside the ring */
 function pointInPolygon([x, y], ring) {
     let inside = false;
@@ -180,41 +279,41 @@ export default function Map() {
     const [coords, setCoords] = useState({ lng: '—', lat: '—', zoom: '—' });
     const [currentDistrict, setCurrentDistrict] = useState(null);
 
+    /* Boot animation phases */
+    const [phase, setPhase] = useState(0);
+    const [listOpen, setListOpen] = useState(true);
+    const [search, setSearch] = useState('');
+
+    useEffect(() => {
+        const timers = [
+            setTimeout(() => setPhase(1), 750),
+            setTimeout(() => setPhase(2), 1550),
+            setTimeout(() => setPhase(3), 2500),
+        ];
+        return () => timers.forEach(clearTimeout);
+    }, []);
+
     useEffect(() => {
         if (!mapContainerRef.current || !window.maplibregl) return;
+        /* Start close to campus at a pulled-back zoom — fly in cinematically */
+        const CAMPUS_CENTER = [77.9620, 30.4020];
         const map = new window.maplibregl.Map({
             container: mapContainerRef.current,
             style: MAP_STYLE,
-            center: [0, 0],
-            zoom: 2,
-            /* disable default map controls — we provide our own */
+            center: CAMPUS_CENTER,
+            zoom: 11.5,
             attributionControl: false,
         });
         map.on('load', () => {
-            /* ── Fit to road network ── */
-            fetch('/map.geojson')
-                .then(r => r.json())
-                .then(data => {
-                    let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
-                    function processCoord(c) {
-                        if (c[0] < minLng) minLng = c[0];
-                        if (c[0] > maxLng) maxLng = c[0];
-                        if (c[1] < minLat) minLat = c[1];
-                        if (c[1] > maxLat) maxLat = c[1];
-                    }
-                    function processGeom(geom) {
-                        if (!geom) return;
-                        if (geom.type === 'LineString') geom.coordinates.forEach(processCoord);
-                        else if (geom.type === 'Polygon') geom.coordinates[0].forEach(processCoord);
-                        else if (geom.type === 'MultiLineString') geom.coordinates.forEach(r => r.forEach(processCoord));
-                        else if (geom.type === 'MultiPolygon') geom.coordinates.forEach(p => p[0].forEach(processCoord));
-                    }
-                    data.features.forEach(f => processGeom(f.geometry));
-                    if (minLng !== Infinity) {
-                        map.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60 });
-                    }
-                })
-                .catch(() => { });
+            /* ── Cinematic fly-in: zoom from 11.5 → 14 over the campus ── */
+            setTimeout(() => {
+                map.flyTo({
+                    center: CAMPUS_CENTER,
+                    zoom: 14,
+                    duration: 3200,
+                    easing: t => t * t * t,
+                });
+            }, 500);
 
             /* ── Zone fills & outlines ── */
             map.addSource('zones', { type: 'geojson', data: '/zones.geojson' });
@@ -332,9 +431,10 @@ export default function Map() {
     const isZoneView = cat === 'Zones';
     const catMeta = CATS.find(c => c.id === cat) || CATS[0];
     const thumb = THUMB[cat] || THUMB['Colleges'];
-    const locations = LOCATIONS[cat] || [];
+    const allLocations = LOCATIONS[cat] || [];
+    const locations = search ? allLocations.filter(l => l.name.toLowerCase().includes(search.toLowerCase())) : allLocations;
+    const CAT_WITH_ZONES = [...CATS, { id: 'Zones', color: '#e3b341' }];
 
-    /* Fly to zone bounds when a zone card is clicked */
     function flyToZone(zoneName) {
         const next = zoneName === activeZone ? null : zoneName;
         setActiveZone(next);
@@ -353,410 +453,428 @@ export default function Map() {
             }).catch(() => { });
     }
 
+    function recenterMap() {
+        if (!mapInstance.current) return;
+        fetch('/map.geojson').then(r => r.json()).then(data => {
+            let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
+            function pc(c) { if (c[0] < minLng) minLng = c[0]; if (c[0] > maxLng) maxLng = c[0]; if (c[1] < minLat) minLat = c[1]; if (c[1] > maxLat) maxLat = c[1]; }
+            function pg(g) { if (!g) return; if (g.type === 'LineString') g.coordinates.forEach(pc); else if (g.type === 'Polygon') g.coordinates[0].forEach(pc); else if (g.type === 'MultiLineString') g.coordinates.forEach(r => r.forEach(pc)); else if (g.type === 'MultiPolygon') g.coordinates.forEach(p => p[0].forEach(pc)); }
+            data.features.forEach(f => pg(f.geometry));
+            if (minLng !== Infinity) mapInstance.current.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, duration: 800 });
+        }).catch(() => { });
+    }
+
+    const hud = (dir, delay = 0) => ({
+        animation: `tec${dir} 0.5s cubic-bezier(0.16,1,0.3,1) both`,
+        animationDelay: `${delay}s`,
+    });
+
+    const districtZone = currentDistrict ? ZONES.find(z => z.name === currentDistrict) : null;
+
     return (
-        <div style={{
-            display: "flex", flexDirection: "column",
-            height: "100%",
-            overflow: "hidden", background: "#09090a",
-        }}>
+        <div style={{ position: 'fixed', top: 64, left: 0, right: 0, bottom: 0, zIndex: 1, background: '#09090a', overflow: 'hidden' }}>
+            <style>{ANIM_CSS}</style>
 
-            {/* ── main row ── */}
-            <div className="map-main-row" style={{ flex: 1, overflow: "hidden" }}>
+            {/* ══════════════════ MAP CANVAS ══════════════════ */}
+            <div ref={mapContainerRef} style={{ position: 'absolute', inset: 0 }} />
 
-                {/* ──────────────── Sidebar ──────────────── */}
-                <div className="map-panel" style={{
-                    width: 280, flexShrink: 0,
-                    background: "#0c0c0d",
-                    borderRight: "1px solid rgba(255,255,255,0.06)",
-                    display: "flex", flexDirection: "column", overflow: "hidden",
+            {/* Edge vignette */}
+            <div style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 5,
+                background: 'radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%)',
+                animation: 'tecVignetteIn 1.5s ease-out 2s both',
+            }} />
+
+            {/* ══════════════════ BOOT OVERLAY ══════════════════ */}
+            {phase < 3 && (
+                <div style={{
+                    position: 'absolute', inset: 0, zIndex: 80,
+                    background: '#09090a',
+                    opacity: phase === 2 ? 0 : 1,
+                    transition: phase === 2 ? 'opacity 1.1s cubic-bezier(0.4,0,0.2,1)' : 'none',
+                    pointerEvents: phase >= 2 ? 'none' : 'auto',
+                    overflow: 'hidden',
                 }}>
-
-                    {/* Sidebar header */}
+                    {/* CRT scanlines */}
                     <div style={{
-                        padding: "16px 16px 0",
-                        borderBottom: "1px solid rgba(255,255,255,0.05)",
-                        paddingBottom: 14,
+                        position: 'absolute', inset: 0, pointerEvents: 'none',
+                        backgroundImage: 'repeating-linear-gradient(0deg,rgba(0,0,0,0.2) 0px,rgba(0,0,0,0.2) 1px,transparent 1px,transparent 4px)',
+                    }} />
+
+                    {/* Corner brackets */}
+                    {[
+                        { top: 24, left: 24, '--bx': '-8px', '--by': '-8px' },
+                        { top: 24, right: 24, '--bx': '8px', '--by': '-8px' },
+                        { bottom: 24, left: 24, '--bx': '-8px', '--by': '8px' },
+                        { bottom: 24, right: 24, '--bx': '8px', '--by': '8px' },
+                    ].map((pos, i) => {
+                        const isRight = 'right' in pos;
+                        const isBottom = 'bottom' in pos;
+                        return (
+                            <div key={i} style={{
+                                position: 'absolute', width: 40, height: 40, ...pos,
+                                animation: `tecBracketIn 0.55s cubic-bezier(0.16,1,0.3,1) ${0.08 + i * 0.06}s both`,
+                                '--bx': pos['--bx'], '--by': pos['--by'],
+                            }}>
+                                <div style={{ position: 'absolute', [isBottom ? 'bottom' : 'top']: 0, [isRight ? 'right' : 'left']: 0, width: 24, height: 2.5, background: 'rgba(204,151,255,0.95)' }} />
+                                <div style={{ position: 'absolute', [isBottom ? 'bottom' : 'top']: 0, [isRight ? 'right' : 'left']: 0, width: 2.5, height: 24, background: 'rgba(204,151,255,0.95)' }} />
+                            </div>
+                        );
+                    })}
+
+                    {/* Scan line */}
+                    {phase >= 1 && (
+                        <div style={{
+                            position: 'absolute', left: 0, right: 0, height: 3,
+                            background: 'linear-gradient(to right, transparent, rgba(83,221,252,0.4), rgba(83,221,252,1), rgba(83,221,252,0.4), transparent)',
+                            boxShadow: '0 0 18px rgba(83,221,252,0.8), 0 0 40px rgba(83,221,252,0.3)',
+                            animation: 'tecScanLine 1.1s cubic-bezier(0.4,0,1,1) forwards',
+                            pointerEvents: 'none', zIndex: 6,
+                        }} />
+                    )}
+
+                    {/* Center branding */}
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 4 }}>
+                        <div style={{
+                            fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 72,
+                            color: '#CC97FF', fontStyle: 'italic', letterSpacing: '-0.04em',
+                            textShadow: '0 0 40px rgba(204,151,255,0.7), 0 0 90px rgba(204,151,255,0.3)',
+                            animation: 'tecLogoIn 0.8s cubic-bezier(0.16,1,0.3,1) both',
+                            lineHeight: 1,
+                        }}>TEC</div>
+                        <div style={{
+                            fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 10,
+                            color: 'rgba(255,255,255,0.38)', letterSpacing: '0.38em', textTransform: 'uppercase',
+                            marginTop: 10,
+                            animation: 'tecSubIn 0.6s ease-out 0.35s both',
+                        }}>Kinetic OS &nbsp;·&nbsp; Explore v2</div>
+                        <div style={{
+                            marginTop: 36, width: 220, height: 2,
+                            background: 'rgba(255,255,255,0.07)', borderRadius: 2, overflow: 'hidden',
+                            animation: 'tecSubIn 0.5s ease-out 0.45s both',
+                        }}>
+                            <div style={{
+                                height: '100%', borderRadius: 2,
+                                width: phase >= 1 ? '100%' : '18%',
+                                background: 'linear-gradient(90deg, #9c48ea, #53DDFC)',
+                                transition: 'width 0.9s cubic-bezier(0.4,0,0.2,1)',
+                                boxShadow: '0 0 8px rgba(83,221,252,0.5)',
+                            }} />
+                        </div>
+                        <div style={{
+                            marginTop: 16, display: 'flex', alignItems: 'center', gap: 8,
+                            animation: 'tecSubIn 0.5s ease-out 0.55s both',
+                        }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#53DDFC', animation: 'tecPulse 0.9s ease-in-out infinite' }} />
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.14em' }}>
+                                {phase === 0 ? 'INITIALIZING MAP GRID...' : 'ESTABLISHING SECTOR LINK...'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ══════════════════ CROSSHAIR ══════════════════ */}
+            <div style={{
+                position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10,
+                opacity: phase >= 3 ? 1 : 0, transition: 'opacity 0.7s ease 0.5s',
+            }}>
+                <div style={{ position: 'absolute', top: '50%', left: 0, width: 'calc(50% - 10px)', height: 1, background: 'linear-gradient(to right,transparent,rgba(255,255,255,0.11))', transform: 'translateY(-0.5px)' }} />
+                <div style={{ position: 'absolute', top: '50%', right: 0, width: 'calc(50% - 10px)', height: 1, background: 'linear-gradient(to left,transparent,rgba(255,255,255,0.11))', transform: 'translateY(-0.5px)' }} />
+                <div style={{ position: 'absolute', left: '50%', top: 0, height: 'calc(50% - 10px)', width: 1, background: 'linear-gradient(to bottom,transparent,rgba(255,255,255,0.11))', transform: 'translateX(-0.5px)' }} />
+                <div style={{ position: 'absolute', left: '50%', bottom: 0, height: 'calc(50% - 10px)', width: 1, background: 'linear-gradient(to top,transparent,rgba(255,255,255,0.11))', transform: 'translateX(-0.5px)' }} />
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.85)', boxShadow: '0 0 0 2px rgba(0,0,0,0.6),0 0 8px rgba(255,255,255,0.35)' }} />
+                {districtZone && (
+                    <div style={{
+                        position: 'absolute', top: 'calc(50% + 14px)', left: '50%', transform: 'translateX(-50%)',
+                        background: 'rgba(9,9,10,0.88)', border: `1px solid ${districtZone.accent}40`,
+                        borderRadius: 4, padding: '2px 9px', fontSize: 9, fontWeight: 700,
+                        color: districtZone.accent, fontFamily: 'var(--font-display)',
+                        letterSpacing: '0.08em', whiteSpace: 'nowrap', boxShadow: `0 0 10px ${districtZone.accent}18`,
+                    }}>{districtZone.name.toUpperCase()}</div>
+                )}
+            </div>
+
+            {/* ══════════════════ LOCKED ZONE CHIPS ══════════════════ */}
+            {phase >= 3 && LOCKED_ZONES.map(z => {
+                const isLocked = z.status === 'locked';
+                const accent = isLocked ? '#FF6E84' : '#e3b341';
+                return (
+                    <div key={z.id} style={{
+                        position: 'absolute', zIndex: 15,
+                        ...z.chipStyle,
+                        animation: 'tecSubIn 0.55s cubic-bezier(0.16,1,0.3,1) 0.7s both',
+                        pointerEvents: 'none',
                     }}>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 16, color: "#CC97FF" }}>radar</span>
+                        {/* Crosshatch darkening patch */}
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%', left: '50%',
+                            transform: 'translate(-50%,-50%)',
+                            width: 90, height: 90, borderRadius: 12,
+                            backgroundImage: `repeating-linear-gradient(
+                                45deg,
+                                ${accent}08 0px, ${accent}08 1px,
+                                transparent 1px, transparent 8px
+                            )`,
+                            border: `1px solid ${accent}28`,
+                        }} />
+                        {/* Label chip */}
+                        <div style={{
+                            position: 'relative',
+                            display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                            background: 'rgba(9,9,10,0.88)',
+                            backdropFilter: 'blur(14px)',
+                            WebkitBackdropFilter: 'blur(14px)',
+                            border: `1px solid ${accent}45`,
+                            borderRadius: 8,
+                            padding: '6px 10px',
+                            animation: `${isLocked ? 'tecLockPulse' : 'tecSoonPulse'} 2.4s ease-in-out infinite`,
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 11, color: accent }}>
+                                    {isLocked ? 'lock' : 'schedule'}
+                                </span>
                                 <span style={{
-                                    fontFamily: "var(--font-display)", fontWeight: 800,
-                                    fontSize: 13, color: "#fff", letterSpacing: "0.06em",
-                                }}>EXPLORE</span>
+                                    fontFamily: 'var(--font-display)', fontWeight: 900,
+                                    fontSize: 9, color: accent, letterSpacing: '0.12em',
+                                }}>{z.label}</span>
                             </div>
                             <span style={{
-                                fontSize: 9, fontWeight: 700, color: "#53DDFC",
-                                fontFamily: "var(--font-mono)", letterSpacing: "0.08em",
-                                background: "rgba(83,221,252,0.08)",
-                                border: "1px solid rgba(83,221,252,0.2)",
-                                borderRadius: 4, padding: "2px 7px",
-                            }}>LIVE</span>
+                                fontFamily: 'var(--font-mono)', fontSize: 8,
+                                color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em',
+                            }}>{z.reason}</span>
                         </div>
-                        {/* Search */}
-                        <div style={{ position: "relative" }}>
-                            <span className="material-symbols-outlined" style={{
-                                position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)",
-                                fontSize: 14, color: "rgba(255,255,255,0.25)", pointerEvents: "none",
-                            }}>search</span>
+                    </div>
+                );
+            })}
+
+            {/* ══════════════════ HUD CARDS ══════════════════ */}
+
+            {/* ── EXPLORE info card (top-left) ── */}
+            {phase >= 3 && (
+                <div className="tec-explore-hud" style={{ position: 'absolute', top: 14, zIndex: 20, ...hud('FromLeft', 0.05) }}>
+                    <div style={{ ...GLASS, borderRadius: 10, padding: '11px 14px', minWidth: 176 }} className="hud-bracket">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#CC97FF' }}>radar</span>
+                                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11.5, color: '#fff', letterSpacing: '0.09em' }}>EXPLORE</span>
+                            </div>
+                            <span style={{ fontSize: 7.5, fontWeight: 800, color: '#53DDFC', letterSpacing: '0.08em', background: 'rgba(83,221,252,0.1)', border: '1px solid rgba(83,221,252,0.25)', borderRadius: 3, padding: '2px 6px', fontFamily: 'var(--font-display)' }}>LIVE</span>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {[{ label: 'LNG', val: coords.lng }, { label: 'LAT', val: coords.lat }, { label: 'ZOOM', val: coords.zoom }].map(c => (
+                                <div key={c.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                                    <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--font-display)', letterSpacing: '0.09em' }}>{c.label}</span>
+                                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-mono)' }}>{c.val}</span>
+                                </div>
+                            ))}
+                        </div>
+                        {districtZone && (
+                            <div style={{ marginTop: 9, padding: '6px 9px', borderRadius: 7, background: `${districtZone.accent}09`, border: `1px solid ${districtZone.accent}25` }}>
+                                <div style={{ fontSize: 7.5, color: districtZone.accent, letterSpacing: '0.1em', fontWeight: 700, fontFamily: 'var(--font-display)', marginBottom: 2 }}>DISTRICT</div>
+                                <span style={{ fontSize: 11.5, color: '#fff', fontWeight: 700, fontFamily: 'var(--font-display)' }}>{districtZone.name}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ── Category filter pills (top-center) ── */}
+            {phase >= 3 && (
+                <div className="tec-cat-pills" style={{
+                    position: 'absolute', top: 14, zIndex: 20,
+                    transform: 'translateX(-50%)',
+                    display: 'flex', gap: 5, alignItems: 'center',
+                    ...hud('FromTop', 0.15),
+                }}>
+                    {CAT_WITH_ZONES.map(c => (
+                        <button key={c.id} className="tec-cat-pill" onClick={() => setCat(c.id)} style={{
+                            padding: '7px 13px', borderRadius: 20,
+                            fontFamily: 'var(--font-display)', fontSize: 9.5, fontWeight: 800, letterSpacing: '0.07em',
+                            cursor: 'pointer',
+                            background: cat === c.id ? `${c.color}1c` : 'rgba(9,9,10,0.8)',
+                            backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                            border: cat === c.id ? `1.5px solid ${c.color}55` : '1px solid rgba(255,255,255,0.1)',
+                            color: cat === c.id ? c.color : 'rgba(255,255,255,0.43)',
+                            boxShadow: cat === c.id ? `0 0 16px ${c.color}25, 0 4px 12px rgba(0,0,0,0.4)` : '0 4px 12px rgba(0,0,0,0.3)',
+                        }}>{c.id.toUpperCase()}</button>
+                    ))}
+                </div>
+            )}
+
+            {/* ── Location list card (right side) ── */}
+            {phase >= 3 && (
+                <div style={{
+                    position: 'absolute', top: 14, right: 14, zIndex: 20,
+                    width: 262, maxHeight: 'calc(100% - 76px)',
+                    display: 'flex', flexDirection: 'column',
+                    ...hud('FromRight', 0.25),
+                }}>
+                    {/* Header */}
+                    <div
+                        style={{
+                            ...GLASS,
+                            borderRadius: listOpen ? '10px 10px 0 0' : 10,
+                            padding: '10px 12px',
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            cursor: 'pointer',
+                            borderBottom: listOpen ? '1px solid rgba(255,255,255,0.05)' : undefined,
+                        }}
+                        onClick={() => setListOpen(o => !o)}
+                    >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 13, color: isZoneView ? '#e3b341' : catMeta.color }}>
+                                {isZoneView ? 'terrain' : thumb.icon}
+                            </span>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, color: '#fff', letterSpacing: '0.06em' }}>
+                                {isZoneView ? 'ZONES' : cat.toUpperCase()}
+                            </span>
+                            <span style={{
+                                fontSize: 8.5, fontWeight: 700,
+                                color: isZoneView ? '#e3b341' : catMeta.color,
+                                background: isZoneView ? 'rgba(227,179,65,0.1)' : `${catMeta.color}12`,
+                                border: `1px solid ${isZoneView ? 'rgba(227,179,65,0.25)' : `${catMeta.color}30`}`,
+                                borderRadius: 3, padding: '1px 5px', fontFamily: 'var(--font-mono)',
+                            }}>{isZoneView ? ZONES.length : locations.length}</span>
+                        </div>
+                        <span className="material-symbols-outlined" style={{
+                            fontSize: 16, color: 'rgba(255,255,255,0.35)',
+                            transition: 'transform 0.22s ease',
+                            transform: listOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
+                        }}>expand_more</span>
+                    </div>
+
+                    {/* Search */}
+                    {listOpen && !isZoneView && (
+                        <div style={{ ...GLASS, borderRadius: 0, padding: '5px 9px', borderTop: 'none', borderBottom: '1px solid rgba(255,255,255,0.05)', position: 'relative' }}>
+                            <span className="material-symbols-outlined" style={{ position: 'absolute', left: 19, top: '50%', transform: 'translateY(-50%)', fontSize: 13, color: 'rgba(255,255,255,0.2)', pointerEvents: 'none' }}>search</span>
                             <input
-                                className="neon-input"
+                                value={search} onChange={e => setSearch(e.target.value)}
                                 placeholder="Search locations..."
                                 style={{
-                                    paddingLeft: 32, borderRadius: 8, fontSize: 12, height: 34,
-                                    background: "rgba(255,255,255,0.04)",
-                                    border: "1px solid rgba(255,255,255,0.07)",
+                                    width: '100%', paddingLeft: 28, background: 'rgba(255,255,255,0.03)',
+                                    border: '1px solid rgba(255,255,255,0.07)', borderRadius: 7,
+                                    fontSize: 11, color: '#fff', height: 30, outline: 'none',
+                                    fontFamily: 'var(--font-body)',
                                 }}
                             />
                         </div>
-                    </div>
-
-                    {/* Category tabs — 4 place tabs + 1 zone tab */}
-                    <div style={{
-                        display: "flex",
-                        borderBottom: "1px solid rgba(255,255,255,0.05)",
-                        flexShrink: 0, overflowX: "auto",
-                    }}>
-                        {[...CATS, { id: 'Zones', color: '#e3b341' }].map(c => (
-                            <button key={c.id} onClick={() => setCat(c.id)} style={{
-                                flex: 1, minWidth: 0,
-                                padding: "10px 4px", cursor: "pointer",
-                                fontFamily: "var(--font-display)", fontSize: 9, fontWeight: 800,
-                                letterSpacing: "0.05em",
-                                background: "transparent",
-                                color: cat === c.id ? c.color : "rgba(255,255,255,0.28)",
-                                border: "none",
-                                borderBottom: cat === c.id ? `2px solid ${c.color}` : "2px solid transparent",
-                                transition: "all 0.15s", whiteSpace: "nowrap",
-                            }}>{c.id.toUpperCase()}</button>
-                        ))}
-                    </div>
-
-                    {/* Count row */}
-                    <div style={{ padding: "10px 16px 6px", flexShrink: 0 }}>
-                        <span style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", fontFamily: "var(--font-mono)" }}>
-                            {isZoneView
-                                ? `${ZONES.length} ZONES MAPPED`
-                                : `${locations.length} LOCATION${locations.length !== 1 ? 'S' : ''} FOUND`
-                            }
-                        </span>
-                    </div>
-
-                    {/* ── Zone cards (shown when Zones tab active) ── */}
-                    {isZoneView && (
-                        <div style={{ flex: 1, overflowY: "auto", padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
-                            {ZONES.map((zone) => (
-                                <div key={zone.name} onClick={() => flyToZone(zone.name)} style={{
-                                    borderRadius: 10, padding: "12px", cursor: "pointer",
-                                    transition: "background 0.12s, border-color 0.12s",
-                                    background: activeZone === zone.name ? `${zone.accent}10` : "rgba(255,255,255,0.02)",
-                                    border: `1px solid ${activeZone === zone.name ? `${zone.accent}40` : "rgba(255,255,255,0.05)"}`,
-                                    display: "flex", gap: 11, alignItems: "center",
-                                }}>
-                                    {/* Color swatch */}
-                                    <div style={{
-                                        width: 38, height: 38, borderRadius: 8, flexShrink: 0,
-                                        background: zone.color,
-                                        border: `2px solid ${zone.accent}50`,
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                    }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: zone.accent }}>terrain</span>
-                                    </div>
-                                    {/* Text */}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 3 }}>
-                                            <span style={{
-                                                fontFamily: "var(--font-display)", fontWeight: 700,
-                                                fontSize: 12.5, color: "#fff",
-                                            }}>{zone.name}</span>
-                                            {activeZone === zone.name && (
-                                                <span style={{
-                                                    fontSize: 8, fontWeight: 800, color: zone.accent,
-                                                    background: `${zone.accent}12`,
-                                                    border: `1px solid ${zone.accent}30`,
-                                                    borderRadius: 3, padding: "1px 5px",
-                                                    letterSpacing: "0.06em", flexShrink: 0,
-                                                }}>VIEWING</span>
-                                            )}
-                                        </div>
-                                        <span style={{ fontSize: 10.5, color: "rgba(255,255,255,0.3)" }}>{zone.desc}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     )}
 
-                    {/* ── Location cards (shown for all non-zone tabs) ── */}
-                    {!isZoneView && (
-                        <div style={{ flex: 1, overflowY: "auto", padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
-                            {locations.map((loc, i) => (
+                    {/* List body */}
+                    {listOpen && (
+                        <div style={{
+                            ...GLASS, borderRadius: '0 0 10px 10px',
+                            borderTop: 'none', overflowY: 'auto',
+                            padding: '5px 7px 7px', display: 'flex', flexDirection: 'column', gap: 3,
+                        }}>
+                            {isZoneView ? ZONES.map(zone => (
+                                <div key={zone.name} onClick={() => flyToZone(zone.name)} style={{
+                                    borderRadius: 8, padding: '9px 10px', cursor: 'pointer',
+                                    transition: 'background 0.12s,border-color 0.12s',
+                                    background: activeZone === zone.name ? `${zone.accent}10` : 'rgba(255,255,255,0.02)',
+                                    border: `1px solid ${activeZone === zone.name ? `${zone.accent}40` : 'rgba(255,255,255,0.04)'}`,
+                                    display: 'flex', gap: 9, alignItems: 'center',
+                                }}>
+                                    <div style={{ width: 34, height: 34, borderRadius: 7, flexShrink: 0, background: zone.color, border: `2px solid ${zone.accent}50`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 16, color: zone.accent }}>terrain</span>
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 2 }}>
+                                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11.5, color: '#fff' }}>{zone.name}</span>
+                                            {activeZone === zone.name && <span style={{ fontSize: 7.5, fontWeight: 800, color: zone.accent, background: `${zone.accent}12`, border: `1px solid ${zone.accent}30`, borderRadius: 3, padding: '1px 5px', letterSpacing: '0.06em', flexShrink: 0 }}>VIEWING</span>}
+                                        </div>
+                                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)' }}>{zone.desc}</span>
+                                    </div>
+                                </div>
+                            )) : locations.map((loc, i) => (
                                 <div key={i} onClick={() => {
                                     const next = loc.name === activePin ? null : loc.name;
                                     setPin(next);
-                                    if (next && loc.lng && loc.lat && mapInstance.current) {
+                                    if (next && loc.lng && loc.lat && mapInstance.current)
                                         mapInstance.current.flyTo({ center: [loc.lng, loc.lat], zoom: 15, duration: 700 });
-                                    }
                                 }} style={{
-                                    borderRadius: 10, padding: "10px 12px", cursor: "pointer",
-                                    transition: "background 0.12s, border-color 0.12s",
-                                    background: activePin === loc.name ? `${catMeta.color}0e` : "rgba(255,255,255,0.02)",
-                                    border: `1px solid ${activePin === loc.name ? `${catMeta.color}35` : "rgba(255,255,255,0.05)"}`,
-                                    display: "flex", gap: 10, alignItems: "center",
+                                    borderRadius: 8, padding: '8px 10px', cursor: 'pointer',
+                                    transition: 'background 0.12s,border-color 0.12s',
+                                    background: activePin === loc.name ? `${catMeta.color}0e` : 'rgba(255,255,255,0.02)',
+                                    border: `1px solid ${activePin === loc.name ? `${catMeta.color}35` : 'rgba(255,255,255,0.04)'}`,
+                                    display: 'flex', gap: 9, alignItems: 'center',
                                 }}>
-                                    {/* Icon */}
-                                    <div style={{
-                                        width: 38, height: 38, borderRadius: 8, flexShrink: 0,
-                                        background: thumb.grad,
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                        border: `1px solid ${thumb.accent}18`,
-                                    }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: thumb.accent }}>{thumb.icon}</span>
+                                    <div style={{ width: 34, height: 34, borderRadius: 7, flexShrink: 0, background: thumb.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${thumb.accent}18` }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 16, color: thumb.accent }}>{thumb.icon}</span>
                                     </div>
-                                    {/* Text */}
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 6, marginBottom: 2 }}>
-                                            <span style={{
-                                                fontFamily: "var(--font-display)", fontWeight: 700,
-                                                fontSize: 12, color: "#fff", lineHeight: 1.3,
-                                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                                            }}>{loc.name}</span>
-                                            {loc.live && (
-                                                <span style={{
-                                                    fontSize: 8, fontWeight: 800, color: "#53DDFC",
-                                                    background: "rgba(83,221,252,0.1)",
-                                                    border: "1px solid rgba(83,221,252,0.25)",
-                                                    borderRadius: 3, padding: "1px 5px",
-                                                    letterSpacing: "0.06em", flexShrink: 0,
-                                                }}>LIVE</span>
-                                            )}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 2 }}>
+                                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{loc.name}</span>
+                                            {loc.live && <span style={{ fontSize: 7.5, fontWeight: 800, color: '#53DDFC', background: 'rgba(83,221,252,0.1)', border: '1px solid rgba(83,221,252,0.25)', borderRadius: 3, padding: '1px 4px', letterSpacing: '0.06em', flexShrink: 0 }}>LIVE</span>}
                                         </div>
-                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                            <span style={{ fontSize: 10.5, color: "rgba(255,255,255,0.3)" }}>{loc.sub}</span>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                                                <span style={{ fontSize: 10, color: "#e3b341", flexShrink: 0 }}>★ {loc.rating}</span>
-                                                <span style={{
-                                                    fontSize: 10, fontWeight: 700, color: catMeta.color,
-                                                    fontFamily: "var(--font-mono)", flexShrink: 0,
-                                                }}>{loc.dist}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)' }}>{loc.sub}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+                                                <span style={{ fontSize: 9.5, color: '#e3b341' }}>★ {loc.rating}</span>
+                                                <span style={{ fontSize: 9.5, fontWeight: 700, color: catMeta.color, fontFamily: 'var(--font-mono)' }}>{loc.dist}</span>
                                             </div>
                                         </div>
-                                        {loc.badge && (
-                                            <div style={{ marginTop: 4 }}>
-                                                <span style={{
-                                                    fontSize: 8.5, fontWeight: 700,
-                                                    color: "rgba(255,255,255,0.32)",
-                                                    border: "1px solid rgba(255,255,255,0.08)",
-                                                    borderRadius: 3, padding: "1px 6px",
-                                                    letterSpacing: "0.05em",
-                                                }}>{loc.badge}</span>
-                                            </div>
-                                        )}
+                                        {loc.badge && <div style={{ marginTop: 3 }}><span style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.28)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 3, padding: '1px 5px' }}>{loc.badge}</span></div>}
                                     </div>
                                 </div>
                             ))}
                         </div>
                     )}
-
-                    {/* District banner — shown when crosshair is inside a zone */}
-                    {(() => {
-                        const z = currentDistrict ? ZONES.find(zn => zn.name === currentDistrict) : null;
-                        return z ? (
-                            <div style={{
-                                padding: "9px 14px",
-                                background: `${z.accent}09`,
-                                borderTop: `1px solid ${z.accent}22`,
-                                flexShrink: 0,
-                            }}>
-                                <div style={{ fontSize: 8, color: z.accent, letterSpacing: "0.12em", fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 4 }}>CURRENT DISTRICT</div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                                    <div style={{ width: 10, height: 10, borderRadius: 3, flexShrink: 0, background: z.color, border: `1.5px solid ${z.accent}70` }} />
-                                    <span style={{ fontSize: 12.5, color: "#fff", fontWeight: 700, fontFamily: "var(--font-display)" }}>{z.name}</span>
-                                </div>
-                                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", marginTop: 3 }}>{z.desc}</div>
-                            </div>
-                        ) : null;
-                    })()}
-
-                    {/* Sidebar footer */}
-                    <div style={{
-                        borderTop: "1px solid rgba(255,255,255,0.05)",
-                        padding: "11px 16px",
-                        display: "grid", gridTemplateColumns: "1fr 1fr 1fr",
-                        flexShrink: 0, gap: 0,
-                    }}>
-                        {[{ label: "NODES", val: "42", color: "#53DDFC" },
-                        { label: "STATUS", val: "Online", color: "#4ade80" }].map(s => (
-                            <div key={s.label}>
-                                <div style={{ fontSize: 8.5, color: "rgba(255,255,255,0.25)", letterSpacing: "0.07em", fontFamily: "var(--font-display)", marginBottom: 2 }}>{s.label}</div>
-                                <div style={{ fontSize: 11, fontWeight: 800, color: s.color, fontFamily: "var(--font-display)" }}>{s.val}</div>
-                            </div>
-                        ))}
-                        <div>
-                            <div style={{ fontSize: 8.5, color: "rgba(255,255,255,0.25)", letterSpacing: "0.07em", fontFamily: "var(--font-display)", marginBottom: 2 }}>DISTRICT</div>
-                            <div style={{
-                                fontSize: 10, fontWeight: 800, fontFamily: "var(--font-display)",
-                                color: currentDistrict ? (ZONES.find(z => z.name === currentDistrict)?.accent ?? "#e3b341") : "rgba(255,255,255,0.18)",
-                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                            }}>{currentDistrict || "—"}</div>
-                        </div>
-                    </div>
                 </div>
+            )}
 
-                {/* ──────────────── Map area ──────────────── */}
-                <div className="map-area" style={{ flex: 1, position: "relative", background: "#09090a", overflow: "hidden" }}>
-
-                    {/* MapLibre GL container */}
-                    <div ref={mapContainerRef} style={{ position: "absolute", inset: 0 }} />
-
-                    {/* ── GTA-style crosshair overlay ── */}
-                    <div style={{
-                        position: "absolute", inset: 0,
-                        pointerEvents: "none", zIndex: 10,
-                    }}>
-                        {/* Horizontal arm — left */}
-                        <div style={{
-                            position: "absolute",
-                            top: "50%", left: 0,
-                            width: "calc(50% - 10px)",
-                            height: 1,
-                            background: "linear-gradient(to right, transparent, rgba(255,255,255,0.12))",
-                            transform: "translateY(-0.5px)",
-                        }} />
-                        {/* Horizontal arm — right */}
-                        <div style={{
-                            position: "absolute",
-                            top: "50%", right: 0,
-                            width: "calc(50% - 10px)",
-                            height: 1,
-                            background: "linear-gradient(to left, transparent, rgba(255,255,255,0.12))",
-                            transform: "translateY(-0.5px)",
-                        }} />
-                        {/* Vertical arm — top */}
-                        <div style={{
-                            position: "absolute",
-                            left: "50%", top: 0,
-                            height: "calc(50% - 10px)",
-                            width: 1,
-                            background: "linear-gradient(to bottom, transparent, rgba(255,255,255,0.12))",
-                            transform: "translateX(-0.5px)",
-                        }} />
-                        {/* Vertical arm — bottom */}
-                        <div style={{
-                            position: "absolute",
-                            left: "50%", bottom: 0,
-                            height: "calc(50% - 10px)",
-                            width: 1,
-                            background: "linear-gradient(to top, transparent, rgba(255,255,255,0.12))",
-                            transform: "translateX(-0.5px)",
-                        }} />
-                        {/* Center dot */}
-                        <div style={{
-                            position: "absolute",
-                            top: "50%", left: "50%",
-                            transform: "translate(-50%, -50%)",
-                            width: 6, height: 6, borderRadius: "50%",
-                            background: "rgba(255,255,255,0.85)",
-                            boxShadow: "0 0 0 2px rgba(0,0,0,0.6), 0 0 8px rgba(255,255,255,0.35)",
-                        }} />
-                        {/* District label at crosshair */}
-                        {currentDistrict && (() => {
-                            const z = ZONES.find(z => z.name === currentDistrict);
-                            return z ? (
-                                <div style={{
-                                    position: "absolute",
-                                    top: "calc(50% + 14px)", left: "50%",
-                                    transform: "translateX(-50%)",
-                                    background: "rgba(9,9,10,0.88)",
-                                    border: `1px solid ${z.accent}40`,
-                                    borderRadius: 4, padding: "2px 9px",
-                                    fontSize: 9, fontWeight: 700,
-                                    color: z.accent,
-                                    fontFamily: "var(--font-display)",
-                                    letterSpacing: "0.08em", whiteSpace: "nowrap",
-                                    boxShadow: `0 0 10px ${z.accent}18`,
-                                }}>{z.name.toUpperCase()}</div>
-                            ) : null;
-                        })()}
-                    </div>
-
-                    {/* Zoom controls — bottom right */}
-                    <div style={{
-                        position: "absolute", right: 14, bottom: 14,
-                        display: "flex", flexDirection: "column", zIndex: 20,
-                        gap: 2,
-                    }}>
-                        {[["add", () => mapInstance.current && mapInstance.current.zoomIn()],
-                        ["remove", () => mapInstance.current && mapInstance.current.zoomOut()]].map(([icon, handler]) => (
-                            <button key={icon} onClick={handler} style={{
-                                width: 34, height: 34, borderRadius: 8,
-                                background: "rgba(12,12,13,0.92)",
-                                border: "1px solid rgba(255,255,255,0.1)",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                cursor: "pointer", color: "rgba(255,255,255,0.6)",
-                                transition: "background 0.12s, color 0.12s",
-                            }}
-                                onMouseEnter={e => { e.currentTarget.style.background = "rgba(30,30,32,0.95)"; e.currentTarget.style.color = "#fff"; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = "rgba(12,12,13,0.92)"; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
-                            >
-                                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{icon}</span>
-                            </button>
+            {/* ── Status bar (bottom) ── */}
+            {phase >= 3 && (
+                <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
+                    ...hud('FromBottom', 0.35),
+                    ...GLASS,
+                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                    borderLeft: 'none', borderRight: 'none', borderBottom: 'none',
+                    padding: '7px 18px', display: 'flex', alignItems: 'center',
+                }}>
+                    <div style={{ display: 'flex', gap: 20, flex: 1 }}>
+                        {[{ label: 'LNG', val: coords.lng }, { label: 'LAT', val: coords.lat }, { label: 'ZOOM', val: coords.zoom }].map(c => (
+                            <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <span style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-display)', letterSpacing: '0.09em' }}>{c.label}</span>
+                                <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-mono)' }}>{c.val}</span>
+                            </div>
                         ))}
                     </div>
+                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.13)', fontFamily: 'var(--font-display)', letterSpacing: '0.08em' }}>TEC KINETIC OS · EXPLORE v2</span>
+                </div>
+            )}
 
-                    {/* Re-center / my_location — bottom right above zoom */}
-                    <button
-                        onClick={() => {
-                            if (!mapInstance.current) return;
-                            fetch('/map.geojson').then(r => r.json()).then(data => {
-                                let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity;
-                                function pc(c) { if (c[0] < minLng) minLng = c[0]; if (c[0] > maxLng) maxLng = c[0]; if (c[1] < minLat) minLat = c[1]; if (c[1] > maxLat) maxLat = c[1]; }
-                                function pg(g) { if (!g) return; if (g.type === 'LineString') g.coordinates.forEach(pc); else if (g.type === 'Polygon') g.coordinates[0].forEach(pc); else if (g.type === 'MultiLineString') g.coordinates.forEach(r => r.forEach(pc)); else if (g.type === 'MultiPolygon') g.coordinates.forEach(p => p[0].forEach(pc)); }
-                                data.features.forEach(f => pg(f.geometry));
-                                if (minLng !== Infinity) mapInstance.current.fitBounds([[minLng, minLat], [maxLng, maxLat]], { padding: 60, duration: 800 });
-                            }).catch(() => { });
-                        }}
-                        style={{
-                            position: "absolute", right: 14, bottom: 90, zIndex: 20,
-                            width: 34, height: 34, borderRadius: 8,
-                            background: "rgba(12,12,13,0.92)",
-                            border: "1px solid rgba(255,255,255,0.1)",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            cursor: "pointer", color: "rgba(255,255,255,0.6)",
-                            transition: "background 0.12s, color 0.12s",
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(30,30,32,0.95)"; e.currentTarget.style.color = "#fff"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = "rgba(12,12,13,0.92)"; e.currentTarget.style.color = "rgba(255,255,255,0.6)"; }}
+            {/* ── Zoom controls ── */}
+            <div style={{ position: 'absolute', right: 14, bottom: 46, zIndex: 20, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {[['add', () => mapInstance.current?.zoomIn()], ['remove', () => mapInstance.current?.zoomOut()]].map(([icon, handler]) => (
+                    <button key={icon} onClick={handler} style={{
+                        width: 34, height: 34, borderRadius: 8, ...GLASS,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', color: 'rgba(255,255,255,0.55)', transition: 'all 0.12s',
+                    }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(30,30,32,0.96)'; e.currentTarget.style.color = '#fff'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(9,9,10,0.84)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
                     >
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>center_focus_strong</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{icon}</span>
                     </button>
-
-                </div>
+                ))}
             </div>
 
-            {/* ──── Bottom status bar ──── */}
-            <div style={{
-                flexShrink: 0,
-                background: "#0c0c0d",
-                borderTop: "1px solid rgba(255,255,255,0.06)",
-                padding: "7px 18px",
-                display: "flex", alignItems: "center", gap: 0,
-            }}>
-                {/* Coords */}
-                <div style={{ display: "flex", gap: 20, flex: 1 }}>
-                    {[{ label: "LNG", val: coords.lng }, { label: "LAT", val: coords.lat }, { label: "ZOOM", val: coords.zoom }].map(c => (
-                        <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: 8.5, color: "rgba(255,255,255,0.22)", fontFamily: "var(--font-display)", letterSpacing: "0.08em" }}>{c.label}</span>
-                            <span style={{ fontSize: 10.5, color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-mono)" }}>{c.val}</span>
-                        </div>
-                    ))}
-                </div>
-                {/* Branding */}
-                <span style={{
-                    fontSize: 9, color: "rgba(255,255,255,0.15)",
-                    fontFamily: "var(--font-display)", letterSpacing: "0.08em",
-                }}>TEC KINETIC OS · EXPLORE v2</span>
-            </div>
-
+            {/* ── Re-center ── */}
+            <button onClick={recenterMap} style={{
+                position: 'absolute', right: 14, bottom: 124, zIndex: 20,
+                width: 34, height: 34, borderRadius: 8, ...GLASS,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: 'rgba(255,255,255,0.55)', transition: 'all 0.12s',
+            }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(30,30,32,0.96)'; e.currentTarget.style.color = '#fff'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(9,9,10,0.84)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
+            >
+                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>center_focus_strong</span>
+            </button>
         </div>
     );
 }
