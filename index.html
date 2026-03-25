@@ -532,6 +532,273 @@
       padding: 2px 8px;
       color: var(--on-surface-var);
     }
+
+    /* ═══════════════════════════════════════════
+       GTA GAMIFICATION LAYER
+    ═══════════════════════════════════════════ */
+
+    /* ── XP / Stat bar ── */
+    .stat-bar-track {
+      height: 5px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      position: relative;
+      transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .stat-bar-fill::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 20px;
+      background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.55));
+      border-radius: 99px;
+      animation: bar-shimmer 2s ease-in-out infinite;
+    }
+
+    @keyframes bar-shimmer {
+
+      0%,
+      100% {
+        opacity: 0.6;
+      }
+
+      50% {
+        opacity: 1;
+      }
+    }
+
+    /* ── GTA wanted / rep stars ── */
+    .rep-star {
+      font-size: 11px;
+      transition: color 0.2s, text-shadow 0.2s;
+    }
+
+    .rep-star.filled {
+      color: #e3b341;
+      text-shadow: 0 0 6px rgba(227, 179, 65, 0.7);
+    }
+
+    .rep-star.empty {
+      color: rgba(255, 255, 255, 0.15);
+    }
+
+    @keyframes star-pop {
+      0% {
+        transform: scale(1);
+      }
+
+      40% {
+        transform: scale(1.5);
+      }
+
+      100% {
+        transform: scale(1);
+      }
+    }
+
+    /* ── HUD bracket corners ── */
+    .hud-bracket {
+      position: relative;
+    }
+
+    .hud-bracket::before,
+    .hud-bracket::after {
+      content: '';
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      pointer-events: none;
+    }
+
+    .hud-bracket::before {
+      top: 0;
+      left: 0;
+      border-top: 1.5px solid var(--primary);
+      border-left: 1.5px solid var(--primary);
+      opacity: 0.5;
+    }
+
+    .hud-bracket::after {
+      bottom: 0;
+      right: 0;
+      border-bottom: 1.5px solid var(--primary);
+      border-right: 1.5px solid var(--primary);
+      opacity: 0.5;
+    }
+
+    /* ── Mission card ── */
+    .mission-card {
+      position: relative;
+    }
+
+    .mission-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      border-radius: 3px 0 0 3px;
+    }
+
+    /* ── XP floating popup ── */
+    .xp-popup {
+      position: absolute;
+      pointer-events: none;
+      font-family: var(--font-display);
+      font-weight: 900;
+      font-size: 14px;
+      color: #e3b341;
+      text-shadow: 0 0 10px rgba(227, 179, 65, 0.8);
+      animation: xp-float 1.1s ease-out forwards;
+      z-index: 100;
+      white-space: nowrap;
+      letter-spacing: 0.04em;
+    }
+
+    @keyframes xp-float {
+      0% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+
+      30% {
+        opacity: 1;
+        transform: translateY(-16px) scale(1.15);
+      }
+
+      100% {
+        opacity: 0;
+        transform: translateY(-48px) scale(0.8);
+      }
+    }
+
+    /* ── GTA mission type badge ── */
+    .mission-type {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-family: var(--font-display);
+      font-size: 8px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    /* ── Glitch text effect ── */
+    @keyframes glitch {
+
+      0%,
+      90%,
+      100% {
+        clip-path: none;
+        transform: none;
+      }
+
+      91% {
+        clip-path: inset(20% 0 60% 0);
+        transform: translateX(-3px);
+      }
+
+      93% {
+        clip-path: inset(50% 0 30% 0);
+        transform: translateX(3px);
+      }
+
+      95% {
+        clip-path: inset(70% 0 10% 0);
+        transform: translateX(-2px);
+      }
+    }
+
+    /* ── Wanted level pulse ── */
+    @keyframes wanted-pulse {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(255, 110, 132, 0);
+      }
+
+      50% {
+        box-shadow: 0 0 0 4px rgba(255, 110, 132, 0.15);
+      }
+    }
+
+    /* ── Topnav XP strip ── */
+    .topnav-xp-strip {
+      position: fixed;
+      top: 64px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      z-index: 201;
+      pointer-events: none;
+    }
+
+    /* ── Sidebar player card ── */
+    .player-card {
+      margin: 0 12px 12px;
+      padding: 14px;
+      background: rgba(204, 151, 255, 0.04);
+      border: 1px solid rgba(204, 151, 255, 0.1);
+      border-radius: 12px;
+      position: relative;
+    }
+
+    /* ── Notification badge ── */
+    .notif-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      background: var(--error);
+      border-radius: 9999px;
+      font-size: 9px;
+      font-weight: 800;
+      color: #fff;
+      font-family: var(--font-display);
+      letter-spacing: 0;
+      box-shadow: 0 0 8px rgba(255, 110, 132, 0.5);
+      animation: wanted-pulse 2s ease-in-out infinite;
+    }
+
+    /* ── GTA grid background on page-wrap ── */
+    .page-wrap {
+      background-image:
+        linear-gradient(rgba(204, 151, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(204, 151, 255, 0.015) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+
+    /* ── Credits display ── */
+    .credits-display {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: rgba(227, 179, 65, 0.08);
+      border: 1px solid rgba(227, 179, 65, 0.2);
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      color: #e3b341;
+      letter-spacing: 0.04em;
+    }
   </style>
 </head>
 

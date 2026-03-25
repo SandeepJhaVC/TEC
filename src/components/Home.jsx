@@ -5,18 +5,21 @@ import { motion } from 'framer-motion';
 const FEED = [
   {
     id: 1, user: 'cyber_junkie', badge: 'Contributor', time: '2h ago',
+    missionType: 'CONTACT MISSION', missionColor: '#53DDFC', xpReward: 150,
     body: 'Just finished building an AI-powered timetable scheduler for UPES. 99.9% uptime in beta. Anyone want to stress test it?',
     code: 'const schedule = await kernel.optimize({ campus: "UPES", algo: "genetic" })\n// → 94.2% conflict-free slots generated',
     votes: 128, replies: 24, kernel: '#X-KERNEL-402',
   },
   {
     id: 2, user: 'neon_ghost', badge: null, time: '5h ago',
+    missionType: 'HEIST', missionColor: '#FF95A0', xpReward: 250,
     body: "Who's building something for the North campus hackathon? Looking for a designer co-founder with mobile experience.",
     code: 'fn main() {\n  println!("who\'s up for a hack session at the North lab?");\n  loop { campus.code(); sleep(3600); }\n}',
     votes: 52, replies: 8, kernel: null,
   },
   {
     id: 3, user: 'delta_root', badge: 'Builder', time: '8h ago',
+    missionType: 'BOUNTY', missionColor: '#e3b341', xpReward: 75,
     body: 'New version of CampusGPT dropped. Context window now covers all UPES syllabi up to 2025. Try it at the link.',
     code: null,
     votes: 203, replies: 47, kernel: '#AI-SYS-221',
@@ -43,11 +46,19 @@ export default function Home() {
   const [votes, setVotes] = useState(FEED.reduce((acc, p) => ({ ...acc, [p.id]: p.votes }), {}));
   const [voted, setVoted] = useState({});
   const [postText, setPostText] = useState('');
+  const [xpPopups, setXpPopups] = useState({}); // { [postId]: key }
+  const [totalXp, setTotalXp] = useState(0);
 
   const handleVote = (id) => {
     if (voted[id]) return;
+    const post = FEED.find(p => p.id === id);
     setVotes(v => ({ ...v, [id]: v[id] + 1 }));
     setVoted(v => ({ ...v, [id]: true }));
+    /* Trigger XP popup */
+    const key = Date.now();
+    setXpPopups(p => ({ ...p, [id]: key }));
+    setTotalXp(x => x + (post?.xpReward ?? 50));
+    setTimeout(() => setXpPopups(p => { const n = { ...p }; delete n[id]; return n; }), 1200);
   };
 
   return (
@@ -62,11 +73,23 @@ export default function Home() {
               <h1 className="section-title" style={{ marginBottom: 6 }}>Echo <span className="accent-primary">Feed</span></h1>
               <p style={{ color: 'var(--on-surface-var)', fontSize: 13 }}>Sub-neural community pulses. Updated real-time.</p>
             </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-              <span className="tag-error" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <span className="live-dot" /> HOT
-              </span>
-              <span className="tag-secondary">TRENDING</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, marginTop: 4 }}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <span className="tag-error" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span className="live-dot" /> ACTIVE
+                </span>
+                <span className="tag-secondary">LIVE</span>
+              </div>
+              {/* Running XP tally */}
+              {totalXp > 0 && (
+                <div style={{
+                  fontFamily: 'var(--font-mono)', fontSize: 11, fontWeight: 800,
+                  color: '#e3b341', letterSpacing: '0.06em',
+                  background: 'rgba(227,179,65,0.08)',
+                  border: '1px solid rgba(227,179,65,0.2)',
+                  borderRadius: 6, padding: '3px 10px',
+                }}>+{totalXp} XP EARNED</div>
+              )}
             </div>
           </div>
 
@@ -92,18 +115,45 @@ export default function Home() {
           {/* Posts */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {FEED.map(post => (
-              <motion.article key={post.id} className="neon-card" style={{ padding: 24, position: 'relative', overflow: 'hidden' }}
+              <motion.article key={post.id} className="neon-card mission-card" style={{
+                padding: 24, position: 'relative', overflow: 'hidden',
+                borderLeft: `3px solid ${post.missionColor}40`,
+              }}
                 initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-                {post.kernel && (
-                  <span style={{ position: 'absolute', top: 16, right: 16, fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--secondary)', opacity: 0.5 }}>{post.kernel}</span>
-                )}
+                {/* Left accent stripe */}
+                <div style={{
+                  position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
+                  background: post.missionColor, opacity: voted[post.id] ? 1 : 0.35,
+                  transition: 'opacity 0.3s',
+                }} />
+                {/* Mission type */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <span className="mission-type" style={{ background: `${post.missionColor}18`, color: post.missionColor, border: `1px solid ${post.missionColor}35` }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 9 }}>radio_button_checked</span>
+                    {post.missionType}
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#e3b341', letterSpacing: '0.08em' }}>
+                      +{post.xpReward} XP
+                    </span>
+                    {post.kernel && (
+                      <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--secondary)', opacity: 0.5 }}>{post.kernel}</span>
+                    )}
+                  </div>
+                </div>
                 <div style={{ display: 'flex', gap: 16 }}>
                   {/* Vote column */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                    <button className="upvote-btn" onClick={() => handleVote(post.id)} style={voted[post.id] ? { background: 'rgba(204,151,255,0.15)', borderColor: 'rgba(204,151,255,0.4)' } : {}}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>expand_less</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0, position: 'relative' }}>
+                    {/* XP popup */}
+                    {xpPopups[post.id] && (
+                      <div key={xpPopups[post.id]} className="xp-popup" style={{ top: -8, left: '50%', transform: 'translateX(-50%)' }}>
+                        +{post.xpReward} XP
+                      </div>
+                    )}
+                    <button className="upvote-btn" onClick={() => handleVote(post.id)} style={voted[post.id] ? { background: `${post.missionColor}25`, borderColor: `${post.missionColor}60` } : {}}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 18, color: voted[post.id] ? post.missionColor : undefined }}>expand_less</span>
                     </button>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: 'var(--on-surface)' }}>{votes[post.id]}</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: voted[post.id] ? post.missionColor : 'var(--on-surface)' }}>{votes[post.id]}</span>
                     <button style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-highest)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--on-surface-var)', fontSize: 16, transition: 'color 0.14s' }}>
                       <span className="material-symbols-outlined" style={{ fontSize: 18 }}>expand_more</span>
                     </button>
@@ -147,17 +197,24 @@ export default function Home() {
         {/* ── RIGHT: SIDEBAR ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, position: 'sticky', top: 80 }}>
           {/* Bazaar Hot */}
-          <div className="neon-card" style={{ padding: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-              <span className="eyebrow" style={{ color: 'var(--on-surface-var)' }}>Bazaar Hot</span>
-              <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--on-surface-var)', cursor: 'pointer' }}>open_in_new</span>
+          <div className="neon-card hud-bracket" style={{ padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div>
+                <div style={{ fontSize: 8, fontFamily: 'var(--font-display)', color: '#e3b341', letterSpacing: '0.18em', fontWeight: 800, textTransform: 'uppercase', marginBottom: 2 }}>BAZAAR</div>
+                <span className="eyebrow" style={{ color: 'var(--on-surface-var)' }}>Hot Items</span>
+              </div>
+              <Link to="/assignments" style={{ display: 'flex', alignItems: 'center' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'var(--on-surface-var)', cursor: 'pointer' }}>open_in_new</span>
+              </Link>
             </div>
             {BAZAAR_HOT.map((item, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < BAZAAR_HOT.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-highest)', flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-surface)', fontFamily: 'var(--font-display)' }}>{item.name}</div>
-                  <div style={{ fontSize: 11, color: 'var(--primary)' }}>{item.credits}</div>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg, rgba(227,179,65,0.15), rgba(204,151,255,0.1))', border: '1px solid rgba(227,179,65,0.2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 15, color: '#e3b341' }}>sell</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface)', fontFamily: 'var(--font-display)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</div>
+                  <div style={{ fontSize: 11, color: '#e3b341', fontFamily: 'var(--font-mono)', marginTop: 1 }}>{item.credits}</div>
                 </div>
               </div>
             ))}
@@ -166,10 +223,13 @@ export default function Home() {
 
           {/* Live Logs */}
           <div className="neon-card" style={{ padding: 20 }}>
-            <span className="eyebrow" style={{ display: 'block', marginBottom: 12 }}>Live Terminal Logs</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <span className="live-dot" />
+              <span className="eyebrow">LIVE TERMINAL</span>
+            </div>
             {LIVE_LOGS.map((log, i) => (
               <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, fontFamily: 'var(--font-mono)', fontSize: 11 }}>
-                <span style={{ color: LOG_COLORS[log.type], fontWeight: 700, minWidth: 36 }}>[{log.type}]</span>
+                <span style={{ color: LOG_COLORS[log.type], fontWeight: 700, minWidth: 38 }}>[{log.type}]</span>
                 <span style={{ color: 'var(--on-surface-var)' }}>{log.msg}</span>
               </div>
             ))}

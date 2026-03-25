@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Home from './components/Home';
@@ -16,6 +16,7 @@ import Listings from './components/Listings';
 import About from './components/About';
 import Poll from './components/Poll';
 import Builds from './components/Builds';
+import SplashScreen from './components/SplashScreen';
 
 /* Routes where the page is full-viewport (no footer, no outer scroll) */
 const FULLSCREEN_ROUTES = ['/map'];
@@ -23,8 +24,11 @@ const FULLSCREEN_ROUTES = ['/map'];
 function AppShell() {
   const location = useLocation();
   const isFullscreen = FULLSCREEN_ROUTES.includes(location.pathname);
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <>
+      {showSplash && <SplashScreen onDone={() => setShowSplash(false)} />}
       <Header />
       <div className="app-content">
         <Routes>

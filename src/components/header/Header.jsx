@@ -41,6 +41,12 @@ export default function Header() {
         setMemberId(''); setSuccess(false);
     };
 
+    /* ── Fake player stats (replace with real data when auth XP is wired) ── */
+    const PLAYER_LEVEL = 7;
+    const XP_PCT = 72;
+    const CREDITS = 1240;
+    const REP_STARS = 3;
+
     const isActive = (to) => to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
 
     return (
@@ -107,6 +113,17 @@ export default function Header() {
                             </button>
                         </>
                     )}
+                    {/* Echo Credits — hidden on mobile */}
+                    <div className="credits-display topbar-join-btn" style={{ cursor: 'default' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 13 }}>toll</span>
+                        {CREDITS.toLocaleString()} EC
+                    </div>
+                    {/* Rep stars — hidden on mobile */}
+                    <div className="topbar-join-btn" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        {[1, 2, 3, 4, 5].map(i => (
+                            <span key={i} className={`rep-star ${i <= REP_STARS ? 'filled' : 'empty'}`}>★</span>
+                        ))}
+                    </div>
                     {/* Hamburger */}
                     <button onClick={() => setMobileOpen(o => !o)} style={{ display: 'none', flexDirection: 'column', gap: 4, background: 'transparent', border: 'none', cursor: 'pointer', padding: 6 }} className="hamburger-btn">
                         {[0, 1, 2].map(i => <span key={i} style={{ display: 'block', width: 20, height: 2, background: 'var(--on-surface-var)', borderRadius: 2 }} />)}
@@ -114,36 +131,99 @@ export default function Header() {
                 </div>
             </nav>
 
+            {/* ── XP strip pinned under topnav ── */}
+            <div className="topnav-xp-strip">
+                <div style={{ height: '100%', width: `${XP_PCT}%`, background: 'linear-gradient(90deg, #9c48ea, #cc97ff)', opacity: 0.7, transition: 'width 1s ease' }} />
+            </div>
+
             {/* ── SIDEBAR ── */}
             <aside style={{
-                position: 'fixed', left: 0, top: 0, paddingTop: 80, paddingBottom: 24,
+                position: 'fixed', left: 0, top: 0, paddingTop: 72, paddingBottom: 24,
                 display: 'flex', flexDirection: 'column', height: '100vh', width: 256,
                 background: 'var(--bg)', borderRight: '1px solid rgba(255,255,255,0.04)', zIndex: 100,
                 overflowY: 'auto',
             }} className="sidebar">
-                <div style={{ padding: '0 20px 20px' }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '0.15em' }}>TEC Terminal</span>
-                    <p style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--on-surface-var)', marginTop: 2 }}>V2.0.4-Stable</p>
+
+                {/* ── Player card ── */}
+                <div className="player-card hud-bracket">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                        {/* Avatar */}
+                        <div style={{
+                            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                            background: 'linear-gradient(135deg, rgba(204,151,255,0.2), rgba(83,221,252,0.1))',
+                            border: '1.5px solid rgba(204,151,255,0.35)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 15, fontWeight: 900, color: 'var(--primary)', fontFamily: 'var(--font-display)',
+                        }}>
+                            {user ? (user.avatarLetter || user.name?.[0] || 'U').toUpperCase() : '?'}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {user ? user.name : 'GHOST'}
+                                </span>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>LVL</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 1 }}>
+                                <div style={{ display: 'flex', gap: 2 }}>
+                                    {[1, 2, 3, 4, 5].map(i => (
+                                        <span key={i} className={`rep-star ${i <= REP_STARS ? 'filled' : 'empty'}`} style={{ fontSize: 10 }}>★</span>
+                                    ))}
+                                </div>
+                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 900, color: 'var(--primary)', lineHeight: 1 }}>{PLAYER_LEVEL}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {/* XP bar */}
+                    <div style={{ marginBottom: 8 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>XP</span>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'rgba(255,255,255,0.3)' }}>{XP_PCT}/100</span>
+                        </div>
+                        <div className="stat-bar-track">
+                            <div className="stat-bar-fill" style={{ width: `${XP_PCT}%`, background: 'linear-gradient(90deg, #9c48ea, #cc97ff)' }} />
+                        </div>
+                    </div>
+                    {/* Credits */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-display)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Echo Credits</span>
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 800, color: '#e3b341' }}>
+                            <span style={{ fontSize: 9, marginRight: 2, opacity: 0.7 }}>$</span>{CREDITS.toLocaleString()}
+                        </span>
+                    </div>
                 </div>
 
                 <nav style={{ flex: 1, padding: '0 8px' }}>
-                    {NAV.map(({ icon, label, to }) => {
+                    {NAV.map(({ icon, label, to }, idx) => {
                         const active = isActive(to);
                         return (
                             <Link key={to} to={to} style={{
-                                display: 'flex', alignItems: 'center', gap: 14, padding: '10px 12px',
+                                display: 'flex', alignItems: 'center', gap: 12, padding: '9px 12px',
                                 borderRadius: 10, marginBottom: 2, textDecoration: 'none',
                                 fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
-                                letterSpacing: '0.1em', textTransform: 'uppercase',
+                                letterSpacing: '0.08em', textTransform: 'uppercase',
                                 color: active ? 'var(--primary)' : 'var(--on-surface-var)',
                                 background: active ? 'rgba(204,151,255,0.08)' : 'transparent',
-                                borderRight: active ? '2px solid var(--primary)' : '2px solid transparent',
+                                borderLeft: active ? '2px solid var(--primary)' : '2px solid transparent',
                                 transition: 'all 0.14s',
                             }}
                                 onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-highest)'; e.currentTarget.style.color = 'var(--on-surface)'; } }}
                                 onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--on-surface-var)'; } }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 18, flexShrink: 0, color: active ? 'var(--primary)' : 'inherit' }}>{icon}</span>
-                                {label}
+                                {/* Mission number */}
+                                <span style={{
+                                    fontFamily: 'var(--font-mono)', fontSize: 8,
+                                    color: active ? 'var(--primary)' : 'rgba(255,255,255,0.15)',
+                                    width: 16, flexShrink: 0, textAlign: 'center',
+                                }}>{String(idx + 1).padStart(2, '0')}</span>
+                                <span className="material-symbols-outlined" style={{ fontSize: 17, flexShrink: 0, color: active ? 'var(--primary)' : 'inherit' }}>{icon}</span>
+                                <span style={{ flex: 1 }}>{label}</span>
+                                {active && (
+                                    <span style={{
+                                        width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
+                                        background: 'var(--primary)',
+                                        boxShadow: '0 0 6px var(--primary)',
+                                    }} />
+                                )}
                             </Link>
                         );
                     })}
@@ -164,29 +244,38 @@ export default function Header() {
                     )}
                 </nav>
 
-                {/* Bottom CTA */}
-                <div style={{ padding: '0 16px', marginTop: 16 }}>
+                {/* Bottom panel: status + join/profile */}
+                <div style={{ padding: '0 12px', marginTop: 8 }}>
+                    {/* Status strip */}
+                    <div style={{
+                        display: 'grid', gridTemplateColumns: '1fr 1fr',
+                        gap: 6, marginBottom: 10,
+                    }}>
+                        {[
+                            { label: 'HEALTH', pct: 88, color: '#4ade80' },
+                            { label: 'ARMOR', pct: 55, color: '#53DDFC' },
+                        ].map(s => (
+                            <div key={s.label}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
+                                    <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{s.label}</span>
+                                    <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: s.color }}>{s.pct}%</span>
+                                </div>
+                                <div className="stat-bar-track">
+                                    <div className="stat-bar-fill" style={{ width: `${s.pct}%`, background: s.color }} />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
                     {!user && (
-                        <button onClick={() => setShowModal(true)} className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '12px', fontSize: 11, letterSpacing: '0.1em' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>rocket_launch</span>
-                            Deploy Build
+                        <button onClick={() => setShowModal(true)} className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px', fontSize: 11, letterSpacing: '0.1em' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 15 }}>rocket_launch</span>
+                            JOIN TEC
                         </button>
                     )}
                     {user && (
-                        <div style={{ padding: '12px 14px', background: 'rgba(204,151,255,0.06)', border: '1px solid rgba(204,151,255,0.12)', borderRadius: 12 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(204,151,255,0.15)', border: '1px solid rgba(204,151,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: 'var(--primary)' }}>
-                                    {(user.avatarLetter || user.name?.[0] || 'U').toUpperCase()}
-                                </div>
-                                <div>
-                                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--on-surface)', fontFamily: 'var(--font-display)', lineHeight: 1 }}>{user.name}</div>
-                                    <div style={{ fontSize: 10, color: ROLE_COLORS[user.role] || 'var(--primary)', fontWeight: 700, letterSpacing: '0.06em', marginTop: 2, textTransform: 'uppercase' }}>{user.role}</div>
-                                </div>
-                            </div>
-                            <button onClick={logout} style={{ width: '100%', padding: '7px', background: 'transparent', border: '1px solid rgba(255,110,132,0.2)', borderRadius: 8, color: 'var(--error)', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', letterSpacing: '0.06em', transition: 'all 0.14s' }}>
-                                Sign out
-                            </button>
-                        </div>
+                        <button onClick={logout} style={{ width: '100%', padding: '9px', background: 'transparent', border: '1px solid rgba(255,110,132,0.2)', borderRadius: 10, color: 'var(--error)', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', letterSpacing: '0.08em', transition: 'all 0.14s' }}>
+                            DISCONNECT
+                        </button>
                     )}
                 </div>
             </aside>
