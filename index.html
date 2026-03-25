@@ -23,6 +23,8 @@
     }
 
     html {
+      height: 100%;
+      overflow: hidden;
       scroll-behavior: smooth;
     }
 
@@ -55,9 +57,16 @@
       background: var(--bg);
       color: var(--on-surface);
       font-family: var(--font-body);
-      min-height: 100vh;
+      height: 100%;
+      overflow: hidden;
+      overscroll-behavior: none;
       font-size: 14px;
       line-height: 1.5;
+    }
+
+    #root {
+      height: 100%;
+      overflow: hidden;
     }
 
     h1,
@@ -92,11 +101,15 @@
       background: var(--surface-bright);
     }
 
-    /* Layout */
+    /* Layout — single scroll container, app-shell pattern */
     .app-content {
       margin-left: var(--sidebar-w);
       padding-top: var(--topnav-h);
-      min-height: 100vh;
+      height: 100vh;
+      overflow-y: auto;
+      overflow-x: hidden;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
       background: var(--bg);
     }
 

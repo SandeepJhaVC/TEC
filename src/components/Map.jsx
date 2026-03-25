@@ -159,14 +159,26 @@ const ZONES = [
     { name: "Aravali", color: "#2a1040", accent: "#CC97FF", desc: "Dense canopy — forest boundary" },
 ];
 
+/* Ray-cast point-in-polygon — returns true if [lng, lat] is inside the ring */
+function pointInPolygon([x, y], ring) {
+    let inside = false;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const [xi, yi] = ring[i], [xj, yj] = ring[j];
+        if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+    }
+    return inside;
+}
+
 export default function Map() {
     const [cat, setCat] = useState("Colleges");
     const [activePin, setPin] = useState(null);
     const [activeZone, setActiveZone] = useState(null);
     const mapContainerRef = useRef(null);
     const mapInstance = useRef(null);
+    const zonesDataRef = useRef(null);
 
     const [coords, setCoords] = useState({ lng: '—', lat: '—', zoom: '—' });
+    const [currentDistrict, setCurrentDistrict] = useState(null);
 
     useEffect(() => {
         if (!mapContainerRef.current || !window.maplibregl) return;
@@ -206,6 +218,7 @@ export default function Map() {
 
             /* ── Zone fills & outlines ── */
             map.addSource('zones', { type: 'geojson', data: '/zones.geojson' });
+            fetch('/zones.geojson').then(r => r.json()).then(d => { zonesDataRef.current = d.features; }).catch(() => { });
 
             /* Fill layer — use color from feature property */
             map.addLayer({
@@ -301,6 +314,14 @@ export default function Map() {
                 lat: c.lat.toFixed(4),
                 zoom: map.getZoom().toFixed(1),
             });
+            /* District detection — ray-cast map center against loaded zones */
+            if (zonesDataRef.current) {
+                const pt = [c.lng, c.lat];
+                const match = zonesDataRef.current.find(
+                    f => f.geometry.type === 'Polygon' && pointInPolygon(pt, f.geometry.coordinates[0])
+                );
+                setCurrentDistrict(match ? match.properties.name : null);
+            }
         };
         map.on('move', updateCoords);
         map.on('zoom', updateCoords);
@@ -335,7 +356,7 @@ export default function Map() {
     return (
         <div style={{
             display: "flex", flexDirection: "column",
-            height: "calc(100vh - var(--topnav-h))",
+            height: "100%",
             overflow: "hidden", background: "#09090a",
         }}>
 
@@ -536,6 +557,26 @@ export default function Map() {
                         </div>
                     )}
 
+                    {/* District banner — shown when crosshair is inside a zone */}
+                    {(() => {
+                        const z = currentDistrict ? ZONES.find(zn => zn.name === currentDistrict) : null;
+                        return z ? (
+                            <div style={{
+                                padding: "9px 14px",
+                                background: `${z.accent}09`,
+                                borderTop: `1px solid ${z.accent}22`,
+                                flexShrink: 0,
+                            }}>
+                                <div style={{ fontSize: 8, color: z.accent, letterSpacing: "0.12em", fontWeight: 700, fontFamily: "var(--font-display)", marginBottom: 4 }}>CURRENT DISTRICT</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                                    <div style={{ width: 10, height: 10, borderRadius: 3, flexShrink: 0, background: z.color, border: `1.5px solid ${z.accent}70` }} />
+                                    <span style={{ fontSize: 12.5, color: "#fff", fontWeight: 700, fontFamily: "var(--font-display)" }}>{z.name}</span>
+                                </div>
+                                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.28)", marginTop: 3 }}>{z.desc}</div>
+                            </div>
+                        ) : null;
+                    })()}
+
                     {/* Sidebar footer */}
                     <div style={{
                         borderTop: "1px solid rgba(255,255,255,0.05)",
@@ -544,13 +585,20 @@ export default function Map() {
                         flexShrink: 0, gap: 0,
                     }}>
                         {[{ label: "NODES", val: "42", color: "#53DDFC" },
-                        { label: "STATUS", val: "Online", color: "#4ade80" },
-                        { label: "ZONES", val: `${ZONES.length}`, color: "#e3b341" }].map(s => (
+                        { label: "STATUS", val: "Online", color: "#4ade80" }].map(s => (
                             <div key={s.label}>
                                 <div style={{ fontSize: 8.5, color: "rgba(255,255,255,0.25)", letterSpacing: "0.07em", fontFamily: "var(--font-display)", marginBottom: 2 }}>{s.label}</div>
                                 <div style={{ fontSize: 11, fontWeight: 800, color: s.color, fontFamily: "var(--font-display)" }}>{s.val}</div>
                             </div>
                         ))}
+                        <div>
+                            <div style={{ fontSize: 8.5, color: "rgba(255,255,255,0.25)", letterSpacing: "0.07em", fontFamily: "var(--font-display)", marginBottom: 2 }}>DISTRICT</div>
+                            <div style={{
+                                fontSize: 10, fontWeight: 800, fontFamily: "var(--font-display)",
+                                color: currentDistrict ? (ZONES.find(z => z.name === currentDistrict)?.accent ?? "#e3b341") : "rgba(255,255,255,0.18)",
+                                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                            }}>{currentDistrict || "—"}</div>
+                        </div>
                     </div>
                 </div>
 
@@ -610,6 +658,25 @@ export default function Map() {
                             background: "rgba(255,255,255,0.85)",
                             boxShadow: "0 0 0 2px rgba(0,0,0,0.6), 0 0 8px rgba(255,255,255,0.35)",
                         }} />
+                        {/* District label at crosshair */}
+                        {currentDistrict && (() => {
+                            const z = ZONES.find(z => z.name === currentDistrict);
+                            return z ? (
+                                <div style={{
+                                    position: "absolute",
+                                    top: "calc(50% + 14px)", left: "50%",
+                                    transform: "translateX(-50%)",
+                                    background: "rgba(9,9,10,0.88)",
+                                    border: `1px solid ${z.accent}40`,
+                                    borderRadius: 4, padding: "2px 9px",
+                                    fontSize: 9, fontWeight: 700,
+                                    color: z.accent,
+                                    fontFamily: "var(--font-display)",
+                                    letterSpacing: "0.08em", whiteSpace: "nowrap",
+                                    boxShadow: `0 0 10px ${z.accent}18`,
+                                }}>{z.name.toUpperCase()}</div>
+                            ) : null;
+                        })()}
                     </div>
 
                     {/* Zoom controls — bottom right */}

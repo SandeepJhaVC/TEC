@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import Home from './components/Home';
 import Login from './components/Login';
@@ -17,28 +17,41 @@ import About from './components/About';
 import Poll from './components/Poll';
 import Builds from './components/Builds';
 
+/* Routes where the page is full-viewport (no footer, no outer scroll) */
+const FULLSCREEN_ROUTES = ['/map'];
+
+function AppShell() {
+  const location = useLocation();
+  const isFullscreen = FULLSCREEN_ROUTES.includes(location.pathname);
+  return (
+    <>
+      <Header />
+      <div className="app-content">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/discounts" element={<Discounts />} />
+          <Route path="/map" element={<Map />} />
+          <Route path="/assignments" element={<Assignments />} />
+          <Route path="/listings" element={<Listings />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/poll" element={<Poll />} />
+          <Route path="/member" element={<MemberPortal />} />
+          <Route path="/admin" element={<ProtectedRoute minRole="admin"><AdminPanel /></ProtectedRoute>} />
+          <Route path="/events" element={<EventsPage />} />
+          <Route path="/builds" element={<Builds />} />
+          <Route path="/login" element={<Login />} />
+        </Routes>
+        {!isFullscreen && <Footer />}
+      </div>
+    </>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <Router>
-        <Header />
-        <div className="app-content">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/discounts" element={<Discounts />} />
-            <Route path="/map" element={<Map />} />
-            <Route path="/assignments" element={<Assignments />} />
-            <Route path="/listings" element={<Listings />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/poll" element={<Poll />} />
-            <Route path="/member" element={<MemberPortal />} />
-            <Route path="/admin" element={<ProtectedRoute minRole="admin"><AdminPanel /></ProtectedRoute>} />
-            <Route path="/events" element={<EventsPage />} />
-            <Route path="/builds" element={<Builds />} />
-            <Route path="/login" element={<Login />} />
-          </Routes>
-        </div>
-        <Footer />
+        <AppShell />
       </Router>
     </AuthProvider>
   );
