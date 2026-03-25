@@ -30,8 +30,8 @@ const BAZAAR_HOT = [
 
 const LIVE_LOGS = [
   { type: 'CONN', msg: 'user.492 joined Echo-net' },
-  { type: 'TX',   msg: 'Deployment alpha-9 success' },
-  { type: 'ERR',  msg: 'Security ping: Block-C' },
+  { type: 'TX', msg: 'Deployment alpha-9 success' },
+  { type: 'ERR', msg: 'Security ping: Block-C' },
   { type: 'INFO', msg: 'Bazaar inventory update' },
 ];
 
@@ -52,7 +52,7 @@ export default function Home() {
 
   return (
     <div className="page-wrap" style={{ maxWidth: 1280 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 32, alignItems: 'start' }}>
+      <div className="two-col">
 
         {/* ── LEFT: FEED ── */}
         <div>
