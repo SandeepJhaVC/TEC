@@ -128,10 +128,10 @@ const THUMB = {
 
 const LOCATIONS = {
     Colleges: [
-        { name: "Main Campus Alpha", sub: "Sector-4, Tech Corridor", dist: "0.8km", live: false, badge: "EST 2024", rating: 4.9 },
-        { name: "UPES Pondha Campus", sub: "City Campus, Pondha", dist: "5.2km", live: false, badge: null, rating: 4.7 },
-        { name: "DIT University", sub: "Mussoorie Diversion Road", dist: "7.1km", live: false, badge: null, rating: 4.5 },
-        { name: "Graphic Era University", sub: "Clement Town", dist: "12km", live: false, badge: null, rating: 4.3 },
+        { name: "Main Campus Alpha", lng: 77.9720, lat: 30.4135, sub: "Sector-4, Tech Corridor", dist: "0.8km", live: false, badge: "EST 2024", rating: 4.9 },
+        { name: "UPES Pondha Campus", lng: 77.9642, lat: 30.3905, sub: "City Campus, Pondha", dist: "5.2km", live: false, badge: null, rating: 4.7 },
+        { name: "DIT University", lng: 77.9560, lat: 30.3860, sub: "Mussoorie Diversion Road", dist: "7.1km", live: false, badge: null, rating: 4.5 },
+        { name: "Graphic Era University", lng: 77.9480, lat: 30.3820, sub: "Clement Town", dist: "12km", live: false, badge: null, rating: 4.3 },
     ],
     PGs: [
         { name: "Neon PG Residence", sub: "Sky View Terraces", dist: "2.4km", live: false, badge: "VACANT: 04", rating: 4.5 },
@@ -153,10 +153,10 @@ const LOCATIONS = {
 };
 
 const ZONES = [
-    { name: "32 Bigha", color: "#1a3020", accent: "#4ade80", desc: "Agricultural zone — upper ridge" },
-    { name: "Maggie Point", color: "#1a2030", accent: "#53DDFC", desc: "Scenic overlook — east valley" },
-    { name: "District 3", color: "#2a1a10", accent: "#FF95A0", desc: "Residential sector — western slopes" },
-    { name: "Aravali", color: "#201020", accent: "#CC97FF", desc: "Dense canopy — forest boundary" },
+    { name: "32 Bigha", color: "#1e4a28", accent: "#4ade80", desc: "Agricultural zone — upper ridge" },
+    { name: "Maggie Point", color: "#142840", accent: "#53DDFC", desc: "Scenic overlook — east valley" },
+    { name: "District 3", color: "#3d200a", accent: "#FF95A0", desc: "Residential sector — western slopes" },
+    { name: "Aravali", color: "#2a1040", accent: "#CC97FF", desc: "Dense canopy — forest boundary" },
 ];
 
 export default function Map() {
@@ -216,8 +216,8 @@ export default function Map() {
                     'fill-color': ['get', 'color'],
                     'fill-opacity': [
                         'case',
-                        ['boolean', ['feature-state', 'hover'], false], 0.55,
-                        0.35
+                        ['boolean', ['feature-state', 'hover'], false], 0.65,
+                        0.45
                     ],
                 },
             });
@@ -229,13 +229,13 @@ export default function Map() {
                 source: 'zones',
                 layout: { 'line-cap': 'round', 'line-join': 'round' },
                 paint: {
-                    'line-color': ['get', 'color'],
+                    'line-color': ['get', 'accent'],
                     'line-width': [
                         'case',
-                        ['boolean', ['feature-state', 'hover'], false], 2.5,
-                        1.5
+                        ['boolean', ['feature-state', 'hover'], false], 3,
+                        1.8
                     ],
-                    'line-opacity': 0.9,
+                    'line-opacity': 0.85,
                 },
             });
 
@@ -257,6 +257,41 @@ export default function Map() {
                 }
                 hoveredZoneId = null;
                 map.getCanvas().style.cursor = '';
+            });
+
+            /* ── College markers ── */
+            const collegeFeatures = LOCATIONS.Colleges
+                .filter(c => c.lng && c.lat)
+                .map(c => ({
+                    type: 'Feature',
+                    properties: { name: c.name },
+                    geometry: { type: 'Point', coordinates: [c.lng, c.lat] }
+                }));
+            map.addSource('colleges', {
+                type: 'geojson',
+                data: { type: 'FeatureCollection', features: collegeFeatures }
+            });
+            /* Outer ring */
+            map.addLayer({
+                id: 'colleges-ring', type: 'circle', source: 'colleges',
+                paint: {
+                    'circle-radius': 11,
+                    'circle-color': 'transparent',
+                    'circle-stroke-width': 2,
+                    'circle-stroke-color': '#53DDFC',
+                    'circle-stroke-opacity': 0.85,
+                }
+            });
+            /* Inner dot */
+            map.addLayer({
+                id: 'colleges-dot', type: 'circle', source: 'colleges',
+                paint: {
+                    'circle-radius': 4.5,
+                    'circle-color': '#53DDFC',
+                    'circle-stroke-width': 1.5,
+                    'circle-stroke-color': '#000',
+                    'circle-stroke-opacity': 0.7,
+                }
             });
         });
         const updateCoords = () => {
@@ -434,7 +469,13 @@ export default function Map() {
                     {!isZoneView && (
                         <div style={{ flex: 1, overflowY: "auto", padding: "0 10px 10px", display: "flex", flexDirection: "column", gap: 4 }}>
                             {locations.map((loc, i) => (
-                                <div key={i} onClick={() => setPin(loc.name === activePin ? null : loc.name)} style={{
+                                <div key={i} onClick={() => {
+                                    const next = loc.name === activePin ? null : loc.name;
+                                    setPin(next);
+                                    if (next && loc.lng && loc.lat && mapInstance.current) {
+                                        mapInstance.current.flyTo({ center: [loc.lng, loc.lat], zoom: 15, duration: 700 });
+                                    }
+                                }} style={{
                                     borderRadius: 10, padding: "10px 12px", cursor: "pointer",
                                     transition: "background 0.12s, border-color 0.12s",
                                     background: activePin === loc.name ? `${catMeta.color}0e` : "rgba(255,255,255,0.02)",
