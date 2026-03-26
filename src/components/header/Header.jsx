@@ -85,26 +85,57 @@ export default function Header() {
                 .tec-nav-link.tec-active::after { transform: scaleX(1); box-shadow: 0 0 8px rgba(204,151,255,0.7); }
                 .tec-nav-link .tec-nav-icon { font-size: 15px; }
 
-                /* ── Mobile nav link ── */
+                /* ── Mobile nav link — GTA style ── */
                 .tec-mob-link {
-                    display: flex; align-items: center; gap: 16px;
-                    padding: 13px 16px; border-radius: 0; margin-bottom: 0;
+                    display: flex; align-items: center; gap: 14px;
+                    padding: 0 18px; height: 56px; border-radius: 0; margin-bottom: 0;
                     text-decoration: none; position: relative; overflow: hidden;
-                    font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.12em;
-                    color: rgba(255,255,255,0.35); transition: all 0.14s;
+                    font-family: 'Bebas Neue', sans-serif; font-size: 20px; letter-spacing: 0.14em;
+                    color: rgba(255,255,255,0.32); transition: all 0.14s;
                     border-left: 3px solid transparent;
                 }
                 .tec-mob-link::before {
                     content: ''; position: absolute; left: 0; top: 0; bottom: 0;
-                    width: 0; background: linear-gradient(90deg, rgba(204,151,255,0.08), transparent);
-                    transition: width 0.2s;
+                    width: 0; background: linear-gradient(90deg, rgba(204,151,255,0.11) 0%, rgba(204,151,255,0.04) 60%, transparent 100%);
+                    transition: width 0.22s;
                 }
-                .tec-mob-link:hover { color: rgba(255,255,255,0.85); border-left-color: rgba(204,151,255,0.3); }
+                .tec-mob-link::after {
+                    content: ''; position: absolute; left: 0; bottom: 0; right: 0; height: 1px;
+                    background: rgba(255,255,255,0.04);
+                }
+                .tec-mob-link:hover { color: rgba(255,255,255,0.85); border-left-color: rgba(204,151,255,0.35); }
                 .tec-mob-link:hover::before { width: 100%; }
                 .tec-mob-link.tec-active {
                     color: #CC97FF; border-left-color: #CC97FF;
-                    background: linear-gradient(90deg, rgba(204,151,255,0.1), transparent);
-                    text-shadow: 0 0 20px rgba(204,151,255,0.5);
+                    background: linear-gradient(90deg, rgba(204,151,255,0.13) 0%, rgba(204,151,255,0.03) 70%, transparent 100%);
+                    text-shadow: 0 0 22px rgba(204,151,255,0.55);
+                    font-size: 21px;
+                }
+                .tec-mob-row-num {
+                    font-family: 'Barlow Condensed', monospace; font-size: 11px; font-weight: 900;
+                    letter-spacing: 0.04em; color: rgba(255,255,255,0.18); min-width: 22px;
+                    font-variant-numeric: tabular-nums;
+                }
+                .tec-mob-link.tec-active .tec-mob-row-num { color: rgba(204,151,255,0.5); }
+                .tec-mob-active-dot {
+                    width: 6px; height: 6px; border-radius: 50%; background: #CC97FF; flex-shrink: 0;
+                    box-shadow: 0 0 8px rgba(204,151,255,0.9), 0 0 16px rgba(204,151,255,0.4);
+                    animation: pulseDot 2s ease-in-out infinite;
+                }
+                @keyframes pulseDot {
+                    0%, 100% { opacity: 1; transform: scale(1); }
+                    50% { opacity: 0.5; transform: scale(0.7); }
+                }
+                .tec-wanted-stars {
+                    font-size: 11px; letter-spacing: 0.05em; margin-top: 3px;
+                    color: #e3b341;
+                    text-shadow: 0 0 8px rgba(227,179,65,0.6);
+                }
+                /* ── Mobile drawer scanlines (enhanced) ── */
+                .tec-mob-drawer-scans {
+                    position: absolute; inset: 0; pointer-events: none; z-index: 0;
+                    background: repeating-linear-gradient(0deg, transparent 0px, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
+                    mix-blend-mode: overlay;
                 }
 
                 /* ── Right side user ── */
@@ -157,8 +188,8 @@ export default function Header() {
                 .tec-mob-drawer::after {
                     content: ''; pointer-events: none;
                     position: absolute; inset: 0;
-                    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
-                    z-index: 1;
+                    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.10) 3px, rgba(0,0,0,0.10) 4px);
+                    z-index: 1; mix-blend-mode: overlay;
                 }
                 /* ── Animated hamburger ── */
                 .tec-hamburger-bar { display: block; height: 2px; background: rgba(255,255,255,0.65); border-radius: 2px; transition: all 0.22s; }
@@ -304,22 +335,29 @@ export default function Header() {
                                 letterSpacing: '0.3em', color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase',
                                 marginTop: -2,
                             }}>The Echo Community</div>
-                            {user && (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
-                                    <div style={{
-                                        width: 36, height: 36, borderRadius: 9,
-                                        background: 'rgba(204,151,255,0.1)',
-                                        border: '1.5px solid rgba(204,151,255,0.3)',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: '#CC97FF',
-                                        boxShadow: '0 0 12px rgba(204,151,255,0.2)',
-                                    }}>{(user.avatarLetter || user.name?.[0] || 'U').toUpperCase()}</div>
-                                    <div>
-                                        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '0.03em' }}>{user.name}</div>
-                                        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: ROLE_COLORS[user.role] || '#CC97FF' }}>{user.role}</div>
+                            {user && (() => {
+                                const WANTED = { student: 1, builder: 2, moderator: 3, admin: 5 };
+                                const stars = WANTED[user.role] || 1;
+                                return (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16 }}>
+                                        <div style={{
+                                            width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                                            background: 'rgba(204,151,255,0.1)',
+                                            border: '1.5px solid rgba(204,151,255,0.3)',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontFamily: "'Bebas Neue', sans-serif", fontSize: 20, color: '#CC97FF',
+                                            boxShadow: '0 0 14px rgba(204,151,255,0.25)',
+                                        }}>{(user.avatarLetter || user.name?.[0] || 'U').toUpperCase()}</div>
+                                        <div>
+                                            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '0.03em', lineHeight: 1.1 }}>{user.name}</div>
+                                            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: ROLE_COLORS[user.role] || '#CC97FF', marginBottom: 2 }}>{user.role}</div>
+                                            <div className="tec-wanted-stars">
+                                                {'★'.repeat(stars)}{'☆'.repeat(5 - stars)}
+                                            </div>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
 
                         {/* Nav section label */}
@@ -330,19 +368,23 @@ export default function Header() {
                             {NAV.map(({ icon, label, to }, idx) => (
                                 <Link key={to} to={to} onClick={() => setMobileOpen(false)}
                                     className={`tec-mob-link${isActive(to) ? ' tec-active' : ''}`}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 20, opacity: 0.7 }}>{icon}</span>
+                                    <span className="tec-mob-row-num">{String(idx + 1).padStart(2, '0')}</span>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 19, opacity: isActive(to) ? 0.9 : 0.5 }}>{icon}</span>
                                     <span style={{ flex: 1 }}>{label}</span>
-                                    {isActive(to) && (
-                                        <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#CC97FF', opacity: 0.6 }}>chevron_right</span>
-                                    )}
+                                    {isActive(to) && <span className="tec-mob-active-dot" />}
                                 </Link>
                             ))}
                             {user?.role === 'admin' && (
                                 <Link to="/admin" onClick={() => setMobileOpen(false)}
                                     className={`tec-mob-link${isActive('/admin') ? ' tec-active' : ''}`}
-                                    style={{ color: isActive('/admin') ? '#FF6E84' : undefined, borderLeftColor: isActive('/admin') ? '#FF6E84' : undefined }}>
-                                    <span className="material-symbols-outlined" style={{ fontSize: 20, opacity: 0.7 }}>admin_panel_settings</span>
+                                    style={{
+                                        color: isActive('/admin') ? '#FF6E84' : undefined,
+                                        borderLeftColor: isActive('/admin') ? '#FF6E84' : undefined,
+                                    }}>
+                                    <span className="tec-mob-row-num" style={{ color: isActive('/admin') ? 'rgba(255,110,132,0.5)' : undefined }}>{String(NAV.length + 1).padStart(2, '0')}</span>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 19, opacity: isActive('/admin') ? 0.9 : 0.5, color: '#FF6E84' }}>admin_panel_settings</span>
                                     <span style={{ flex: 1 }}>Admin</span>
+                                    {isActive('/admin') && <span className="tec-mob-active-dot" style={{ background: '#FF6E84', boxShadow: '0 0 8px rgba(255,110,132,0.9)' }} />}
                                 </Link>
                             )}
                         </div>

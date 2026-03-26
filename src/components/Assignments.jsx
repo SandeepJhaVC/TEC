@@ -56,10 +56,13 @@ export default function Assignments() {
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ title: '', price: '', cat: 'Hardware', condition: 'New', desc: '', contact: '' });
 
+    const isAdmin = user?.role === 'admin';
+
     useEffect(() => {
-        supabase.from('marketplace_listings').select('*').order('created_at', { ascending: false })
-            .then(({ data }) => { setListings(data || []); setLoadingListings(false); });
-    }, []);
+        let q = supabase.from('marketplace_listings').select('*').order('created_at', { ascending: false });
+        if (!isAdmin) q = q.eq('approved', true);
+        q.then(({ data }) => { setListings(data || []); setLoadingListings(false); });
+    }, [isAdmin]);
 
     const handlePostListing = async () => {
         if (!form.title.trim() || !user) return;
@@ -73,9 +76,10 @@ export default function Assignments() {
             description: form.desc,
             contact: form.contact,
             seller_name: user.name,
+            approved: null,
         }).select().single();
         if (!error && data) {
-            setListings(prev => [data, ...prev]);
+            if (isAdmin) setListings(prev => [data, ...prev]);
             setShowForm(false);
             setForm({ title: '', price: '', cat: 'Hardware', condition: 'New', desc: '', contact: '' });
         }
@@ -150,6 +154,11 @@ export default function Assignments() {
                                             <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, letterSpacing: '-0.02em' }}>{item.title}</h3>
                                             <span className="tag-ghost" style={{ fontSize: 10 }}>{item.cat}</span>
                                             {item.condition && <span className="tag-secondary" style={{ fontSize: 9 }}>{item.condition}</span>}
+                                            {isAdmin && (() => {
+                                                const sc = item.approved === true ? '#4ade80' : item.approved === false ? '#FF6E84' : '#e3b341';
+                                                const sl = item.approved === true ? 'APPROVED' : item.approved === false ? 'REJECTED' : 'PENDING';
+                                                return <span style={{ fontSize: 8, padding: '2px 8px', borderRadius: 9999, background: `${sc}18`, color: sc, fontFamily: 'var(--font-mono)', fontWeight: 700 }}>{sl}</span>;
+                                            })()}
                                         </div>
                                         <p style={{ color: 'var(--on-surface-var)', fontSize: 13, lineHeight: 1.5, marginBottom: 12 }}>{item.description}</p>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -205,7 +214,7 @@ export default function Assignments() {
                 <div className="modal-overlay" onClick={() => setShowForm(false)}>
                     <div className="modal-box" onClick={e => e.stopPropagation()}>
                         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 6 }}>List on <span className="accent-tertiary">Bazaar</span></h2>
-                        <p style={{ color: 'var(--on-surface-var)', fontSize: 13, marginBottom: 24 }}>Post a new listing to the campus marketplace.</p>
+                        <p style={{ color: 'var(--on-surface-var)', fontSize: 13, marginBottom: 24 }}>Your listing will be reviewed by an admin before going live.</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
                             <input className="neon-input" placeholder="Item title" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} />
                             <input className="neon-input" placeholder="Price (e.g. ₹1,500 or Free)" value={form.price} onChange={e => setForm({ ...form, price: e.target.value })} />

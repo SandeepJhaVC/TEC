@@ -33,6 +33,21 @@ export default function Home() {
   const [submittingPost, setSubmittingPost] = useState(false);
   const [xpPopups, setXpPopups] = useState({});
   const [totalXp, setTotalXp] = useState(0);
+  const [promoCards, setPromoCards] = useState([]);
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from('deals').select('name,cat,discount,desc,loc').limit(4),
+      supabase.from('admin_listings').select('name,tab,price,loc').limit(3),
+      supabase.from('pulse_issues').select('title,votes').order('votes', { ascending: false }).limit(1),
+    ]).then(([deals, listings, issues]) => {
+      const cards = [];
+      (deals.data || []).forEach(d => cards.push({ type: 'deal', data: d }));
+      (listings.data || []).forEach(l => cards.push({ type: 'listing', data: l }));
+      if (issues.data?.[0]) cards.push({ type: 'issue', data: issues.data[0] });
+      setPromoCards(cards);
+    });
+  }, []);
 
   useEffect(() => {
     supabase.from('feed_posts').select('*').order('created_at', { ascending: false })
@@ -143,82 +158,138 @@ export default function Home() {
                 No posts yet. Be the first to relay a pulse.
               </div>
             )}
-            {posts.map(post => (
-              <motion.article key={post.id} className="neon-card mission-card" style={{
-                padding: 24, position: 'relative', overflow: 'hidden',
-                borderLeft: `3px solid ${post.missionColor}40`,
-              }}
-                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
-                {/* Left accent stripe */}
-                <div style={{
-                  position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
-                  background: post.missionColor, opacity: voted[post.id] ? 1 : 0.35,
-                  transition: 'opacity 0.3s',
-                }} />
-                {/* Mission type */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <span className="mission-type" style={{ background: `${post.missionColor}18`, color: post.missionColor, border: `1px solid ${post.missionColor}35` }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 9 }}>radio_button_checked</span>
-                    {post.missionType}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#e3b341', letterSpacing: '0.08em' }}>
-                      +{post.xpReward} XP
+            {posts.map((post, idx) => (
+              <React.Fragment key={post.id}>
+                <motion.article className="neon-card mission-card" style={{
+                  padding: 24, position: 'relative', overflow: 'hidden',
+                  borderLeft: `3px solid ${post.missionColor}40`,
+                }}
+                  initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
+                  {/* Left accent stripe */}
+                  <div style={{
+                    position: 'absolute', left: 0, top: 0, bottom: 0, width: 3,
+                    background: post.missionColor, opacity: voted[post.id] ? 1 : 0.35,
+                    transition: 'opacity 0.3s',
+                  }} />
+                  {/* Mission type */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <span className="mission-type" style={{ background: `${post.missionColor}18`, color: post.missionColor, border: `1px solid ${post.missionColor}35` }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 9 }}>radio_button_checked</span>
+                      {post.missionType}
                     </span>
-                    {post.kernel && (
-                      <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--secondary)', opacity: 0.5 }}>{post.kernel}</span>
-                    )}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 16 }}>
-                  {/* Vote column */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0, position: 'relative' }}>
-                    {/* XP popup */}
-                    {xpPopups[post.id] && (
-                      <div key={xpPopups[post.id]} className="xp-popup" style={{ top: -8, left: '50%', transform: 'translateX(-50%)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#e3b341', letterSpacing: '0.08em' }}>
                         +{post.xpReward} XP
-                      </div>
-                    )}
-                    <button className="upvote-btn" onClick={() => handleVote(post.id)} style={voted[post.id] ? { background: `${post.missionColor}25`, borderColor: `${post.missionColor}60` } : {}}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 18, color: voted[post.id] ? post.missionColor : undefined }}>expand_less</span>
-                    </button>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: voted[post.id] ? post.missionColor : 'var(--on-surface)' }}>{votes[post.id]}</span>
-                    <button style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-highest)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--on-surface-var)', fontSize: 16, transition: 'color 0.14s' }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 18 }}>expand_more</span>
-                    </button>
-                  </div>
-                  {/* Content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <span style={{ fontWeight: 700, color: 'var(--on-surface)', fontFamily: 'var(--font-display)' }}>{post.user}</span>
-                      <span style={{ fontSize: 12, color: 'var(--on-surface-var)' }}>{post.time}</span>
-                      {post.badge && (
-                        <span className="tag-primary" style={{ fontSize: 8, letterSpacing: '0.1em' }}>{post.badge.toUpperCase()}</span>
+                      </span>
+                      {post.kernel && (
+                        <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--secondary)', opacity: 0.5 }}>{post.kernel}</span>
                       )}
                     </div>
-                    <p style={{ color: 'var(--on-surface-var)', lineHeight: 1.6, marginBottom: 14 }}>{post.body}</p>
-                    {post.code && (
-                      <div style={{ background: 'var(--surface-highest)', border: '1px solid rgba(255,255,255,0.07)', borderLeft: '3px solid var(--primary)', borderRadius: 10, padding: '12px 16px', marginBottom: 14 }}>
-                        <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--secondary)', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{post.code}</pre>
-                      </div>
-                    )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                      <button style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--on-surface-var)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, transition: 'color 0.14s', fontFamily: 'var(--font-body)' }}
-                        onMouseEnter={e => e.currentTarget.style.color = 'var(--secondary)'}
-                        onMouseLeave={e => e.currentTarget.style.color = 'var(--on-surface-var)'}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>chat_bubble</span>
-                        {post.replies} Responses
+                  </div>
+                  <div style={{ display: 'flex', gap: 16 }}>
+                    {/* Vote column */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0, position: 'relative' }}>
+                      {/* XP popup */}
+                      {xpPopups[post.id] && (
+                        <div key={xpPopups[post.id]} className="xp-popup" style={{ top: -8, left: '50%', transform: 'translateX(-50%)' }}>
+                          +{post.xpReward} XP
+                        </div>
+                      )}
+                      <button className="upvote-btn" onClick={() => handleVote(post.id)} style={voted[post.id] ? { background: `${post.missionColor}25`, borderColor: `${post.missionColor}60` } : {}}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: voted[post.id] ? post.missionColor : undefined }}>expand_less</span>
                       </button>
-                      <button style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--on-surface-var)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, transition: 'color 0.14s', fontFamily: 'var(--font-body)' }}
-                        onMouseEnter={e => e.currentTarget.style.color = 'var(--primary)'}
-                        onMouseLeave={e => e.currentTarget.style.color = 'var(--on-surface-var)'}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>share</span>
-                        Relay
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: voted[post.id] ? post.missionColor : 'var(--on-surface)' }}>{votes[post.id]}</span>
+                      <button style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-highest)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--on-surface-var)', fontSize: 16, transition: 'color 0.14s' }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>expand_more</span>
                       </button>
                     </div>
+                    {/* Content */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                        <span style={{ fontWeight: 700, color: 'var(--on-surface)', fontFamily: 'var(--font-display)' }}>{post.user}</span>
+                        <span style={{ fontSize: 12, color: 'var(--on-surface-var)' }}>{post.time}</span>
+                        {post.badge && (
+                          <span className="tag-primary" style={{ fontSize: 8, letterSpacing: '0.1em' }}>{post.badge.toUpperCase()}</span>
+                        )}
+                      </div>
+                      <p style={{ color: 'var(--on-surface-var)', lineHeight: 1.6, marginBottom: 14 }}>{post.body}</p>
+                      {post.code && (
+                        <div style={{ background: 'var(--surface-highest)', border: '1px solid rgba(255,255,255,0.07)', borderLeft: '3px solid var(--primary)', borderRadius: 10, padding: '12px 16px', marginBottom: 14 }}>
+                          <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--secondary)', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{post.code}</pre>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                        <button style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--on-surface-var)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, transition: 'color 0.14s', fontFamily: 'var(--font-body)' }}
+                          onMouseEnter={e => e.currentTarget.style.color = 'var(--secondary)'}
+                          onMouseLeave={e => e.currentTarget.style.color = 'var(--on-surface-var)'}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>chat_bubble</span>
+                          {post.replies} Responses
+                        </button>
+                        <button style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--on-surface-var)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, transition: 'color 0.14s', fontFamily: 'var(--font-body)' }}
+                          onMouseEnter={e => e.currentTarget.style.color = 'var(--primary)'}
+                          onMouseLeave={e => e.currentTarget.style.color = 'var(--on-surface-var)'}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>share</span>
+                          Relay
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </motion.article>
+                </motion.article>
+
+                {/* Inject promo card every 3 posts */}
+                {(idx + 1) % 3 === 0 && promoCards.length > 0 && (() => {
+                  const card = promoCards[Math.floor((idx + 1) / 3 - 1) % promoCards.length];
+                  if (card.type === 'deal') return (
+                    <Link to="/discounts" key={`promo-${idx}`} style={{ textDecoration: 'none' }}>
+                      <div className="neon-card" style={{ padding: '14px 18px', borderLeft: '3px solid var(--secondary)', display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(83,221,252,0.03)', cursor: 'pointer' }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(83,221,252,0.1)', border: '1px solid rgba(83,221,252,0.2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--secondary)' }}>sell</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <span style={{ fontSize: 8, fontFamily: 'var(--font-display)', letterSpacing: '0.18em', fontWeight: 800, color: 'rgba(83,221,252,0.5)' }}>DEAL</span>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--on-surface)' }}>{card.data.name}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--on-surface-var)' }}>{card.data.desc?.slice(0, 60)}{card.data.desc?.length > 60 ? '…' : ''}</div>
+                        </div>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20, color: 'var(--secondary)', flexShrink: 0 }}>{card.data.discount}</span>
+                      </div>
+                    </Link>
+                  );
+                  if (card.type === 'listing') return (
+                    <Link to="/listings" key={`promo-${idx}`} style={{ textDecoration: 'none' }}>
+                      <div className="neon-card" style={{ padding: '14px 18px', borderLeft: '3px solid var(--primary)', display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(204,151,255,0.03)', cursor: 'pointer' }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(204,151,255,0.1)', border: '1px solid rgba(204,151,255,0.2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--primary)' }}>location_city</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <span style={{ fontSize: 8, fontFamily: 'var(--font-display)', letterSpacing: '0.18em', fontWeight: 800, color: 'rgba(204,151,255,0.5)' }}>{card.data.tab?.toUpperCase()}</span>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--on-surface)' }}>{card.data.name}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--on-surface-var)' }}>{card.data.loc}</div>
+                        </div>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 16, color: 'var(--tertiary)', flexShrink: 0 }}>{card.data.price}</span>
+                      </div>
+                    </Link>
+                  );
+                  if (card.type === 'issue') return (
+                    <Link to="/poll" key={`promo-${idx}`} style={{ textDecoration: 'none' }}>
+                      <div className="neon-card" style={{ padding: '14px 18px', borderLeft: '3px solid #e3b341', display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(227,179,65,0.03)', cursor: 'pointer' }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(227,179,65,0.1)', border: '1px solid rgba(227,179,65,0.2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#e3b341' }}>how_to_vote</span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 8, fontFamily: 'var(--font-display)', letterSpacing: '0.18em', fontWeight: 800, color: 'rgba(227,179,65,0.5)', marginBottom: 2 }}>TOP PULSE ISSUE</div>
+                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--on-surface)' }}>{card.data.title}</div>
+                        </div>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 16, color: '#e3b341', flexShrink: 0 }}>{card.data.votes} votes</span>
+                      </div>
+                    </Link>
+                  );
+                  return null;
+                })()}
+              </React.Fragment>
             ))}
           </div>
         </div>

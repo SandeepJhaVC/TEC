@@ -1,5 +1,6 @@
-﻿import React, { useState } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { supabase } from "../supabaseClient";
 
 const DEALS = [
   { id: 1, name: "Chai Sutta Bar", cat: "Food", discount: "20% OFF", desc: "Show your college ID for 20% off on all beverages. Valid all week.", validity: "Ongoing", code: "STUDENT20", loc: "Rajpur Road, Dehradun", rating: 4.5 },
@@ -21,7 +22,14 @@ const CAT_COLOR = { Food: "var(--secondary)", Transport: "var(--primary)", Shopp
 export default function Discounts() {
   const [active, setActive] = useState("All");
   const [revealed, setRevealed] = useState({});
-  const filtered = active === "All" ? DEALS : DEALS.filter(d => d.cat === active);
+  const [dealsData, setDealsData] = useState(DEALS);
+
+  useEffect(() => {
+    supabase.from('deals').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => { if (data && data.length > 0) setDealsData(data); });
+  }, []);
+
+  const filtered = active === "All" ? dealsData : dealsData.filter(d => d.cat === active);
   return (
     <div className="page-wrap" style={{ maxWidth: 1100 }}>
       <div className="eyebrow" style={{ marginBottom: 8 }}>Student Perks</div>
@@ -46,7 +54,7 @@ export default function Discounts() {
             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
               <div>
-                <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 10, color: CAT_COLOR[d.cat] || "var(--primary)", letterSpacing: "0.07em" }}>{d.cat.toUpperCase()}</span>
+                <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 10, color: CAT_COLOR[d.cat] || "var(--primary)", letterSpacing: "0.07em" }}>{(d.cat || '').toUpperCase()}</span>
                 <h3 style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 16, marginTop: 2, letterSpacing: "-0.02em" }}>{d.name}</h3>
               </div>
               <span style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 18, color: "var(--secondary)", whiteSpace: "nowrap" }}>{d.discount}</span>

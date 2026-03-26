@@ -1,5 +1,6 @@
 ﻿import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -44,6 +45,7 @@ const STATUS_STYLE = {
 
 export default function Poll() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [problems, setProblems] = useState([]);
     const [polls, setPolls] = useState(ACTIVE_POLLS);
     const [activeArea, setActiveArea] = useState("All");
@@ -124,7 +126,7 @@ export default function Poll() {
                             <option value="votes">Most Voted</option>
                             <option value="new">Newest</option>
                         </select>
-                        <button onClick={() => setShowForm(true)} className="btn-primary" style={{ fontSize: 11, padding: "7px 16px" }}>
+                        <button onClick={() => user ? setShowForm(true) : navigate('/login')} className="btn-primary" style={{ fontSize: 11, padding: "7px 16px" }}>
                             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>add</span>
                             Report Issue
                         </button>

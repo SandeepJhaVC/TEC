@@ -1,5 +1,6 @@
-﻿import React, { useState } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { supabase } from "../supabaseClient";
 
 const TABS = ["PG / Hostels", "Restaurants", "Rentals", "Hangout Spots", "Activities"];
 const TAB_ICONS = { "PG / Hostels": "home", "Restaurants": "restaurant", "Rentals": "two_wheeler", "Hangout Spots": "celebration", "Activities": "directions_run" };
@@ -59,11 +60,26 @@ function Stars({ rating }) {
 export default function Listings() {
   const [tab, setTab] = useState("PG / Hostels");
   const [search, setSearch] = useState("");
-  const items = DATA[tab].filter(item =>
+  const [listingsData, setListingsData] = useState(DATA);
+
+  useEffect(() => {
+    supabase.from('admin_listings').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const grouped = {};
+          TABS.forEach(t => grouped[t] = []);
+          data.forEach(item => { if (grouped[item.tab]) grouped[item.tab].push(item); });
+          setListingsData(grouped);
+        }
+      });
+  }, []);
+
+  const items = (listingsData[tab] || []).filter(item =>
     !search ||
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    item.loc.toLowerCase().includes(search.toLowerCase()) ||
-    item.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
+    (item.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (item.loc || '').toLowerCase().includes(search.toLowerCase()) ||
+    (Array.isArray(item.tags) ? item.tags : (item.tags || '').split(','))
+      .some(t => (t || '').toLowerCase().includes(search.toLowerCase()))
   );
   return (
     <div className="page-wrap" style={{ maxWidth: 1140 }}>
@@ -109,7 +125,8 @@ export default function Listings() {
           </div>
           <p style={{ fontSize: 13, color: "var(--on-surface-var)", lineHeight: 1.5, marginBottom: 12 }}>{item.desc}</p>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 14 }}>
-            {item.tags.map(t => <span key={t} className="tag-ghost" style={{ fontSize: 10 }}>{t}</span>)}
+            {(Array.isArray(item.tags) ? item.tags : (item.tags || '').split(',').map(t => t.trim()).filter(Boolean))
+              .map(t => <span key={t} className="tag-ghost" style={{ fontSize: 10 }}>{t}</span>)}
           </div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontSize: 11, color: "var(--on-surface-var)", fontFamily: "var(--font-mono)" }}>{item.reviews || 0} reviews</span>
