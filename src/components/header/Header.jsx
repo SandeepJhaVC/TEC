@@ -87,14 +87,25 @@ export default function Header() {
 
                 /* ── Mobile nav link ── */
                 .tec-mob-link {
-                    display: flex; align-items: center; gap: 14px;
-                    padding: 11px 14px; border-radius: 10px; margin-bottom: 2px;
-                    text-decoration: none;
-                    font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.1em;
-                    color: rgba(255,255,255,0.4); transition: all 0.14s;
+                    display: flex; align-items: center; gap: 16px;
+                    padding: 13px 16px; border-radius: 0; margin-bottom: 0;
+                    text-decoration: none; position: relative; overflow: hidden;
+                    font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 0.12em;
+                    color: rgba(255,255,255,0.35); transition: all 0.14s;
+                    border-left: 3px solid transparent;
                 }
-                .tec-mob-link:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.04); }
-                .tec-mob-link.tec-active { color: #CC97FF; background: rgba(204,151,255,0.08); }
+                .tec-mob-link::before {
+                    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+                    width: 0; background: linear-gradient(90deg, rgba(204,151,255,0.08), transparent);
+                    transition: width 0.2s;
+                }
+                .tec-mob-link:hover { color: rgba(255,255,255,0.85); border-left-color: rgba(204,151,255,0.3); }
+                .tec-mob-link:hover::before { width: 100%; }
+                .tec-mob-link.tec-active {
+                    color: #CC97FF; border-left-color: #CC97FF;
+                    background: linear-gradient(90deg, rgba(204,151,255,0.1), transparent);
+                    text-shadow: 0 0 20px rgba(204,151,255,0.5);
+                }
 
                 /* ── Right side user ── */
                 .tec-user-name {
@@ -141,6 +152,19 @@ export default function Header() {
                     .tec-topbar-right { display: none !important; }
                     .tec-hamburger { display: flex !important; }
                 }
+
+                /* ── Mobile drawer scanline ── */
+                .tec-mob-drawer::after {
+                    content: ''; pointer-events: none;
+                    position: absolute; inset: 0;
+                    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.06) 2px, rgba(0,0,0,0.06) 4px);
+                    z-index: 1;
+                }
+                /* ── Animated hamburger ── */
+                .tec-hamburger-bar { display: block; height: 2px; background: rgba(255,255,255,0.65); border-radius: 2px; transition: all 0.22s; }
+                .tec-hamburger.open .tec-hamburger-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); background: #CC97FF; }
+                .tec-hamburger.open .tec-hamburger-bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+                .tec-hamburger.open .tec-hamburger-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); background: #CC97FF; }
             `}</style>
 
             {/* ══════════════ TOP NAV ══════════════ */}
@@ -234,90 +258,131 @@ export default function Header() {
                 </div>
 
                 {/* Hamburger */}
-                <button onClick={() => setMobileOpen(o => !o)} className="tec-hamburger" style={{
+                <button onClick={() => setMobileOpen(o => !o)} className={`tec-hamburger${mobileOpen ? ' open' : ''}`} style={{
                     flexDirection: 'column', gap: 5, background: 'transparent', border: 'none',
                     cursor: 'pointer', padding: 8, marginLeft: 'auto', alignSelf: 'center',
                 }}>
-                    <span style={{ display: 'block', width: 22, height: 2, background: 'rgba(255,255,255,0.65)', borderRadius: 2 }} />
-                    <span style={{ display: 'block', width: 16, height: 2, background: 'rgba(255,255,255,0.65)', borderRadius: 2 }} />
-                    <span style={{ display: 'block', width: 22, height: 2, background: 'rgba(255,255,255,0.65)', borderRadius: 2 }} />
+                    <span className="tec-hamburger-bar" style={{ width: 22 }} />
+                    <span className="tec-hamburger-bar" style={{ width: 16 }} />
+                    <span className="tec-hamburger-bar" style={{ width: 22 }} />
                 </button>
             </nav>
 
             {/* ══════════════ MOBILE DRAWER ══════════════ */}
             {mobileOpen && (
                 <div onClick={() => setMobileOpen(false)} style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)',
-                    zIndex: 300, backdropFilter: 'blur(8px)',
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
+                    zIndex: 300, backdropFilter: 'blur(6px)',
                 }}>
-                    <div onClick={e => e.stopPropagation()} style={{
-                        position: 'absolute', left: 0, top: 0, bottom: 0, width: 272,
-                        background: 'rgba(10,10,11,0.98)', backdropFilter: 'blur(24px)',
-                        borderRight: '1px solid rgba(255,255,255,0.06)',
-                        padding: '92px 12px 28px', overflowY: 'auto',
+                    <div onClick={e => e.stopPropagation()} className="tec-mob-drawer" style={{
+                        position: 'absolute', left: 0, top: 0, bottom: 0, width: 300,
+                        background: 'linear-gradient(160deg, #0a0a0c 0%, #0d0b14 60%, #0a0a0c 100%)',
+                        borderRight: '1px solid rgba(204,151,255,0.12)',
+                        overflowY: 'auto', overflowX: 'hidden',
                         display: 'flex', flexDirection: 'column',
+                        boxShadow: '8px 0 60px rgba(0,0,0,0.8)',
                     }}>
-                        {/* Mobile logo */}
+                        {/* GTA-style header strip */}
                         <div style={{
-                            position: 'absolute', top: 20, left: 20,
-                            fontFamily: "'Bebas Neue', sans-serif", fontSize: 30, fontStyle: 'italic',
-                            color: '#CC97FF', letterSpacing: '0.03em', lineHeight: 1,
-                            textShadow: '0 0 20px rgba(204,151,255,0.5)',
-                        }}>TEC</div>
-
-                        {NAV.map(({ icon, label, to }) => (
-                            <Link key={to} to={to} onClick={() => setMobileOpen(false)}
-                                className={`tec-mob-link${isActive(to) ? ' tec-active' : ''}`}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 19 }}>{icon}</span>
-                                {label}
-                            </Link>
-                        ))}
-                        {user?.role === 'admin' && (
-                            <Link to="/admin" onClick={() => setMobileOpen(false)}
-                                className={`tec-mob-link${isActive('/admin') ? ' tec-active' : ''}`}
-                                style={{ color: isActive('/admin') ? '#FF6E84' : undefined }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 19 }}>admin_panel_settings</span>
-                                Admin
-                            </Link>
-                        )}
-
-                        <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                            {user ? (
-                                <>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                                        <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(204,151,255,0.1)', border: '1.5px solid rgba(204,151,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: '#CC97FF' }}>
-                                            {(user.avatarLetter || user.name?.[0] || 'U').toUpperCase()}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, color: '#fff' }}>{user.name}</div>
-                                            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: ROLE_COLORS[user.role] || '#CC97FF' }}>{user.role}</div>
-                                        </div>
+                            position: 'relative', padding: '28px 20px 20px',
+                            borderBottom: '1px solid rgba(204,151,255,0.1)',
+                            background: 'linear-gradient(135deg, rgba(204,151,255,0.06), transparent)',
+                        }}>
+                            {/* Corner accent */}
+                            <div style={{
+                                position: 'absolute', top: 0, right: 0,
+                                width: 80, height: 80,
+                                background: 'radial-gradient(circle at top right, rgba(204,151,255,0.12), transparent 70%)',
+                            }} />
+                            <div style={{
+                                fontFamily: "'Bebas Neue', sans-serif", fontSize: 42, fontStyle: 'italic',
+                                color: '#CC97FF', letterSpacing: '0.04em', lineHeight: 1,
+                                textShadow: '0 0 30px rgba(204,151,255,0.6), 2px 2px 0 rgba(0,0,0,0.8)',
+                            }}>TEC</div>
+                            <div style={{
+                                fontFamily: "'Barlow Condensed', sans-serif", fontSize: 9, fontWeight: 800,
+                                letterSpacing: '0.3em', color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase',
+                                marginTop: -2,
+                            }}>The Echo Community</div>
+                            {user && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
+                                    <div style={{
+                                        width: 36, height: 36, borderRadius: 9,
+                                        background: 'rgba(204,151,255,0.1)',
+                                        border: '1.5px solid rgba(204,151,255,0.3)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontFamily: "'Bebas Neue', sans-serif", fontSize: 18, color: '#CC97FF',
+                                        boxShadow: '0 0 12px rgba(204,151,255,0.2)',
+                                    }}>{(user.avatarLetter || user.name?.[0] || 'U').toUpperCase()}</div>
+                                    <div>
+                                        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 16, color: '#fff', letterSpacing: '0.03em' }}>{user.name}</div>
+                                        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', color: ROLE_COLORS[user.role] || '#CC97FF' }}>{user.role}</div>
                                     </div>
-                                    <button onClick={toggleTheme} style={{
-                                        width: '100%', padding: '10px', background: 'rgba(255,255,255,0.04)',
-                                        border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
-                                        color: 'rgba(255,255,255,0.7)', fontFamily: "'Bebas Neue', sans-serif",
-                                        fontSize: 15, letterSpacing: '0.1em', cursor: 'pointer',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                                        marginBottom: 8,
-                                    }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
-                                            {theme === 'dark' ? 'light_mode' : 'dark_mode'}
-                                        </span>
-                                        {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
-                                    </button>
-                                    <button onClick={() => { logout(); setMobileOpen(false); }} style={{
-                                        width: '100%', padding: '11px', background: 'transparent',
-                                        border: '1px solid rgba(255,110,132,0.25)', borderRadius: 10,
-                                        color: '#FF6E84', fontFamily: "'Bebas Neue', sans-serif",
-                                        fontSize: 15, letterSpacing: '0.1em', cursor: 'pointer',
-                                    }}>Disconnect</button>
-                                </>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Nav section label */}
+                        <div style={{ padding: '16px 20px 8px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 9, fontWeight: 900, letterSpacing: '0.3em', color: 'rgba(255,255,255,0.2)', textTransform: 'uppercase' }}>Navigation</div>
+
+                        {/* Nav links */}
+                        <div style={{ flex: 1, position: 'relative', zIndex: 2 }}>
+                            {NAV.map(({ icon, label, to }, idx) => (
+                                <Link key={to} to={to} onClick={() => setMobileOpen(false)}
+                                    className={`tec-mob-link${isActive(to) ? ' tec-active' : ''}`}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 20, opacity: 0.7 }}>{icon}</span>
+                                    <span style={{ flex: 1 }}>{label}</span>
+                                    {isActive(to) && (
+                                        <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#CC97FF', opacity: 0.6 }}>chevron_right</span>
+                                    )}
+                                </Link>
+                            ))}
+                            {user?.role === 'admin' && (
+                                <Link to="/admin" onClick={() => setMobileOpen(false)}
+                                    className={`tec-mob-link${isActive('/admin') ? ' tec-active' : ''}`}
+                                    style={{ color: isActive('/admin') ? '#FF6E84' : undefined, borderLeftColor: isActive('/admin') ? '#FF6E84' : undefined }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 20, opacity: 0.7 }}>admin_panel_settings</span>
+                                    <span style={{ flex: 1 }}>Admin</span>
+                                </Link>
+                            )}
+                        </div>
+
+                        {/* Bottom actions */}
+                        <div style={{ padding: '16px 20px 28px', borderTop: '1px solid rgba(255,255,255,0.05)', position: 'relative', zIndex: 2 }}>
+                            <button onClick={toggleTheme} style={{
+                                width: '100%', padding: '10px 14px',
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.07)', borderRadius: 8,
+                                color: 'rgba(255,255,255,0.5)', fontFamily: "'Bebas Neue', sans-serif",
+                                fontSize: 14, letterSpacing: '0.1em', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8,
+                                transition: 'all 0.14s',
+                            }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>
+                                    {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+                                </span>
+                                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                            </button>
+                            {user ? (
+                                <button onClick={() => { logout(); setMobileOpen(false); }} style={{
+                                    width: '100%', padding: '11px 14px',
+                                    background: 'rgba(255,110,132,0.06)',
+                                    border: '1px solid rgba(255,110,132,0.2)', borderRadius: 8,
+                                    color: '#FF6E84', fontFamily: "'Bebas Neue', sans-serif",
+                                    fontSize: 14, letterSpacing: '0.1em', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: 8,
+                                }}>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 16 }}>logout</span>
+                                    Disconnect
+                                </button>
                             ) : (
                                 <button onClick={() => { setShowModal(true); setMobileOpen(false); }} style={{
-                                    width: '100%', padding: '12px', background: 'linear-gradient(135deg, #9C48EA, #CC97FF)',
-                                    border: 'none', borderRadius: 10, color: '#fff',
-                                    fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: '0.1em', cursor: 'pointer',
+                                    width: '100%', padding: '13px 14px',
+                                    background: 'linear-gradient(135deg, #9C48EA, #CC97FF)',
+                                    border: 'none', borderRadius: 8,
+                                    color: '#fff', fontFamily: "'Bebas Neue', sans-serif",
+                                    fontSize: 18, letterSpacing: '0.12em', cursor: 'pointer',
+                                    boxShadow: '0 0 24px rgba(204,151,255,0.25)',
                                 }}>Join TEC</button>
                             )}
                         </div>

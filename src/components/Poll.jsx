@@ -24,14 +24,13 @@ const _INIT_PROBLEMS_UNUSED = [
     { id: 12, area: "Raipur", title: "Lack of clean non-veg affordable food options", cat: "Food", votes: 93, upvoted: false, comments: 21, status: "Submitted", urgent: false },
 ];
 
-const ACTIVE_POLLS = [];
-const _ACTIVE_POLLS_UNUSED = [
+const ACTIVE_POLLS = [
     {
-        id: 1, q: "Which campus feature do you want TEC to build next?", totalVotes: 428,
+        id: 1, q: "Which campus feature do you want TEC to build next?", totalVotes: 428, voted: null,
         options: [{ text: "Carpooling board", votes: 148 }, { text: "Live classroom updates", votes: 127 }, { text: "Internship board", votes: 103 }, { text: "Mess menu planner", votes: 50 }]
     },
     {
-        id: 2, q: "Most urgent infrastructure issue in Bidholi?", totalVotes: 312,
+        id: 2, q: "Most urgent infrastructure issue in Bidholi?", totalVotes: 312, voted: null,
         options: [{ text: "Better streetlights", votes: 145 }, { text: "Footpaths on main road", votes: 102 }, { text: "More roundabouts", votes: 65 }]
     },
 ];
@@ -46,7 +45,7 @@ const STATUS_STYLE = {
 export default function Poll() {
     const { user } = useAuth();
     const [problems, setProblems] = useState([]);
-    const [polls, setPolls] = useState([]);
+    const [polls, setPolls] = useState(ACTIVE_POLLS);
     const [activeArea, setActiveArea] = useState("All");
     const [activeCat, setActiveCat] = useState("All");
     const [sort, setSort] = useState("votes");

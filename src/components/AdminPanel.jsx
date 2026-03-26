@@ -1,33 +1,19 @@
-﻿import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const ROLE_META = {
-  admin:     { label: "Admin",     color: "var(--error)",    bg: "rgba(255,110,132,0.1)",   border: "rgba(255,110,132,0.25)"   },
-  moderator: { label: "Moderator", color: "var(--tertiary)", bg: "rgba(255,149,160,0.1)",   border: "rgba(255,149,160,0.25)"   },
-  builder:   { label: "Builder",   color: "var(--primary)",  bg: "rgba(204,151,255,0.1)",   border: "rgba(204,151,255,0.25)"   },
-  student:   { label: "Student",   color: "var(--secondary)",bg: "rgba(83,221,252,0.1)",    border: "rgba(83,221,252,0.25)"    },
+  admin: { label: "Admin", color: "var(--error)", bg: "rgba(255,110,132,0.1)", border: "rgba(255,110,132,0.25)" },
+  moderator: { label: "Moderator", color: "var(--tertiary)", bg: "rgba(255,149,160,0.1)", border: "rgba(255,149,160,0.25)" },
+  builder: { label: "Builder", color: "var(--primary)", bg: "rgba(204,151,255,0.1)", border: "rgba(204,151,255,0.25)" },
+  student: { label: "Student", color: "var(--secondary)", bg: "rgba(83,221,252,0.1)", border: "rgba(83,221,252,0.25)" },
 };
 
 const emptyMember = {
   name: "", joined_at: null, status: "Active Member", certificates: [],
   sap_id: "", pers_email: "", clg_email: "", batch: "", year: "", course: "",
 };
-
-const MOCK_PENDING = [
-  { id: 101, type: "Listing", title: "CLRS 3rd Ed - Selling",        author: "Arjun S.", time: "10m ago", flag: null },
-  { id: 102, type: "Build",   title: "CampusGPT — beta",             author: "Dev A.",   time: "32m ago",flag: "spam" },
-  { id: 103, type: "Poll",    title: "Should TEC add carpooling?",    author: "Priya M.", time: "1h ago", flag: null },
-  { id: 104, type: "Listing", title: "HP Victus Gaming Laptop",       author: "Vivek P.", time: "2h ago", flag: "duplicate" },
-  { id: 105, type: "Build",   title: "SplitIt - bill splitting",      author: "Kiran T.", time: "4h ago", flag: null },
-];
-
-const MOCK_ROLE_LOG = [
-  { id: 1, user: "Rahul K.",  from: "student", to: "builder",   by: "Admin TEC", time: "Yesterday" },
-  { id: 2, user: "Priya M.",  from: "student", to: "moderator", by: "Admin TEC", time: "2 days ago" },
-  { id: 3, user: "Sneha B.",  from: "student", to: "builder",   by: "Admin TEC", time: "1 week ago" },
-];
 
 function RoleBadge({ role }) {
   const m = ROLE_META[role] || ROLE_META.student;
@@ -38,89 +24,219 @@ function RoleBadge({ role }) {
   );
 }
 
+function StatCard({ label, value, sub, color, loading }) {
+  return (
+    <div className="neon-card" style={{ padding: "20px 22px" }}>
+      <div style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 32, letterSpacing: "-0.05em", color, lineHeight: 1 }}>
+        {loading ? "…" : value}
+      </div>
+      <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13, marginTop: 6 }}>{label}</div>
+      <div style={{ fontSize: 11, color: "var(--on-surface-var)", marginTop: 2 }}>{sub}</div>
+    </div>
+  );
+}
+
+const DEL_BTN = { padding: "4px 12px", borderRadius: "var(--radius)", background: "rgba(255,110,132,0.1)", border: "1px solid rgba(255,110,132,0.2)", color: "var(--error)", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" };
+const TH = { padding: "10px 16px", textAlign: "left", fontSize: 10, fontWeight: 800, color: "var(--on-surface-var)", letterSpacing: "0.07em", fontFamily: "var(--font-display)", whiteSpace: "nowrap" };
+const TD = { padding: "10px 16px" };
+
 export default function AdminPanel() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab]         = useState("overview");
-  const [members, setMembers]             = useState([]);
+  const [activeTab, setActiveTab] = useState("overview");
+
+  // Members
+  const [members, setMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(true);
   const [editingMemberId, setEditingMemberId] = useState(null);
-  const [form, setForm]                   = useState(emptyMember);
-  const [showForm, setShowForm]           = useState(false);
-  const [loading, setLoading]             = useState(true);
-  const [search, setSearch]               = useState("");
-  const [pending, setPending]             = useState(MOCK_PENDING);
-  const [roleLog, setRoleLog]             = useState(MOCK_ROLE_LOG);
-  const [roleChangeTarget, setRoleChangeTarget] = useState(null);
-  const [roleChangeTo, setRoleChangeTo]   = useState("student");
+  const [form, setForm] = useState(emptyMember);
+  const [showForm, setShowForm] = useState(false);
+  const [memberSearch, setMemberSearch] = useState("");
+
+  // Content logs
+  const [feedPosts, setFeedPosts] = useState([]);
+  const [listings, setListings] = useState([]);
+  const [issues, setIssues] = useState([]);
+  const [logsLoading, setLogsLoading] = useState(true);
+  const [logTab, setLogTab] = useState("feed");
+
+  // Stats
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Roles
+  const [roleLog, setRoleLog] = useState([]);
+  const [roleTarget, setRoleTarget] = useState("");
+  const [roleTo, setRoleTo] = useState("student");
+
+  // ── Deals (admin CRUD) ────────────────────────────────────────────────────
+  const CATS_DEAL = ["Food", "Transport", "Shopping", "Health", "Study", "Stay"];
+  const emptyDeal = { name: "", cat: "Food", discount: "", desc: "", validity: "", code: "", loc: "", rating: 4.0 };
+  const [deals, setDeals] = useState([]);
+  const [dealsLoading, setDealsLoading] = useState(true);
+  const [dealForm, setDealForm] = useState(emptyDeal);
+  const [editingDealId, setEditingDealId] = useState(null);
+  const [showDealForm, setShowDealForm] = useState(false);
+
+  // ── Admin Listings (local_listings) ──────────────────────────────────────
+  const LISTING_TABS_ADMIN = ["PG / Hostels", "Restaurants", "Rentals", "Hangout Spots", "Activities"];
+  const emptyListing = { name: "", tab: "PG / Hostels", loc: "", price: "", rating: 4.0, tags: "", desc: "", reviews: 0 };
+  const [adminListings, setAdminListings] = useState([]);
+  const [adminListingsLoading, setAdminListingsLoading] = useState(true);
+  const [listingForm, setListingForm] = useState(emptyListing);
+  const [editingListingId, setEditingListingId] = useState(null);
+  const [showListingForm, setShowListingForm] = useState(false);
+  const [listingTabFilter, setListingTabFilter] = useState("PG / Hostels");
 
   const TABS = [
-    { id: "overview",   icon: "dashboard",        label: "Overview" },
-    { id: "members",    icon: "group",             label: "Members"  },
-    { id: "moderation", icon: "policy",            label: "Moderation", badge: pending.length },
-    { id: "roles",      icon: "manage_accounts",   label: "Roles"    },
+    { id: "overview", icon: "dashboard", label: "Overview" },
+    { id: "logs", icon: "terminal", label: "Content" },
+    { id: "deals", icon: "sell", label: "Deals" },
+    { id: "listings", icon: "location_city", label: "Listings" },
+    { id: "members", icon: "group", label: "Members" },
+    { id: "roles", icon: "manage_accounts", label: "Roles" },
   ];
 
-  useEffect(() => { getMembers(); }, []);
+  const fetchAll = useCallback(async () => {
+    setMembersLoading(true);
+    setLogsLoading(true);
+    setStatsLoading(true);
+    setDealsLoading(true);
+    setAdminListingsLoading(true);
 
-  const getMembers = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.from("members").select("*").order("name", { ascending: true });
-      if (error) throw error;
-      setMembers(data || []);
-    } catch (e) { console.error(e.message); }
-    finally { setLoading(false); }
-  };
+    const [{ data: mData }, { data: fData }, { data: lData }, { data: iData }, { data: dData }, { data: alData }] = await Promise.all([
+      supabase.from("members").select("*").order("name"),
+      supabase.from("feed_posts").select("*").order("created_at", { ascending: false }),
+      supabase.from("marketplace_listings").select("*").order("created_at", { ascending: false }),
+      supabase.from("pulse_issues").select("*").order("votes", { ascending: false }),
+      supabase.from("deals").select("*").order("id", { ascending: true }),
+      supabase.from("local_listings").select("*").order("id", { ascending: true }),
+    ]);
 
-  const handleInputChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+    setMembers(mData || []);
+    setFeedPosts(fData || []);
+    setListings(lData || []);
+    setIssues(iData || []);
+    setDeals(dData || []);
+    setAdminListings(alData || []);
+    setMembersLoading(false);
+    setLogsLoading(false);
+    setStatsLoading(false);
+    setDealsLoading(false);
+    setAdminListingsLoading(false);
+  }, []);
 
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  // ─── Member CRUD ─────────────────────────────────────────────────────────────
   const handleEdit = m => {
     setForm({ ...m, certificates: (m.certificates || []).join(", ") });
     setEditingMemberId(m.id);
     setShowForm(true);
   };
 
-  const handleDelete = async memberId => {
+  const handleDelete = async id => {
     if (!window.confirm("Delete this member permanently?")) return;
-    const { error } = await supabase.from("members").delete().eq("id", memberId);
-    if (!error) getMembers();
+    await supabase.from("members").delete().eq("id", id);
+    setMembers(ms => ms.filter(m => m.id !== id));
   };
 
   const handleSubmit = async e => {
     e.preventDefault();
-    const certNames = typeof form.certificates === "string"
-      ? form.certificates.split(",").map(s => s.trim()).filter(Boolean)
-      : [];
-    const payload = { name: form.name, status: form.status, certificates: certNames, sap_id: form.sap_id, pers_email: form.pers_email, clg_email: form.clg_email, batch: form.batch, year: form.year, course: form.course };
-    if (editingMemberId) payload.joined_at = form.joined_at;
-    try {
-      if (editingMemberId) {
-        await supabase.from("members").update(payload).eq("id", editingMemberId);
-      } else {
-        await supabase.from("members").insert([payload]);
-      }
-      getMembers(); setShowForm(false); setForm(emptyMember); setEditingMemberId(null);
-    } catch (err) { alert(err.message); }
-  };
-
-  const formatDate = d => d ? new Date(d).toLocaleDateString("en-US", { timeZone: "UTC", month: "short", year: "numeric", day: "numeric" }) : "—";
-  const moderateItem = id => setPending(p => p.filter(i => i.id !== id));
-
-  const applyRoleChange = () => {
-    if (!roleChangeTarget) return;
-    const member = members.find(m => String(m.id) === String(roleChangeTarget));
-    if (member) {
-      setRoleLog(log => [{ id: Date.now(), user: member.name, from: member.role || "student", to: roleChangeTo, by: user?.name || "Admin", time: "Just now" }, ...log]);
+    const certs = typeof form.certificates === "string"
+      ? form.certificates.split(",").map(s => s.trim()).filter(Boolean) : [];
+    const payload = { name: form.name, status: form.status, certificates: certs, sap_id: form.sap_id, pers_email: form.pers_email, clg_email: form.clg_email, batch: form.batch, year: form.year, course: form.course };
+    if (editingMemberId) {
+      await supabase.from("members").update(payload).eq("id", editingMemberId);
+    } else {
+      await supabase.from("members").insert([payload]);
     }
-    setRoleChangeTarget(null);
+    const { data } = await supabase.from("members").select("*").order("name");
+    setMembers(data || []);
+    setShowForm(false); setForm(emptyMember); setEditingMemberId(null);
   };
+
+  // ─── Content delete ───────────────────────────────────────────────────────────
+  const deletePost = async id => { await supabase.from("feed_posts").delete().eq("id", id); setFeedPosts(ps => ps.filter(p => p.id !== id)); };
+  const deleteListing = async id => { await supabase.from("marketplace_listings").delete().eq("id", id); setListings(ls => ls.filter(l => l.id !== id)); };
+  const deleteIssue = async id => { await supabase.from("pulse_issues").delete().eq("id", id); setIssues(is => is.filter(i => i.id !== id)); };
+
+  const approveListing = async id => {
+    await supabase.from("marketplace_listings").update({ status: "approved" }).eq("id", id);
+    setListings(ls => ls.map(l => l.id === id ? { ...l, status: "approved" } : l));
+  };
+  const rejectListing = async id => {
+    await supabase.from("marketplace_listings").update({ status: "rejected" }).eq("id", id);
+    setListings(ls => ls.map(l => l.id === id ? { ...l, status: "rejected" } : l));
+  };
+
+  // ─── Deals CRUD ───────────────────────────────────────────────────────────────
+  const handleDealSubmit = async e => {
+    e.preventDefault();
+    const payload = { name: dealForm.name, cat: dealForm.cat, discount: dealForm.discount, desc: dealForm.desc, validity: dealForm.validity, code: dealForm.code, loc: dealForm.loc, rating: parseFloat(dealForm.rating) || 4.0 };
+    if (editingDealId) {
+      await supabase.from("deals").update(payload).eq("id", editingDealId);
+    } else {
+      await supabase.from("deals").insert([payload]);
+    }
+    const { data } = await supabase.from("deals").select("*").order("id");
+    setDeals(data || []);
+    setShowDealForm(false); setDealForm(emptyDeal); setEditingDealId(null);
+  };
+  const handleDealEdit = d => { setDealForm({ ...d }); setEditingDealId(d.id); setShowDealForm(true); };
+  const handleDealDelete = async id => {
+    if (!window.confirm("Delete this deal?")) return;
+    await supabase.from("deals").delete().eq("id", id);
+    setDeals(ds => ds.filter(d => d.id !== id));
+  };
+
+  // ─── Admin Listings CRUD ──────────────────────────────────────────────────────
+  const handleListingSubmit = async e => {
+    e.preventDefault();
+    const payload = { name: listingForm.name, tab: listingForm.tab, loc: listingForm.loc, price: listingForm.price, rating: parseFloat(listingForm.rating) || 4.0, tags: (listingForm.tags || "").split(",").map(t => t.trim()).filter(Boolean), desc: listingForm.desc, reviews: parseInt(listingForm.reviews) || 0 };
+    if (editingListingId) {
+      await supabase.from("local_listings").update(payload).eq("id", editingListingId);
+    } else {
+      await supabase.from("local_listings").insert([payload]);
+    }
+    const { data } = await supabase.from("local_listings").select("*").order("id");
+    setAdminListings(data || []);
+    setShowListingForm(false); setListingForm(emptyListing); setEditingListingId(null);
+  };
+  const handleListingEdit = l => { setListingForm({ ...l, tags: Array.isArray(l.tags) ? l.tags.join(", ") : (l.tags || "") }); setEditingListingId(l.id); setShowListingForm(true); };
+  const handleListingDelete = async id => {
+    if (!window.confirm("Delete this listing?")) return;
+    await supabase.from("local_listings").delete().eq("id", id);
+    setAdminListings(ls => ls.filter(l => l.id !== id));
+  };
+
+  const updateIssueStatus = async (id, status) => {
+    await supabase.from("pulse_issues").update({ status }).eq("id", id);
+    setIssues(is => is.map(i => i.id === id ? { ...i, status } : i));
+  };
+
+  // ─── Role change → upsert user_roles table ───────────────────────────────────
+  const applyRoleChange = async () => {
+    if (!roleTarget) return;
+    const member = members.find(m => String(m.id) === String(roleTarget));
+    await supabase.from("user_roles").upsert({ user_id: roleTarget, role: roleTo }, { onConflict: "user_id" });
+    setRoleLog(log => [{
+      id: Date.now(), user: member?.name || roleTarget,
+      from: member?.role || "student", to: roleTo,
+      by: user?.name || "Admin", time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    }, ...log]);
+    setRoleTarget("");
+  };
+
+  const fmt = d => d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "—";
+  const fmtT = d => d ? new Date(d).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
 
   const filteredMembers = members.filter(m =>
-    !search || m.name?.toLowerCase().includes(search.toLowerCase()) || m.sap_id?.toString().includes(search)
+    !memberSearch || m.name?.toLowerCase().includes(memberSearch.toLowerCase()) || m.sap_id?.toString().includes(memberSearch)
   );
 
   return (
     <div style={{ minHeight: "100vh", paddingBottom: 80 }}>
-      {/* ── Top bar ── */}
+
+      {/* ── Tab bar ── */}
       <div style={{ background: "var(--surface-low)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "0 32px", display: "flex", gap: 0 }}>
         {TABS.map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)} style={{
@@ -133,12 +249,9 @@ export default function AdminPanel() {
           }}>
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{t.icon}</span>
             {t.label}
-            {t.badge > 0 && (
-              <span style={{ background: "var(--error)", color: "#fff", borderRadius: 9999, padding: "0 6px", fontSize: 10, fontWeight: 800, lineHeight: "18px", height: 18, minWidth: 18, textAlign: "center" }}>{t.badge}</span>
-            )}
           </button>
         ))}
-        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 10, padding: "0 4px" }}>
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", padding: "0 4px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "var(--surface-highest)", borderRadius: 9999 }}>
             <span style={{ width: 22, height: 22, borderRadius: "50%", background: "rgba(255,110,132,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 900, color: "var(--error)" }}>{(user?.name || "A")[0].toUpperCase()}</span>
             <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 12 }}>{user?.name || "Admin"}</span>
@@ -149,49 +262,37 @@ export default function AdminPanel() {
 
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 32px 0" }}>
 
-        {/* ── OVERVIEW ── */}
+        {/* ═══════════════════════ OVERVIEW ═══════════════════════ */}
         {activeTab === "overview" && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <div className="eyebrow" style={{ marginBottom: 16 }}>Platform at a glance</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 14, marginBottom: 36 }}>
-              {[
-                { label: "Total Members",   value: loading ? "…" : members.length, sub: "registered",        color: "var(--secondary)" },
-                { label: "Pending Review",  value: pending.length,                  sub: "listings & builds", color: "#e3b341" },
-                { label: "Active Builders", value: roleLog.filter(r => r.to === "builder").length,   sub: "verified builders", color: "var(--primary)" },
-                { label: "Moderators",      value: roleLog.filter(r => r.to === "moderator").length, sub: "content reviewers", color: "var(--tertiary)" },
-              ].map((s, i) => (
-                <div key={i} className="neon-card" style={{ padding: "20px 22px" }}>
-                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 32, letterSpacing: "-0.05em", color: s.color, lineHeight: 1 }}>{s.value}</div>
-                  <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 13, marginTop: 6 }}>{s.label}</div>
-                  <div style={{ fontSize: 11, color: "var(--on-surface-var)", marginTop: 2 }}>{s.sub}</div>
-                </div>
-              ))}
+              <StatCard label="Registered Members" value={members.length} sub="all time" color="var(--secondary)" loading={statsLoading} />
+              <StatCard label="Feed Posts" value={feedPosts.length} sub="community pulses" color="var(--primary)" loading={statsLoading} />
+              <StatCard label="Marketplace Listings" value={listings.length} sub="active listings" color="var(--tertiary)" loading={statsLoading} />
+              <StatCard label="Pulse Issues" value={issues.length} sub="reported problems" color="#e3b341" loading={statsLoading} />
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
               <div className="neon-card" style={{ padding: 22 }}>
-                <span className="eyebrow" style={{ display: "block", marginBottom: 14 }}>Recent Activity</span>
-                {[
-                  { text: "New member registered — Sneha B.",     time: "5m ago",  color: "var(--secondary)" },
-                  { text: "Build listed — StudySync (BETA)",       time: "22m ago", color: "var(--primary)" },
-                  { text: "Content flagged — HP Victus listing",   time: "1h ago",  color: "var(--error)" },
-                  { text: "Role upgraded — Rahul K. → Builder",    time: "2h ago",  color: "#e3b341" },
-                  { text: "Poll created — Carpool feature vote",   time: "3h ago",  color: "var(--tertiary)" },
-                ].map((a, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: i < 4 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: a.color, flexShrink: 0, marginTop: 5 }} />
-                      <span style={{ fontSize: 13, color: "var(--on-surface)" }}>{a.text}</span>
+                <span className="eyebrow" style={{ display: "block", marginBottom: 14 }}>Latest Feed Posts</span>
+                {feedPosts.length === 0
+                  ? <div style={{ fontSize: 13, color: "var(--on-surface-var)", padding: "16px 0" }}>No posts yet.</div>
+                  : feedPosts.slice(0, 5).map((p, i) => (
+                    <div key={p.id} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "10px 0", borderBottom: i < 4 ? "1px solid rgba(255,255,255,0.05)" : "none" }}>
+                      <div style={{ display: "flex", gap: 10, alignItems: "flex-start", minWidth: 0 }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--primary)", flexShrink: 0, marginTop: 5 }} />
+                        <span style={{ fontSize: 13, color: "var(--on-surface)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.body?.slice(0, 60)}{(p.body?.length || 0) > 60 ? "…" : ""}</span>
+                      </div>
+                      <span style={{ fontSize: 11, color: "var(--on-surface-var)", flexShrink: 0, fontFamily: "var(--font-mono)" }}>{fmtT(p.created_at)}</span>
                     </div>
-                    <span style={{ fontSize: 11, color: "var(--on-surface-var)", flexShrink: 0, fontFamily: "var(--font-mono)" }}>{a.time}</span>
-                  </div>
-                ))}
+                  ))}
               </div>
               <div className="neon-card" style={{ padding: 22 }}>
                 <span className="eyebrow" style={{ display: "block", marginBottom: 14 }}>Quick Actions</span>
                 {[
-                  { label: "Add new member",          icon: "person_add",    action: () => { setActiveTab("members"); setTimeout(() => { setForm(emptyMember); setEditingMemberId(null); setShowForm(true); }, 100); } },
-                  { label: "Review pending content",  icon: "policy",        action: () => setActiveTab("moderation") },
-                  { label: "Manage roles",             icon: "manage_accounts", action: () => setActiveTab("roles") },
+                  { label: "View all content logs", icon: "terminal", action: () => setActiveTab("logs") },
+                  { label: "Add new member", icon: "person_add", action: () => { setActiveTab("members"); setTimeout(() => { setForm(emptyMember); setEditingMemberId(null); setShowForm(true); }, 100); } },
+                  { label: "Manage user roles", icon: "manage_accounts", action: () => setActiveTab("roles") },
                 ].map((q, i) => (
                   <button key={i} onClick={q.action} className="btn-secondary" style={{ width: "100%", justifyContent: "flex-start", marginBottom: 8, fontSize: 13 }}>
                     <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{q.icon}</span>
@@ -203,7 +304,124 @@ export default function AdminPanel() {
           </motion.div>
         )}
 
-        {/* ── MEMBERS ── */}
+        {/* ═══════════════════════ CONTENT LOGS ═══════════════════════ */}
+        {activeTab === "logs" && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="eyebrow" style={{ marginBottom: 4 }}>Content Logs</div>
+            <p style={{ fontSize: 13, color: "var(--on-surface-var)", marginBottom: 20 }}>All user-generated content. Admins can delete any entry or update issue status.</p>
+
+            {/* Sub-tabs */}
+            <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+              {[
+                { id: "feed", label: `Feed Posts (${feedPosts.length})`, icon: "campaign" },
+                { id: "listings", label: `Listings (${listings.length})`, icon: "storefront" },
+                { id: "issues", label: `Pulse Issues (${issues.length})`, icon: "how_to_vote" },
+              ].map(t => (
+                <button key={t.id} onClick={() => setLogTab(t.id)} style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "10px 18px",
+                  background: "transparent", border: "none", cursor: "pointer",
+                  fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 700, letterSpacing: "0.04em",
+                  color: logTab === t.id ? "var(--on-surface)" : "var(--on-surface-var)",
+                  borderBottom: logTab === t.id ? "2px solid var(--secondary)" : "2px solid transparent",
+                  transition: "all 0.14s",
+                }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 15 }}>{t.icon}</span>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
+            {logsLoading ? (
+              <div style={{ textAlign: "center", padding: 60, color: "var(--on-surface-var)" }}>Loading logs…</div>
+            ) : (
+              <>
+                {/* Feed Posts */}
+                {logTab === "feed" && (
+                  <div className="neon-card" style={{ padding: 0, overflow: "hidden" }}>
+                    {feedPosts.length === 0
+                      ? <div style={{ padding: 48, textAlign: "center", color: "var(--on-surface-var)" }}>No feed posts.</div>
+                      : <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                          <thead><tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                            {["User", "Role", "Body", "Votes", "Posted", ""].map(h => <th key={h} style={TH}>{h}</th>)}
+                          </tr></thead>
+                          <tbody>{feedPosts.map((p, i) => (
+                            <tr key={p.id} style={{ borderBottom: i < feedPosts.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                              <td style={{ ...TD, fontWeight: 700, whiteSpace: "nowrap" }}>{p.user_name || "—"}</td>
+                              <td style={TD}><RoleBadge role={p.user_role || "student"} /></td>
+                              <td style={{ ...TD, color: "var(--on-surface-var)", maxWidth: 340 }}>{p.body?.slice(0, 100)}{(p.body?.length || 0) > 100 ? "…" : ""}</td>
+                              <td style={{ ...TD, fontFamily: "var(--font-mono)", color: "var(--secondary)" }}>{p.votes}</td>
+                              <td style={{ ...TD, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--on-surface-var)", whiteSpace: "nowrap" }}>{fmtT(p.created_at)}</td>
+                              <td style={TD}><button style={DEL_BTN} onClick={() => deletePost(p.id)}>Delete</button></td>
+                            </tr>
+                          ))}</tbody>
+                        </table>
+                      </div>}
+                  </div>
+                )}
+
+                {/* Marketplace Listings */}
+                {logTab === "listings" && (
+                  <div className="neon-card" style={{ padding: 0, overflow: "hidden" }}>
+                    {listings.length === 0
+                      ? <div style={{ padding: 48, textAlign: "center", color: "var(--on-surface-var)" }}>No listings.</div>
+                      : <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                          <thead><tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                            {["Title", "Category", "Condition", "Price", "Seller", "Contact", "Posted", ""].map(h => <th key={h} style={TH}>{h}</th>)}
+                          </tr></thead>
+                          <tbody>{listings.map((l, i) => (
+                            <tr key={l.id} style={{ borderBottom: i < listings.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                              <td style={{ ...TD, fontWeight: 700 }}>{l.title}</td>
+                              <td style={TD}><span className="tag-ghost" style={{ fontSize: 10 }}>{l.cat}</span></td>
+                              <td style={{ ...TD, fontSize: 11, color: "var(--on-surface-var)" }}>{l.condition || "—"}</td>
+                              <td style={{ ...TD, color: "var(--tertiary)", fontFamily: "var(--font-display)", fontWeight: 700 }}>{l.price}</td>
+                              <td style={{ ...TD, color: "var(--on-surface-var)", fontSize: 12 }}>{l.seller_name || "—"}</td>
+                              <td style={{ ...TD, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--on-surface-var)" }}>{l.contact || "—"}</td>
+                              <td style={{ ...TD, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--on-surface-var)", whiteSpace: "nowrap" }}>{fmtT(l.created_at)}</td>
+                              <td style={TD}><button style={DEL_BTN} onClick={() => deleteListing(l.id)}>Delete</button></td>
+                            </tr>
+                          ))}</tbody>
+                        </table>
+                      </div>}
+                  </div>
+                )}
+
+                {/* Pulse Issues */}
+                {logTab === "issues" && (
+                  <div className="neon-card" style={{ padding: 0, overflow: "hidden" }}>
+                    {issues.length === 0
+                      ? <div style={{ padding: 48, textAlign: "center", color: "var(--on-surface-var)" }}>No issues reported.</div>
+                      : <div style={{ overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                          <thead><tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                            {["Title", "Area", "Category", "Votes", "Status", "Reported", ""].map(h => <th key={h} style={TH}>{h}</th>)}
+                          </tr></thead>
+                          <tbody>{issues.map((iss, i) => (
+                            <tr key={iss.id} style={{ borderBottom: i < issues.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none" }}>
+                              <td style={{ ...TD, fontWeight: 700, maxWidth: 260 }}>{iss.title}</td>
+                              <td style={{ ...TD, color: "var(--secondary)", fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 11 }}>{iss.area}</td>
+                              <td style={TD}><span className="tag-ghost" style={{ fontSize: 10 }}>{iss.cat}</span></td>
+                              <td style={{ ...TD, fontFamily: "var(--font-mono)", color: "var(--primary)" }}>{iss.votes}</td>
+                              <td style={TD}>
+                                <select value={iss.status} onChange={e => updateIssueStatus(iss.id, e.target.value)} className="neon-select" style={{ fontSize: 11, padding: "3px 8px", minWidth: 110 }}>
+                                  {["Submitted", "In Review", "Forwarded", "Resolved"].map(s => <option key={s}>{s}</option>)}
+                                </select>
+                              </td>
+                              <td style={{ ...TD, fontFamily: "var(--font-mono)", fontSize: 11, color: "var(--on-surface-var)", whiteSpace: "nowrap" }}>{fmtT(iss.created_at)}</td>
+                              <td style={TD}><button style={DEL_BTN} onClick={() => deleteIssue(iss.id)}>Delete</button></td>
+                            </tr>
+                          ))}</tbody>
+                        </table>
+                      </div>}
+                  </div>
+                )}
+              </>
+            )}
+          </motion.div>
+        )}
+
+        {/* ═══════════════════════ MEMBERS ═══════════════════════ */}
         {activeTab === "members" && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
@@ -214,7 +432,7 @@ export default function AdminPanel() {
               <div style={{ display: "flex", gap: 10 }}>
                 <div style={{ position: "relative" }}>
                   <span className="material-symbols-outlined" style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 16, color: "var(--on-surface-var)" }}>search</span>
-                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search name or SAP ID…" className="neon-input" style={{ paddingLeft: 40, width: 220 }} />
+                  <input value={memberSearch} onChange={e => setMemberSearch(e.target.value)} placeholder="Search name or SAP ID…" className="neon-input" style={{ paddingLeft: 40, width: 220 }} />
                 </div>
                 <button onClick={() => { setForm(emptyMember); setEditingMemberId(null); setShowForm(true); }} className="btn-primary" style={{ fontSize: 12 }}>
                   <span className="material-symbols-outlined" style={{ fontSize: 16 }}>person_add</span>
@@ -222,18 +440,15 @@ export default function AdminPanel() {
                 </button>
               </div>
             </div>
-
-            {loading ? (
-              <div style={{ textAlign: "center", padding: 60, color: "var(--on-surface-var)", fontSize: 13 }}>Loading members…</div>
+            {membersLoading ? (
+              <div style={{ textAlign: "center", padding: 60, color: "var(--on-surface-var)" }}>Loading members…</div>
             ) : (
               <div className="neon-card" style={{ padding: 0, overflow: "hidden" }}>
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                        {["#", "Name", "SAP ID", "Course", "Batch", "Joined", "Status", ""].map(h => (
-                          <th key={h} style={{ padding: "10px 16px", textAlign: "left", fontSize: 10, fontWeight: 800, color: "var(--on-surface-var)", letterSpacing: "0.07em", whiteSpace: "nowrap", fontFamily: "var(--font-display)" }}>{h}</th>
-                        ))}
+                        {["#", "Name", "SAP ID", "Course", "Batch", "Joined", "Status", ""].map(h => <th key={h} style={TH}>{h}</th>)}
                       </tr>
                     </thead>
                     <tbody>
@@ -241,29 +456,29 @@ export default function AdminPanel() {
                         <tr key={m.id} style={{ borderBottom: i < filteredMembers.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none", transition: "background 0.12s" }}
                           onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}
                           onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                          <td style={{ padding: "10px 16px", color: "var(--on-surface-var)", fontFamily: "var(--font-mono)", fontSize: 11 }}>{m.id}</td>
-                          <td style={{ padding: "10px 16px", fontWeight: 700, fontSize: 13 }}>{m.name}</td>
-                          <td style={{ padding: "10px 16px", color: "var(--on-surface-var)", fontFamily: "var(--font-mono)", fontSize: 11 }}>{m.sap_id || "—"}</td>
-                          <td style={{ padding: "10px 16px", color: "var(--on-surface-var)", fontSize: 12 }}>{m.course || "—"}</td>
-                          <td style={{ padding: "10px 16px", color: "var(--on-surface-var)", fontSize: 12 }}>{m.batch || "—"}</td>
-                          <td style={{ padding: "10px 16px", color: "var(--on-surface-var)", fontSize: 12 }}>{formatDate(m.joined_at)}</td>
-                          <td style={{ padding: "10px 16px" }}>
+                          <td style={{ ...TD, color: "var(--on-surface-var)", fontFamily: "var(--font-mono)", fontSize: 11 }}>{m.id}</td>
+                          <td style={{ ...TD, fontWeight: 700 }}>{m.name}</td>
+                          <td style={{ ...TD, color: "var(--on-surface-var)", fontFamily: "var(--font-mono)", fontSize: 11 }}>{m.sap_id || "—"}</td>
+                          <td style={{ ...TD, color: "var(--on-surface-var)", fontSize: 12 }}>{m.course || "—"}</td>
+                          <td style={{ ...TD, color: "var(--on-surface-var)", fontSize: 12 }}>{m.batch || "—"}</td>
+                          <td style={{ ...TD, color: "var(--on-surface-var)", fontSize: 12 }}>{fmt(m.joined_at)}</td>
+                          <td style={TD}>
                             <span style={{ background: m.status === "Active Member" ? "rgba(83,221,252,0.1)" : "rgba(255,149,160,0.1)", color: m.status === "Active Member" ? "var(--secondary)" : "var(--tertiary)", border: `1px solid ${m.status === "Active Member" ? "rgba(83,221,252,0.2)" : "rgba(255,149,160,0.2)"}`, borderRadius: 9999, padding: "2px 10px", fontSize: 10, fontWeight: 800, letterSpacing: "0.05em", fontFamily: "var(--font-display)" }}>
                               {m.status || "—"}
                             </span>
                           </td>
-                          <td style={{ padding: "10px 16px" }}>
+                          <td style={TD}>
                             <div style={{ display: "flex", gap: 6 }}>
                               <button onClick={() => handleEdit(m)} className="btn-secondary" style={{ padding: "4px 12px", fontSize: 11 }}>Edit</button>
-                              <button onClick={() => handleDelete(m.id)} style={{ padding: "4px 12px", borderRadius: "var(--radius)", background: "rgba(255,110,132,0.1)", border: "1px solid rgba(255,110,132,0.2)", color: "var(--error)", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Delete</button>
+                              <button onClick={() => handleDelete(m.id)} style={DEL_BTN}>Delete</button>
                             </div>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {filteredMembers.length === 0 && !loading && (
-                    <div style={{ textAlign: "center", padding: "48px 24px", color: "var(--on-surface-var)", fontSize: 13 }}>No members found.</div>
+                  {filteredMembers.length === 0 && (
+                    <div style={{ padding: "48px 24px", textAlign: "center", color: "var(--on-surface-var)", fontSize: 13 }}>No members found.</div>
                   )}
                 </div>
               </div>
@@ -271,44 +486,7 @@ export default function AdminPanel() {
           </motion.div>
         )}
 
-        {/* ── MODERATION ── */}
-        {activeTab === "moderation" && (
-          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-            <div style={{ marginBottom: 20 }}>
-              <span className="eyebrow">Content Moderation</span>
-              <span style={{ fontSize: 12, color: "var(--on-surface-var)", display: "block", marginTop: 2 }}>{pending.length} items pending review</span>
-            </div>
-            {pending.length === 0 ? (
-              <div className="neon-card" style={{ padding: "60px 24px", textAlign: "center" }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 32, color: "var(--secondary)", display: "block", marginBottom: 12 }}>check_circle</span>
-                <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, color: "var(--secondary)", marginBottom: 6 }}>All clear</div>
-                <div style={{ fontSize: 13, color: "var(--on-surface-var)" }}>No content pending review.</div>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {pending.map(item => (
-                  <div key={item.id} className="neon-card" style={{ padding: "16px 20px", borderLeft: `3px solid ${item.flag ? "var(--error)" : "rgba(255,255,255,0.08)"}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
-                        <span className="tag-ghost" style={{ fontSize: 10 }}>{item.type}</span>
-                        {item.flag && <span className="tag-error" style={{ fontSize: 9 }}>FLAGGED: {item.flag.toUpperCase()}</span>}
-                      </div>
-                      <div style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 14 }}>{item.title}</div>
-                      <div style={{ fontSize: 11, color: "var(--on-surface-var)", marginTop: 3 }}>{item.author} · {item.time}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-                      <button onClick={() => moderateItem(item.id)} style={{ padding: "6px 14px", borderRadius: "var(--radius)", background: "rgba(83,221,252,0.1)", border: "1px solid rgba(83,221,252,0.2)", color: "var(--secondary)", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Approve</button>
-                      <button onClick={() => moderateItem(item.id)} style={{ padding: "6px 14px", borderRadius: "var(--radius)", background: "rgba(255,110,132,0.1)", border: "1px solid rgba(255,110,132,0.2)", color: "var(--error)", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Reject</button>
-                      <button onClick={() => moderateItem(item.id)} className="btn-secondary" style={{ padding: "6px 14px", fontSize: 11 }}>Ignore</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* ── ROLES ── */}
+        {/* ═══════════════════════ ROLES ═══════════════════════ */}
         {activeTab === "roles" && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28, alignItems: "start" }}>
@@ -317,7 +495,7 @@ export default function AdminPanel() {
                 <div className="neon-card" style={{ padding: 22 }}>
                   <div style={{ marginBottom: 14 }}>
                     <label style={{ fontSize: 10, fontWeight: 800, color: "var(--on-surface-var)", letterSpacing: "0.07em", display: "block", marginBottom: 8, fontFamily: "var(--font-display)" }}>MEMBER</label>
-                    <select value={roleChangeTarget || ""} onChange={e => setRoleChangeTarget(e.target.value || null)} className="neon-select" style={{ width: "100%" }}>
+                    <select value={roleTarget} onChange={e => setRoleTarget(e.target.value)} className="neon-select" style={{ width: "100%" }}>
                       <option value="">— Select member —</option>
                       {members.map(m => <option key={m.id} value={m.id}>{m.name} ({m.sap_id || "no SAP"})</option>)}
                     </select>
@@ -326,66 +504,69 @@ export default function AdminPanel() {
                     <label style={{ fontSize: 10, fontWeight: 800, color: "var(--on-surface-var)", letterSpacing: "0.07em", display: "block", marginBottom: 8, fontFamily: "var(--font-display)" }}>NEW ROLE</label>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       {["student", "builder", "moderator", "admin"].map(r => {
-                        const m2 = ROLE_META[r];
+                        const rm = ROLE_META[r];
                         return (
-                          <button key={r} onClick={() => setRoleChangeTo(r)} style={{
+                          <button key={r} onClick={() => setRoleTo(r)} style={{
                             flex: 1, minWidth: 80, padding: "9px 0", borderRadius: "var(--radius)", fontSize: 11, fontWeight: 800,
                             fontFamily: "var(--font-display)", letterSpacing: "0.05em", cursor: "pointer",
-                            border: `1px solid ${roleChangeTo === r ? m2.border : "rgba(255,255,255,0.08)"}`,
-                            background: roleChangeTo === r ? m2.bg : "transparent",
-                            color: roleChangeTo === r ? m2.color : "var(--on-surface-var)",
+                            border: `1px solid ${roleTo === r ? rm.border : "rgba(255,255,255,0.08)"}`,
+                            background: roleTo === r ? rm.bg : "transparent",
+                            color: roleTo === r ? rm.color : "var(--on-surface-var)",
                             transition: "all 0.14s",
-                          }}>{m2.label}</button>
+                          }}>{rm.label}</button>
                         );
                       })}
                     </div>
                   </div>
-                  <div style={{ background: "var(--surface-highest)", borderRadius: "var(--radius)", padding: "10px 14px", marginBottom: 18, fontSize: 12, color: "var(--on-surface-var)", lineHeight: 1.7, fontFamily: "var(--font-mono)" }}>
-                    {roleChangeTo === "admin"     && "Full access: member CRUD, moderation, role management, analytics."}
-                    {roleChangeTo === "moderator" && "Can approve/reject content. Cannot manage members or roles."}
-                    {roleChangeTo === "builder"   && "Verified builder badge. All student features included."}
-                    {roleChangeTo === "student"   && "Default member. Access to all community features."}
+                  <div style={{ background: "var(--surface-highest)", borderRadius: "var(--radius)", padding: "10px 14px", marginBottom: 14, fontSize: 12, color: "var(--on-surface-var)", fontFamily: "var(--font-mono)", lineHeight: 1.7 }}>
+                    {roleTo === "admin" && "Full access: members, content logs, roles, all data."}
+                    {roleTo === "moderator" && "Approve/reject content. Cannot manage members or roles."}
+                    {roleTo === "builder" && "Verified builder badge. All student features included."}
+                    {roleTo === "student" && "Default member. Access to all community features."}
                   </div>
-                  <button onClick={applyRoleChange} disabled={!roleChangeTarget} className="btn-primary" style={{ width: "100%", justifyContent: "center", padding: 12, fontSize: 12, letterSpacing: "0.05em", opacity: roleChangeTarget ? 1 : 0.4 }}>
+                  <div style={{ padding: "10px 14px", background: "rgba(227,179,65,0.06)", border: "1px solid rgba(227,179,65,0.15)", borderRadius: "var(--radius)", marginBottom: 18, fontSize: 11, color: "#e3b341", fontFamily: "var(--font-mono)", lineHeight: 1.6 }}>
+                    ⚠ Updates user_roles table. User must sign out and back in for the new role to take effect.
+                  </div>
+                  <button onClick={applyRoleChange} disabled={!roleTarget} className="btn-primary" style={{ width: "100%", justifyContent: "center", padding: 12, fontSize: 12, letterSpacing: "0.05em", opacity: roleTarget ? 1 : 0.4 }}>
                     Apply Role Change
                   </button>
                 </div>
               </div>
 
               <div>
-                <span className="eyebrow" style={{ display: "block", marginBottom: 16 }}>Role Change Log</span>
+                <span className="eyebrow" style={{ display: "block", marginBottom: 16 }}>Role Change Log <span style={{ fontSize: 10, color: "var(--on-surface-var)", fontWeight: 400 }}>(this session)</span></span>
                 <div className="neon-card" style={{ marginBottom: 20, overflow: "hidden", padding: 0 }}>
-                  {roleLog.length === 0 ? (
-                    <div style={{ padding: 32, textAlign: "center", fontSize: 13, color: "var(--on-surface-var)" }}>No role changes yet.</div>
-                  ) : roleLog.map((entry, i) => (
-                    <div key={entry.id} style={{ padding: "14px 18px", borderBottom: i < roleLog.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div>
-                        <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 13 }}>{entry.user}</span>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                          <RoleBadge role={entry.from} />
-                          <span className="material-symbols-outlined" style={{ fontSize: 14, color: "var(--on-surface-var)" }}>arrow_forward</span>
-                          <RoleBadge role={entry.to} />
+                  {roleLog.length === 0
+                    ? <div style={{ padding: 32, textAlign: "center", fontSize: 13, color: "var(--on-surface-var)" }}>No role changes this session.</div>
+                    : roleLog.map((entry, i) => (
+                      <div key={entry.id} style={{ padding: "14px 18px", borderBottom: i < roleLog.length - 1 ? "1px solid rgba(255,255,255,0.05)" : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 13 }}>{entry.user}</span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                            <RoleBadge role={entry.from} />
+                            <span className="material-symbols-outlined" style={{ fontSize: 14, color: "var(--on-surface-var)" }}>arrow_forward</span>
+                            <RoleBadge role={entry.to} />
+                          </div>
+                        </div>
+                        <div style={{ textAlign: "right" }}>
+                          <div style={{ fontSize: 11, color: "var(--on-surface-var)", fontFamily: "var(--font-mono)" }}>{entry.time}</div>
+                          <div style={{ fontSize: 11, color: "var(--on-surface-var)", marginTop: 2 }}>by {entry.by}</div>
                         </div>
                       </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 11, color: "var(--on-surface-var)", fontFamily: "var(--font-mono)" }}>{entry.time}</div>
-                        <div style={{ fontSize: 11, color: "var(--on-surface-var)", marginTop: 2 }}>by {entry.by}</div>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
 
-                <span className="eyebrow" style={{ display: "block", marginBottom: 12 }}>Role Permissions</span>
+                <span className="eyebrow" style={{ display: "block", marginBottom: 12 }}>Role Hierarchy</span>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                   {[
-                    { role: "admin",     perms: "Everything: members, moderation, roles, analytics" },
+                    { role: "admin", perms: "Everything: members, content logs, roles, analytics" },
                     { role: "moderator", perms: "Approve/reject content, flag posts" },
-                    { role: "builder",   perms: "All student features + verified build badge" },
-                    { role: "student",   perms: "Post listings, vote, builds, polls" },
+                    { role: "builder", perms: "All student features + verified build badge" },
+                    { role: "student", perms: "Post listings, vote, report issues, use polls" },
                   ].map(({ role, perms }) => {
-                    const m2 = ROLE_META[role];
+                    const rm = ROLE_META[role];
                     return (
-                      <div key={role} style={{ background: "var(--surface-low)", border: `1px solid rgba(255,255,255,0.05)`, borderLeft: `3px solid ${m2.color}`, borderRadius: "var(--radius)", padding: "10px 14px", display: "flex", gap: 12, alignItems: "center" }}>
+                      <div key={role} style={{ background: "var(--surface-low)", border: "1px solid rgba(255,255,255,0.05)", borderLeft: `3px solid ${rm.color}`, borderRadius: "var(--radius)", padding: "10px 14px", display: "flex", gap: 12, alignItems: "center" }}>
                         <RoleBadge role={role} />
                         <span style={{ fontSize: 12, color: "var(--on-surface-var)" }}>{perms}</span>
                       </div>
@@ -410,32 +591,32 @@ export default function AdminPanel() {
               <form onSubmit={handleSubmit}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
                   {[
-                    { label: "NAME",    name: "name",    ph: "Full name",         req: true },
-                    { label: "SAP ID",  name: "sap_id",  ph: "SAP ID" },
-                    { label: "COURSE",  name: "course",  ph: "B.Tech CSE" },
-                    { label: "BATCH",   name: "batch",   ph: "2022" },
-                    { label: "YEAR",    name: "year",    ph: "2nd Year" },
-                    { label: "STATUS",  name: "status",  ph: "Active Member" },
+                    { label: "NAME", name: "name", ph: "Full name", req: true },
+                    { label: "SAP ID", name: "sap_id", ph: "SAP ID" },
+                    { label: "COURSE", name: "course", ph: "B.Tech CSE" },
+                    { label: "BATCH", name: "batch", ph: "2022" },
+                    { label: "YEAR", name: "year", ph: "2nd Year" },
+                    { label: "STATUS", name: "status", ph: "Active Member" },
                   ].map(f => (
                     <div key={f.name}>
                       <label style={{ fontSize: 10, fontWeight: 800, color: "var(--on-surface-var)", letterSpacing: "0.07em", display: "block", marginBottom: 6, fontFamily: "var(--font-display)" }}>{f.label}</label>
-                      <input name={f.name} value={form[f.name] || ""} onChange={handleInputChange} placeholder={f.ph} required={f.req} className="neon-input" style={{ width: "100%", boxSizing: "border-box" }} />
+                      <input name={f.name} value={form[f.name] || ""} onChange={e => setForm({ ...form, [e.target.name]: e.target.value })} placeholder={f.ph} required={!!f.req} className="neon-input" style={{ width: "100%", boxSizing: "border-box" }} />
                     </div>
                   ))}
                 </div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
                   <div>
                     <label style={{ fontSize: 10, fontWeight: 800, color: "var(--on-surface-var)", letterSpacing: "0.07em", display: "block", marginBottom: 6, fontFamily: "var(--font-display)" }}>PERSONAL EMAIL</label>
-                    <input name="pers_email" type="email" value={form.pers_email || ""} onChange={handleInputChange} placeholder="personal@gmail.com" className="neon-input" style={{ width: "100%", boxSizing: "border-box" }} />
+                    <input type="email" value={form.pers_email || ""} onChange={e => setForm({ ...form, pers_email: e.target.value })} placeholder="personal@gmail.com" className="neon-input" style={{ width: "100%", boxSizing: "border-box" }} />
                   </div>
                   <div>
                     <label style={{ fontSize: 10, fontWeight: 800, color: "var(--on-surface-var)", letterSpacing: "0.07em", display: "block", marginBottom: 6, fontFamily: "var(--font-display)" }}>COLLEGE EMAIL</label>
-                    <input name="clg_email" type="email" value={form.clg_email || ""} onChange={handleInputChange} placeholder="name@ddn.upes.ac.in" className="neon-input" style={{ width: "100%", boxSizing: "border-box" }} />
+                    <input type="email" value={form.clg_email || ""} onChange={e => setForm({ ...form, clg_email: e.target.value })} placeholder="name@ddn.upes.ac.in" className="neon-input" style={{ width: "100%", boxSizing: "border-box" }} />
                   </div>
                 </div>
                 <div style={{ marginBottom: 20 }}>
                   <label style={{ fontSize: 10, fontWeight: 800, color: "var(--on-surface-var)", letterSpacing: "0.07em", display: "block", marginBottom: 6, fontFamily: "var(--font-display)" }}>CERTIFICATES (comma-separated)</label>
-                  <input name="certificates" value={typeof form.certificates === "string" ? form.certificates : (form.certificates || []).join(", ")} onChange={handleInputChange} placeholder="AWS Cloud, Google Analytics…" className="neon-input" style={{ width: "100%", boxSizing: "border-box" }} />
+                  <input value={typeof form.certificates === "string" ? form.certificates : (form.certificates || []).join(", ")} onChange={e => setForm({ ...form, certificates: e.target.value })} placeholder="AWS Cloud, Google Analytics…" className="neon-input" style={{ width: "100%", boxSizing: "border-box" }} />
                 </div>
                 <div style={{ display: "flex", gap: 10 }}>
                   <button type="submit" className="btn-primary" style={{ flex: 1, justifyContent: "center", padding: 12, fontSize: 12 }}>
@@ -451,3 +632,17 @@ export default function AdminPanel() {
     </div>
   );
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+

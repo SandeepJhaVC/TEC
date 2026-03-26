@@ -1,8 +1,7 @@
 ﻿import React, { useState } from "react";
 import { motion } from "framer-motion";
 
-const DEALS = [];
-const _DEALS_UNUSED = [
+const DEALS = [
   { id: 1, name: "Chai Sutta Bar", cat: "Food", discount: "20% OFF", desc: "Show your college ID for 20% off on all beverages. Valid all week.", validity: "Ongoing", code: "STUDENT20", loc: "Rajpur Road, Dehradun", rating: 4.5 },
   { id: 2, name: "Domino's Pizza", cat: "Food", discount: "30% OFF", desc: "Order online using code for 30% off on medium & large pizzas.", validity: "Weekdays only", code: "UPES30", loc: "Pacific Mall, Doon", rating: 4.2 },
   { id: 3, name: "Rapido Bike Taxi", cat: "Transport", discount: "50% OFF", desc: "First 5 rides at 50% off for new sign-ups with college email.", validity: "New users", code: "TECRIDER", loc: "App-based", rating: 4.7 },

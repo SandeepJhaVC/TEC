@@ -39,8 +39,7 @@ const _ITEMS_UNUSED = [
     },
 ];
 
-const INSIGHTS = [];
-const _INSIGHTS_UNUSED = [
+const INSIGHTS = [
     { label: 'Items Listed', value: '1,284', delta: '+12 today' },
     { label: 'Active Deals', value: '412', delta: '+3.2%' },
     { label: 'Avg Enquiry Rate', value: '8.4%', delta: 'vs 6.1% last wk' },

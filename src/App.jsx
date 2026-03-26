@@ -7,6 +7,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import Header from './components/header/Header';
 import Footer from './components/Footer';
 import AdminPanel from './components/AdminPanel';
+import HostelManagement from './components/HostelManagement';
 import Discounts from './components/Discounts';
 import Map from './components/Map';
 import Assignments from './components/Assignments';
@@ -37,6 +38,7 @@ function AppShell() {
           <Route path="/about" element={<About />} />
           <Route path="/poll" element={<Poll />} />
           <Route path="/admin" element={<ProtectedRoute minRole="admin"><AdminPanel /></ProtectedRoute>} />
+          <Route path="/admin/hostel" element={<ProtectedRoute minRole="admin"><HostelManagement /></ProtectedRoute>} />
           <Route path="/login" element={<Login />} />
         </Routes>
         {!isFullscreen && <Footer />}

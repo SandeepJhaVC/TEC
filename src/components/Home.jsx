@@ -6,11 +6,20 @@ import { useAuth } from '../context/AuthContext';
 
 const FEED = [];
 
-const BAZAAR_HOT = [];
+const BAZAAR_HOT = [
+  { name: "GATE CSE 2024 Full Set", credits: "₹1,200" },
+  { name: "Arduino Starter Kit", credits: "₹1,800" },
+  { name: "Casio FX-991EX Calculator", credits: "₹800" },
+];
 
-const LIVE_LOGS = [];
+const LIVE_LOGS = [
+  { type: "CONN", msg: "3 new members joined TEC today" },
+  { type: "TX", msg: "New listing posted on Bazaar" },
+  { type: "INFO", msg: "Events board updated with 2 entries" },
+  { type: "CONN", msg: "Campus map refreshed" },
+];
 
-const TRENDING_NODES = [];
+const TRENDING_NODES = ["#placement", "#hackathon", "#hostels", "#assignments", "#cafeteria", "#UPES2025", "#internship", "#exam-prep"];
 
 const LOG_COLORS = { CONN: '#53DDFC', TX: '#3fb950', ERR: '#FF6E84', INFO: '#CC97FF' };
 

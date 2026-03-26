@@ -6,14 +6,6 @@ const TAB_ICONS = { "PG / Hostels": "home", "Restaurants": "restaurant", "Rental
 const TAB_COLOR = { "PG / Hostels": "#e3b341", "Restaurants": "var(--error)", "Rentals": "var(--secondary)", "Hangout Spots": "var(--primary)", "Activities": "var(--tertiary)" };
 
 const DATA = {
-  "PG / Hostels": [],
-  "Restaurants": [],
-  "Rentals": [],
-  "Hangout Spots": [],
-  "Activities": [],
-};
-
-const _DATA_UNUSED = {
   "PG / Hostels": [
     { name: "Sunrise Boys PG", loc: "Bidholi", price: "6,500/mo", rating: 4.4, tags: ["AC", "WiFi", "Meals", "24hr Security"], desc: "Clean rooms, home-cooked meals, 5min from UPES gate.", reviews: 42 },
     { name: "Patel Bhawan Girls PG", loc: "Bidholi", price: "7,200/mo", rating: 4.6, tags: ["Fully Furnished", "CCTV", "Meals", "Laundry"], desc: "Safe and comfortable hostel-style PG exclusively for girls.", reviews: 61 },
@@ -127,7 +119,7 @@ export default function Listings() {
           </div>
         </motion.div>
       ))}
-        {items.length === 0 && <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "48px 0", color: "var(--on-surface-var)" }}>No listings match your search.</div>}
+        {items.length === 0 && search && <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "48px 0", color: "var(--on-surface-var)" }}>No listings match your search.</div>}
       </div>
     </div>
   );
