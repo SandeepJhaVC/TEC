@@ -9,15 +9,13 @@ const TABS = [
 ];
 
 const ROLE_META = {
-  admin:     { label: "Admin",     color: "var(--error)",     border: "var(--error)",     bg: "rgba(255,110,132,0.12)" },
-  moderator: { label: "Mod",       color: "var(--tertiary)",  border: "var(--tertiary)",  bg: "rgba(255,149,160,0.12)" },
-  builder:   { label: "Builder",   color: "var(--primary)",   border: "var(--primary)",   bg: "rgba(204,151,255,0.12)" },
-  student:   { label: "Student",   color: "var(--secondary)", border: "var(--secondary)", bg: "rgba(83,221,252,0.12)"  },
+  student: { label: "Student", color: "var(--secondary)", border: "var(--secondary)", bg: "rgba(83,221,252,0.10)" },
+  builder: { label: "Builder", color: "var(--primary)", border: "var(--primary)", bg: "rgba(204,151,255,0.10)" },
 };
 
 const fade = {
   hidden: { opacity: 0, y: 16 },
-  show:   { opacity: 1, y: 0 },
+  show: { opacity: 1, y: 0 },
 };
 
 function Field({ label, type = "text", value, onChange, placeholder, required }) {
@@ -44,27 +42,26 @@ function Field({ label, type = "text", value, onChange, placeholder, required })
 }
 
 export default function Login() {
-  const { login, register, authError, DEMO_USERS } = useAuth();
-  const navigate  = useNavigate();
-  const location  = useLocation();
-  const from      = location.state?.from || "/";
+  const { login, register, authError } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from || "/";
 
-  const [tab,        setTab]        = useState("login");
+  const [tab, setTab] = useState("login");
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState("");
-  const [showDemo,   setShowDemo]   = useState(false);
 
   // Sign-in state
-  const [email,    setEmail]    = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   // Register state
-  const [regName,     setRegName]     = useState("");
-  const [regEmail,    setRegEmail]    = useState("");
+  const [regName, setRegName] = useState("");
+  const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
-  const [regConfirm,  setRegConfirm]  = useState("");
-  const [regRole,     setRegRole]     = useState("student");
-  const [regSuccess,  setRegSuccess]  = useState(false);
+  const [regConfirm, setRegConfirm] = useState("");
+  const [regRole, setRegRole] = useState("student");
+  const [regSuccess, setRegSuccess] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -80,19 +77,12 @@ export default function Login() {
     e.preventDefault();
     setLocalError("");
     if (regPassword !== regConfirm) { setLocalError("Passwords do not match."); return; }
-    if (regPassword.length < 8)     { setLocalError("Password must be at least 8 characters."); return; }
+    if (regPassword.length < 8) { setLocalError("Password must be at least 8 characters."); return; }
     setSubmitting(true);
     const { ok, error } = await register(regEmail, regPassword, regName, regRole);
     setSubmitting(false);
     if (!ok) { setLocalError(error || "Registration failed. Try again."); return; }
     setRegSuccess(true);
-  };
-
-  const fillDemo = (u) => {
-    setEmail(u.email);
-    setPassword(u.password);
-    setTab("login");
-    setShowDemo(false);
   };
 
   const err = localError || authError;
@@ -201,66 +191,6 @@ export default function Login() {
                   >
                     {submitting ? "Signing in…" : "Sign In"}
                   </button>
-
-                  {/* Demo users */}
-                  {DEMO_USERS && DEMO_USERS.length > 0 && (
-                    <div style={{ marginTop: 20 }}>
-                      <button
-                        type="button"
-                        onClick={() => setShowDemo(v => !v)}
-                        style={{
-                          width: "100%", background: "none", border: "1px solid rgba(255,255,255,0.08)",
-                          borderRadius: "var(--radius)", padding: "8px 14px", fontSize: 12,
-                          color: "var(--on-surface-var)", cursor: "pointer", fontFamily: "inherit",
-                          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                        }}
-                      >
-                        <span className="material-symbols-outlined" style={{ fontSize: 15 }}>smart_toy</span>
-                        Demo accounts
-                        <span className="material-symbols-outlined" style={{ fontSize: 15 }}>
-                          {showDemo ? "expand_less" : "expand_more"}
-                        </span>
-                      </button>
-
-                      {showDemo && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 6 }}
-                        >
-                          {DEMO_USERS.map(u => {
-                            const meta = ROLE_META[u.role] || ROLE_META.student;
-                            return (
-                              <button
-                                key={u.email}
-                                type="button"
-                                onClick={() => fillDemo(u)}
-                                style={{
-                                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                                  padding: "10px 14px", border: `1px solid ${meta.border}30`,
-                                  borderRadius: "var(--radius)", background: meta.bg,
-                                  cursor: "pointer", fontFamily: "inherit", transition: "opacity 0.15s",
-                                }}
-                              >
-                                <div style={{ textAlign: "left" }}>
-                                  <div style={{ fontSize: 13, fontWeight: 600, color: "var(--on-surface)" }}>{u.name || u.email}</div>
-                                  <div style={{ fontSize: 11, color: "var(--on-surface-var)", marginTop: 2 }}>{u.email}</div>
-                                </div>
-                                <span style={{
-                                  fontSize: 10, fontWeight: 800, color: meta.color,
-                                  background: meta.bg, border: `1px solid ${meta.border}50`,
-                                  borderRadius: 4, padding: "2px 8px", letterSpacing: "0.06em",
-                                  textTransform: "uppercase",
-                                }}>
-                                  {meta.label}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </motion.div>
-                      )}
-                    </div>
-                  )}
                 </motion.form>
               )}
 

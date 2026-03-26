@@ -1,4 +1,5 @@
 ﻿import React, { useState, useEffect, useRef } from "react";
+import { supabase } from '../supabaseClient';
 
 const ANIM_CSS = `
 @keyframes tecScanLine {
@@ -255,72 +256,21 @@ const THUMB = {
     Transit: { grad: "linear-gradient(135deg,#0e0e28 0%,#08081a 100%)", icon: "directions_bus", accent: "#a78bfa" },
 };
 
-const LOCATIONS = {
-    Colleges: [
-        { name: "Main Campus Alpha", lng: 77.9720, lat: 30.4135, sub: "Sector-4, Tech Corridor", dist: "0.8km", live: false, badge: "EST 2024", rating: 4.9 },
-        { name: "UPES Pondha Campus", lng: 77.9642, lat: 30.3905, sub: "City Campus, Pondha", dist: "5.2km", live: false, badge: null, rating: 4.7 },
-        { name: "DIT University", lng: 77.9560, lat: 30.3860, sub: "Mussoorie Diversion Road", dist: "7.1km", live: false, badge: null, rating: 4.5 },
-        { name: "Graphic Era University", lng: 77.9480, lat: 30.3820, sub: "Clement Town", dist: "12km", live: false, badge: null, rating: 4.3 },
-    ],
-    PGs: [
-        { name: "Neon PG Residence", sub: "Sky View Terraces", dist: "2.4km", live: false, badge: "VACANT: 04", rating: 4.5 },
-        { name: "Sunrise PG Boys", sub: "₹6,500/mo — AC, WiFi", dist: "1.8km", live: false, badge: null, rating: 4.2 },
-        { name: "Patel Bhawan Girls", sub: "₹7,000/mo — 24hr security", dist: "2.0km", live: false, badge: null, rating: 4.4 },
-        { name: "Greenwood Hostel", sub: "₹6,000/mo — Mess included", dist: "1.5km", live: false, badge: null, rating: 4.1 },
-    ],
-    Food: [
-        { name: "Cyber Cafe & Hub", sub: "GND Floor, Nexus Block", dist: "1.2km", live: true, badge: null, rating: 4.7 },
-        { name: "Chai Sutta Bar", sub: "Student fav — great chai", dist: "0.9km", live: true, badge: null, rating: 4.8 },
-        { name: "Bidholi Dhaba", sub: "Cheap & tasty desi food", dist: "1.4km", live: false, badge: null, rating: 4.3 },
-        { name: "Crust N Bake", sub: "Pizzas & burgers", dist: "1.7km", live: true, badge: null, rating: 4.6 },
-    ],
-    Transit: [
-        { name: "Bidholi Bus Stand", sub: "Main UPES stop", dist: "0.3km", live: true, badge: null, rating: 4.0 },
-        { name: "Sahastradhara Crossing", sub: "Shared autos hub", dist: "3.1km", live: false, badge: null, rating: 3.8 },
-        { name: "Pondha Chowk Stop", sub: "City-centre route", dist: "5.4km", live: true, badge: null, rating: 3.9 },
-    ],
-};
-
-const ZONES = [
-    { name: "32 Bigha", color: "#1e4a28", accent: "#4ade80", desc: "Agricultural zone — upper ridge" },
-    { name: "Maggie Point", color: "#142840", accent: "#53DDFC", desc: "Scenic overlook — east valley" },
-    { name: "District 3", color: "#3d200a", accent: "#FF95A0", desc: "Residential sector — western slopes" },
-    { name: "Aravali", color: "#2a1040", accent: "#CC97FF", desc: "Dense canopy — forest boundary" },
-];
+/*
+ * Supabase tables required:
+ *
+ * map_locations  — id uuid pk, category text, name text, lng float8, lat float8,
+ *                  subtitle text, distance text, is_live bool default false,
+ *                  badge text, rating numeric(2,1), sort_order int default 0
+ *
+ * map_zones      — id uuid pk, name text, color text, accent text,
+ *                  description text, sort_order int default 0
+ *
+ * map_locked_zones — id text pk, label text, status text ('locked'|'soon'),
+ *                    reason text, chip_top text, chip_left text
+ */
 
 /* ── Locked / coming-soon areas overlaid on the map ── */
-const LOCKED_ZONES = [
-    {
-        id: "north-corridor",
-        label: "NORTH CORRIDOR",
-        status: "locked",          /* "locked" | "soon" */
-        reason: "Restricted access",
-        /* rough bounding box center + size for the overlay chip */
-        chipStyle: { top: '18%', left: '38%' },
-    },
-    {
-        id: "delta-sector",
-        label: "DELTA SECTOR",
-        status: "soon",
-        reason: "Coming Q2 2026",
-        chipStyle: { top: '62%', left: '20%' },
-    },
-    {
-        id: "east-ridge",
-        label: "EAST RIDGE",
-        status: "locked",
-        reason: "TEC members only",
-        chipStyle: { top: '40%', left: '70%' },
-    },
-    {
-        id: "summit-lab",
-        label: "SUMMIT LAB",
-        status: "soon",
-        reason: "Opening soon",
-        chipStyle: { top: '78%', left: '55%' },
-    },
-];
-
 const CAMPUS_CENTER = [77.9620, 30.4020];
 
 /* Ray-cast point-in-polygon — returns true if [lng, lat] is inside the ring */
@@ -347,6 +297,13 @@ export default function Map() {
     const [coords, setCoords] = useState({ lng: '—', lat: '—', zoom: '—' });
     const [currentDistrict, setCurrentDistrict] = useState(null);
 
+    /* ─ Supabase data ─ */
+    const [locationsData, setLocationsData] = useState({});
+    const [zonesConfig, setZonesConfig] = useState([]);
+    const [lockedZones, setLockedZones] = useState([]);
+    const [dataLoading, setDataLoading] = useState(true);
+    const [mapStyleLoaded, setMapStyleLoaded] = useState(false);
+
     /* Boot animation phases */
     const [phase, setPhase] = useState(0);
     const [listOpen, setListOpen] = useState(true);
@@ -361,7 +318,42 @@ export default function Map() {
         return () => timers.forEach(clearTimeout);
     }, []);
 
-    /* ── Resolve initial map center from device GPS ── */
+    /* ── Fetch all map data from Supabase ── */
+    useEffect(() => {
+        async function fetchMapData() {
+            setDataLoading(true);
+            const [locsResult, zonesResult, lockedResult] = await Promise.all([
+                supabase.from('map_locations').select('*').order('sort_order'),
+                supabase.from('map_zones').select('*').order('sort_order'),
+                supabase.from('map_locked_zones').select('*'),
+            ]);
+            if (!locsResult.error && locsResult.data) {
+                const grouped = {};
+                for (const loc of locsResult.data) {
+                    if (!grouped[loc.category]) grouped[loc.category] = [];
+                    grouped[loc.category].push({
+                        name: loc.name, lng: loc.lng, lat: loc.lat,
+                        sub: loc.subtitle, dist: loc.distance,
+                        live: loc.is_live, badge: loc.badge, rating: loc.rating,
+                    });
+                }
+                setLocationsData(grouped);
+            }
+            if (!zonesResult.error && zonesResult.data) {
+                setZonesConfig(zonesResult.data.map(z => ({
+                    name: z.name, color: z.color, accent: z.accent, desc: z.description,
+                })));
+            }
+            if (!lockedResult.error && lockedResult.data) {
+                setLockedZones(lockedResult.data.map(z => ({
+                    id: z.id, label: z.label, status: z.status, reason: z.reason,
+                    chipStyle: { top: z.chip_top, left: z.chip_left },
+                })));
+            }
+            setDataLoading(false);
+        }
+        fetchMapData();
+    }, []);
     useEffect(() => {
         if (!navigator.geolocation) { setMapCenter(CAMPUS_CENTER); return; }
         const fallback = setTimeout(() => setMapCenter(CAMPUS_CENTER), 4000);
@@ -481,17 +473,10 @@ export default function Map() {
                 map.getCanvas().style.cursor = '';
             });
 
-            /* ── College markers ── */
-            const collegeFeatures = LOCATIONS.Colleges
-                .filter(c => c.lng && c.lat)
-                .map(c => ({
-                    type: 'Feature',
-                    properties: { name: c.name },
-                    geometry: { type: 'Point', coordinates: [c.lng, c.lat] }
-                }));
+            /* ── College markers — source seeded empty; filled by locationsData effect ── */
             map.addSource('colleges', {
                 type: 'geojson',
-                data: { type: 'FeatureCollection', features: collegeFeatures }
+                data: { type: 'FeatureCollection', features: [] }
             });
             /* Outer ring */
             map.addLayer({
@@ -515,6 +500,7 @@ export default function Map() {
                     'circle-stroke-opacity': 0.7,
                 }
             });
+            setMapStyleLoaded(true);
         });
         const updateCoords = () => {
             const c = map.getCenter();
@@ -538,10 +524,26 @@ export default function Map() {
         return () => { map.remove(); };
     }, [mapCenter]);
 
+    /* ── Update college map markers whenever Supabase data arrives ── */
+    useEffect(() => {
+        if (!mapStyleLoaded || !mapInstance.current) return;
+        const src = mapInstance.current.getSource('colleges');
+        if (!src) return;
+        const colleges = (locationsData.Colleges || []).filter(c => c.lng && c.lat);
+        src.setData({
+            type: 'FeatureCollection',
+            features: colleges.map(c => ({
+                type: 'Feature',
+                properties: { name: c.name },
+                geometry: { type: 'Point', coordinates: [c.lng, c.lat] },
+            })),
+        });
+    }, [mapStyleLoaded, locationsData]);
+
     const isZoneView = cat === 'Zones';
     const catMeta = CATS.find(c => c.id === cat) || CATS[0];
     const thumb = THUMB[cat] || THUMB['Colleges'];
-    const allLocations = LOCATIONS[cat] || [];
+    const allLocations = locationsData[cat] || [];
     const locations = search ? allLocations.filter(l => l.name.toLowerCase().includes(search.toLowerCase())) : allLocations;
     const CAT_WITH_ZONES = [...CATS, { id: 'Zones', color: '#e3b341' }];
 
@@ -579,7 +581,7 @@ export default function Map() {
         animationDelay: `${delay}s`,
     });
 
-    const districtZone = currentDistrict ? ZONES.find(z => z.name === currentDistrict) : null;
+    const districtZone = currentDistrict ? zonesConfig.find(z => z.name === currentDistrict) : null;
 
     return (
         <div style={{ position: 'fixed', top: 68, left: 0, right: 0, bottom: 0, zIndex: 1, background: '#09090a', overflow: 'hidden' }}>
@@ -706,7 +708,7 @@ export default function Map() {
             </div>
 
             {/* ══════════════════ LOCKED ZONE LABELS ══════════════════ */}
-            {phase >= 3 && LOCKED_ZONES.map(z => {
+            {phase >= 3 && lockedZones.map(z => {
                 const isLocked = z.status === 'locked';
                 const accent = isLocked ? '#FF6E84' : '#e3b341';
                 return (
@@ -857,7 +859,7 @@ export default function Map() {
                                 background: isZoneView ? 'rgba(227,179,65,0.1)' : `${catMeta.color}12`,
                                 border: `1px solid ${isZoneView ? 'rgba(227,179,65,0.25)' : `${catMeta.color}30`}`,
                                 borderRadius: 4, padding: '2px 7px', fontFamily: 'var(--font-mono)',
-                            }}>{isZoneView ? ZONES.length : locations.length}</span>
+                            }}>{isZoneView ? zonesConfig.length : locations.length}</span>
                         </div>
                         <span className="material-symbols-outlined" style={{
                             fontSize: 18, color: 'rgba(255,255,255,0.4)',
@@ -890,7 +892,23 @@ export default function Map() {
                             borderTop: 'none', overflowY: 'auto',
                             padding: '5px 7px 7px', display: 'flex', flexDirection: 'column', gap: 3,
                         }}>
-                            {isZoneView ? ZONES.map(zone => (
+                            {dataLoading ? (
+                                [0, 1, 2].map(i => (
+                                    <div key={i} style={{
+                                        borderRadius: 10, padding: '10px 11px', display: 'flex', gap: 10, alignItems: 'center',
+                                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)',
+                                    }}>
+                                        <div style={{
+                                            width: 38, height: 38, borderRadius: 8, background: 'rgba(255,255,255,0.05)', flexShrink: 0,
+                                            animation: 'tecPulse 1.4s ease-in-out infinite', animationDelay: `${i * 0.15}s`
+                                        }} />
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ height: 11, width: '60%', borderRadius: 4, background: 'rgba(255,255,255,0.06)', marginBottom: 7 }} />
+                                            <div style={{ height: 9, width: '40%', borderRadius: 4, background: 'rgba(255,255,255,0.04)' }} />
+                                        </div>
+                                    </div>
+                                ))
+                            ) : isZoneView ? zonesConfig.map(zone => (
                                 <div key={zone.name} onClick={() => flyToZone(zone.name)} style={{
                                     borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
                                     transition: 'background 0.12s,border-color 0.12s',

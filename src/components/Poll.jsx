@@ -1,12 +1,15 @@
-﻿import React, { useState } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 const AREAS = ["All", "Pondha", "Bidholi", "Premnagar", "Sahastradhara", "Raipur"];
 const CATS = ["All", "Transport", "Healthcare", "Banking", "Infrastructure", "Safety", "Housing", "Technology", "Environment", "Food"];
 
 const AREA_COLOR = { Pondha: "var(--secondary)", Bidholi: "var(--primary)", Premnagar: "#e3b341", Sahastradhara: "var(--tertiary)", Raipur: "var(--error)" };
 
-const INIT_PROBLEMS = [
+const INIT_PROBLEMS = [];
+const _INIT_PROBLEMS_UNUSED = [
     { id: 1, area: "Bidholi", title: "No direct auto-rickshaw route to Railway Station", cat: "Transport", votes: 234, upvoted: false, comments: 45, status: "In Review", urgent: true },
     { id: 2, area: "Pondha", title: "Street lights broken on main road — safety risk after 9PM", cat: "Safety", votes: 189, upvoted: false, comments: 32, status: "Forwarded", urgent: true },
     { id: 3, area: "Premnagar", title: "No 24hr ATM near student residential area", cat: "Banking", votes: 156, upvoted: false, comments: 28, status: "Submitted", urgent: false },
@@ -21,7 +24,8 @@ const INIT_PROBLEMS = [
     { id: 12, area: "Raipur", title: "Lack of clean non-veg affordable food options", cat: "Food", votes: 93, upvoted: false, comments: 21, status: "Submitted", urgent: false },
 ];
 
-const ACTIVE_POLLS = [
+const ACTIVE_POLLS = [];
+const _ACTIVE_POLLS_UNUSED = [
     {
         id: 1, q: "Which campus feature do you want TEC to build next?", totalVotes: 428,
         options: [{ text: "Carpooling board", votes: 148 }, { text: "Live classroom updates", votes: 127 }, { text: "Internship board", votes: 103 }, { text: "Mess menu planner", votes: 50 }]
@@ -40,19 +44,26 @@ const STATUS_STYLE = {
 };
 
 export default function Poll() {
-    const [problems, setProblems] = useState(INIT_PROBLEMS);
-    const [polls, setPolls] = useState(ACTIVE_POLLS.map(p => ({ ...p, voted: null })));
+    const { user } = useAuth();
+    const [problems, setProblems] = useState([]);
+    const [polls, setPolls] = useState([]);
     const [activeArea, setActiveArea] = useState("All");
     const [activeCat, setActiveCat] = useState("All");
     const [sort, setSort] = useState("votes");
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ title: "", area: "Bidholi", cat: "Transport", desc: "" });
 
-    const handleVote = id => {
-        setProblems(ps => ps.map(p => p.id === id
-            ? { ...p, votes: p.upvoted ? p.votes - 1 : p.votes + 1, upvoted: !p.upvoted }
-            : p
-        ));
+    useEffect(() => {
+        supabase.from('pulse_issues').select('*').order('votes', { ascending: false })
+            .then(({ data }) => setProblems((data || []).map(p => ({ ...p, upvoted: false }))));
+    }, []);
+
+    const handleVote = async id => {
+        const current = problems.find(p => p.id === id);
+        if (!current || current.upvoted) return;
+        const newVotes = current.votes + 1;
+        setProblems(ps => ps.map(p => p.id === id ? { ...p, votes: newVotes, upvoted: true } : p));
+        await supabase.from('pulse_issues').update({ votes: newVotes }).eq('id', id);
     };
 
     const handlePollVote = (pollId, optIdx) => {
@@ -62,10 +73,24 @@ export default function Poll() {
         }));
     };
 
-    const handleSubmit = e => {
+    const handleSubmit = async e => {
         e.preventDefault();
-        setProblems(ps => [{ ...form, id: Date.now(), votes: 1, upvoted: false, comments: 0, status: "Submitted", urgent: false }, ...ps]);
-        setShowForm(false); setForm({ title: "", area: "Bidholi", cat: "Transport", desc: "" });
+        if (!user) return;
+        const { data, error } = await supabase.from('pulse_issues').insert({
+            user_id: user.id,
+            title: form.title,
+            area: form.area,
+            cat: form.cat,
+            description: form.desc,
+            votes: 1,
+            status: 'Submitted',
+            urgent: false,
+        }).select().single();
+        if (!error && data) {
+            setProblems(ps => [{ ...data, upvoted: false }, ...ps]);
+            setShowForm(false);
+            setForm({ title: "", area: "Bidholi", cat: "Transport", desc: "" });
+        }
     };
 
     const filtered = problems
@@ -121,6 +146,12 @@ export default function Poll() {
 
                     {/* Problems list */}
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {filtered.length === 0 && (
+                            <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--on-surface-var)' }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 40, opacity: 0.25, display: 'block', marginBottom: 12 }}>how_to_vote</span>
+                                No issues reported yet. Submit one below.
+                            </div>
+                        )}
                         {filtered.map((p, i) => {
                             const ss = STATUS_STYLE[p.status] || STATUS_STYLE["Submitted"];
                             return (
@@ -152,6 +183,12 @@ export default function Poll() {
                 {/* RIGHT: Active Polls */}
                 <div style={{ position: "sticky", top: 80 }}>
                     <span className="eyebrow" style={{ display: "block", marginBottom: 16 }}>Active Polls</span>
+                    {polls.length === 0 && (
+                        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--on-surface-var)', fontSize: 13 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 36, opacity: 0.25, display: 'block', marginBottom: 10 }}>bar_chart</span>
+                            No active polls.
+                        </div>
+                    )}
                     {polls.map(poll => {
                         const max = Math.max(...poll.options.map(o => o.votes));
                         return (

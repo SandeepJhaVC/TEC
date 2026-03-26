@@ -1,9 +1,12 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
 const CATEGORIES = ['All', 'Hardware', 'Study Sessions', 'Software', 'Books', 'Services'];
 const CONDITIONS = ['Any', 'New', 'Like New', 'Good', 'Functional'];
 
-const ITEMS = [
+const ITEMS = [];
+const _ITEMS_UNUSED = [
     {
         id: 1, cat: 'Hardware', title: 'NVIDIA RTX 4070 Ti', price: '₹42,000', condition: 'Like New', live: true,
         desc: 'Used 3 months for ML research. Full box, warranty valid. No thermal issues.',
@@ -36,23 +39,54 @@ const ITEMS = [
     },
 ];
 
-const INSIGHTS = [
+const INSIGHTS = [];
+const _INSIGHTS_UNUSED = [
     { label: 'Items Listed', value: '1,284', delta: '+12 today' },
     { label: 'Active Deals', value: '412', delta: '+3.2%' },
     { label: 'Avg Enquiry Rate', value: '8.4%', delta: 'vs 6.1% last wk' },
 ];
 
 export default function Assignments() {
+    const { user } = useAuth();
+    const [listings, setListings] = useState([]);
+    const [loadingListings, setLoadingListings] = useState(true);
+    const [submittingListing, setSubmittingListing] = useState(false);
     const [activecat, setActiveCat] = useState('All');
     const [condition, setCondition] = useState('Any');
     const [search, setSearch] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ title: '', price: '', cat: 'Hardware', condition: 'New', desc: '', contact: '' });
 
-    const filtered = ITEMS.filter(i => {
+    useEffect(() => {
+        supabase.from('marketplace_listings').select('*').order('created_at', { ascending: false })
+            .then(({ data }) => { setListings(data || []); setLoadingListings(false); });
+    }, []);
+
+    const handlePostListing = async () => {
+        if (!form.title.trim() || !user) return;
+        setSubmittingListing(true);
+        const { data, error } = await supabase.from('marketplace_listings').insert({
+            user_id: user.id,
+            title: form.title,
+            price: form.price,
+            cat: form.cat,
+            condition: form.condition,
+            description: form.desc,
+            contact: form.contact,
+            seller_name: user.name,
+        }).select().single();
+        if (!error && data) {
+            setListings(prev => [data, ...prev]);
+            setShowForm(false);
+            setForm({ title: '', price: '', cat: 'Hardware', condition: 'New', desc: '', contact: '' });
+        }
+        setSubmittingListing(false);
+    };
+
+    const filtered = listings.filter(i => {
         const matchCat = activecat === 'All' || i.cat === activecat;
         const matchCond = condition === 'Any' || !i.condition || i.condition === condition;
-        const matchQ = !search || i.title.toLowerCase().includes(search.toLowerCase()) || i.desc.toLowerCase().includes(search.toLowerCase());
+        const matchQ = !search || i.title.toLowerCase().includes(search.toLowerCase()) || (i.description || '').toLowerCase().includes(search.toLowerCase());
         return matchCat && matchCond && matchQ;
     });
 
@@ -101,7 +135,10 @@ export default function Assignments() {
                     </div>
 
                     {/* Items */}
-                    {filtered.length === 0 && (
+                    {loadingListings && (
+                        <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--on-surface-var)' }}>Loading listings...</div>
+                    )}
+                    {!loadingListings && filtered.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--on-surface-var)' }}>No listings match your filters.</div>
                     )}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -115,17 +152,14 @@ export default function Assignments() {
                                             <span className="tag-ghost" style={{ fontSize: 10 }}>{item.cat}</span>
                                             {item.condition && <span className="tag-secondary" style={{ fontSize: 9 }}>{item.condition}</span>}
                                         </div>
-                                        <p style={{ color: 'var(--on-surface-var)', fontSize: 13, lineHeight: 1.5, marginBottom: 12 }}>{item.desc}</p>
+                                        <p style={{ color: 'var(--on-surface-var)', fontSize: 13, lineHeight: 1.5, marginBottom: 12 }}>{item.description}</p>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                                             <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--on-surface-var)' }}>
-                                                <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(255,149,160,0.12)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'var(--tertiary)' }}>{item.seller[0].toUpperCase()}</span>
-                                                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--on-surface)' }}>{item.seller}</span>
+                                                <span style={{ width: 18, height: 18, borderRadius: '50%', background: 'rgba(255,149,160,0.12)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 800, color: 'var(--tertiary)' }}>{(item.seller_name || '?')[0].toUpperCase()}</span>
+                                                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--on-surface)' }}>{item.seller_name || 'Unknown'}</span>
                                             </span>
-                                            <span style={{ fontSize: 11, color: 'var(--on-surface-var)' }}>{item.batch}</span>
-                                            <span style={{ fontSize: 11, color: 'var(--on-surface-var)', fontFamily: 'var(--font-mono)' }}>{item.posted}</span>
-                                            <span style={{ marginLeft: 'auto', display: 'flex', gap: 10, fontSize: 11, color: 'var(--on-surface-var)', fontFamily: 'var(--font-mono)' }}>
-                                                <span>{item.stats.views} views</span>
-                                                <span>{item.stats.enquiries} enquiries</span>
+                                            <span style={{ fontSize: 11, color: 'var(--on-surface-var)', fontFamily: 'var(--font-mono)' }}>
+                                                {item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}
                                             </span>
                                         </div>
                                     </div>
@@ -188,7 +222,7 @@ export default function Assignments() {
                             <input className="neon-input" placeholder="Contact (Insta / WhatsApp / Email)" value={form.contact} onChange={e => setForm({ ...form, contact: e.target.value })} />
                         </div>
                         <div style={{ display: 'flex', gap: 10 }}>
-                            <button className="btn-primary" style={{ flex: 1, justifyContent: 'center', padding: 12, fontSize: 11 }}>Post Listing</button>
+                            <button className="btn-primary" onClick={handlePostListing} disabled={submittingListing} style={{ flex: 1, justifyContent: 'center', padding: 12, fontSize: 11, opacity: submittingListing ? 0.6 : 1 }}>{submittingListing ? 'Posting...' : 'Post Listing'}</button>
                             <button className="btn-secondary" onClick={() => setShowForm(false)} style={{ padding: '12px 20px' }}>Cancel</button>
                         </div>
                     </div>

@@ -1,64 +1,78 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../context/AuthContext';
 
-const FEED = [
-  {
-    id: 1, user: 'cyber_junkie', badge: 'Contributor', time: '2h ago',
-    missionType: 'CONTACT MISSION', missionColor: '#53DDFC', xpReward: 150,
-    body: 'Just finished building an AI-powered timetable scheduler for UPES. 99.9% uptime in beta. Anyone want to stress test it?',
-    code: 'const schedule = await kernel.optimize({ campus: "UPES", algo: "genetic" })\n// → 94.2% conflict-free slots generated',
-    votes: 128, replies: 24, kernel: '#X-KERNEL-402',
-  },
-  {
-    id: 2, user: 'neon_ghost', badge: null, time: '5h ago',
-    missionType: 'HEIST', missionColor: '#FF95A0', xpReward: 250,
-    body: "Who's building something for the North campus hackathon? Looking for a designer co-founder with mobile experience.",
-    code: 'fn main() {\n  println!("who\'s up for a hack session at the North lab?");\n  loop { campus.code(); sleep(3600); }\n}',
-    votes: 52, replies: 8, kernel: null,
-  },
-  {
-    id: 3, user: 'delta_root', badge: 'Builder', time: '8h ago',
-    missionType: 'BOUNTY', missionColor: '#e3b341', xpReward: 75,
-    body: 'New version of CampusGPT dropped. Context window now covers all UPES syllabi up to 2025. Try it at the link.',
-    code: null,
-    votes: 203, replies: 47, kernel: '#AI-SYS-221',
-  },
-];
+const FEED = [];
 
-const BAZAAR_HOT = [
-  { name: 'TEC Oversized Hoodie', credits: '47 Echo Credits' },
-  { name: 'Premium Keycap Set', credits: '120 Echo Credits' },
-];
+const BAZAAR_HOT = [];
 
-const LIVE_LOGS = [
-  { type: 'CONN', msg: 'user.492 joined Echo-net' },
-  { type: 'TX', msg: 'Deployment alpha-9 success' },
-  { type: 'ERR', msg: 'Security ping: Block-C' },
-  { type: 'INFO', msg: 'Bazaar inventory update' },
-];
+const LIVE_LOGS = [];
 
-const TRENDING_NODES = ['#FinalWeek', '#CodeJam24', '#CoffeeLogic', '#Protocol_X'];
+const TRENDING_NODES = [];
 
 const LOG_COLORS = { CONN: '#53DDFC', TX: '#3fb950', ERR: '#FF6E84', INFO: '#CC97FF' };
 
 export default function Home() {
-  const [votes, setVotes] = useState(FEED.reduce((acc, p) => ({ ...acc, [p.id]: p.votes }), {}));
+  const { user } = useAuth();
+  const [posts, setPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [votes, setVotes] = useState({});
   const [voted, setVoted] = useState({});
   const [postText, setPostText] = useState('');
-  const [xpPopups, setXpPopups] = useState({}); // { [postId]: key }
+  const [submittingPost, setSubmittingPost] = useState(false);
+  const [xpPopups, setXpPopups] = useState({});
   const [totalXp, setTotalXp] = useState(0);
+
+  useEffect(() => {
+    supabase.from('feed_posts').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => {
+        const loaded = (data || []).map(p => ({
+          ...p,
+          user: p.user_name || 'Anonymous',
+          time: p.created_at ? new Date(p.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
+          badge: (p.user_role && p.user_role !== 'student') ? p.user_role : null,
+          missionColor: p.user_role === 'builder' ? '#CC97FF' : p.user_role === 'admin' ? '#FF6E84' : '#53DDFC',
+          missionType: 'PULSE',
+          xpReward: null, kernel: null, code: null, replies: 0,
+        }));
+        setPosts(loaded);
+        setVotes(loaded.reduce((acc, p) => ({ ...acc, [p.id]: p.votes }), {}));
+        setLoadingPosts(false);
+      });
+  }, []);
+
+  const handleRelay = async () => {
+    if (!postText.trim() || !user) return;
+    setSubmittingPost(true);
+    const { data, error } = await supabase.from('feed_posts').insert({
+      user_id: user.id, user_name: user.name, user_role: user.role,
+      body: postText.trim(), votes: 1,
+    }).select().single();
+    if (!error && data) {
+      const normalized = {
+        ...data,
+        user: data.user_name || user.name,
+        time: 'Just now',
+        badge: (user.role && user.role !== 'student') ? user.role : null,
+        missionColor: user.role === 'builder' ? '#CC97FF' : user.role === 'admin' ? '#FF6E84' : '#53DDFC',
+        missionType: 'PULSE',
+        xpReward: null, kernel: null, code: null, replies: 0,
+      };
+      setPosts(p => [normalized, ...p]);
+      setVotes(v => ({ ...v, [data.id]: 1 }));
+      setPostText('');
+    }
+    setSubmittingPost(false);
+  };
 
   const handleVote = (id) => {
     if (voted[id]) return;
-    const post = FEED.find(p => p.id === id);
-    setVotes(v => ({ ...v, [id]: v[id] + 1 }));
+    const newCount = (votes[id] || 0) + 1;
+    setVotes(v => ({ ...v, [id]: newCount }));
     setVoted(v => ({ ...v, [id]: true }));
-    /* Trigger XP popup */
-    const key = Date.now();
-    setXpPopups(p => ({ ...p, [id]: key }));
-    setTotalXp(x => x + (post?.xpReward ?? 50));
-    setTimeout(() => setXpPopups(p => { const n = { ...p }; delete n[id]; return n; }), 1200);
+    supabase.from('feed_posts').update({ votes: newCount }).eq('id', id);
   };
 
   return (
@@ -108,13 +122,19 @@ export default function Home() {
                   </button>
                 ))}
               </div>
-              <button className="btn-ghost-cyan" style={{ fontSize: 11, padding: '6px 16px', letterSpacing: '0.08em' }}>RELAY</button>
+              <button className="btn-ghost-cyan" onClick={handleRelay} disabled={submittingPost || !postText.trim()} style={{ fontSize: 11, padding: '6px 16px', letterSpacing: '0.08em', opacity: (submittingPost || !postText.trim()) ? 0.45 : 1 }}>{submittingPost ? '...' : 'RELAY'}</button>
             </div>
           </div>
 
           {/* Posts */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {FEED.map(post => (
+            {!loadingPosts && posts.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '60px 0', color: 'var(--on-surface-var)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 40, opacity: 0.25, display: 'block', marginBottom: 12 }}>chat_bubble</span>
+                No posts yet. Be the first to relay a pulse.
+              </div>
+            )}
+            {posts.map(post => (
               <motion.article key={post.id} className="neon-card mission-card" style={{
                 padding: 24, position: 'relative', overflow: 'hidden',
                 borderLeft: `3px solid ${post.missionColor}40`,

@@ -13,24 +13,6 @@ const ROLE_HIERARCHY = { admin: 4, moderator: 3, builder: 2, student: 1 };
 
 const AuthContext = createContext(null);
 
-// ------------------------------------------------------------------
-// DEMO credentials — replace with real Supabase RLS + roles table
-// ------------------------------------------------------------------
-const DEMO_USERS = [
-    { email: 'admin@tec.dev', password: 'Admin@123', role: 'admin', name: 'Admin TEC', id: 'demo-admin-001' },
-    { email: 'mod@tec.dev', password: 'Mod@123', role: 'moderator', name: 'Priya Moderator', id: 'demo-mod-001' },
-    { email: 'builder@tec.dev', password: 'Build@123', role: 'builder', name: 'Rahul Builder', id: 'demo-build-001' },
-    { email: 'student@tec.dev', password: 'Student@123', role: 'student', name: 'Arjun Student', id: 'demo-student-001' },
-];
-
-function matchDemo(email, password) {
-    return DEMO_USERS.find(
-        u => u.email.toLowerCase() === email.toLowerCase() && u.password === password
-    ) || null;
-}
-
-// ------------------------------------------------------------------
-
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);        // { id, email, name, role, avatarLetter }
     const [loading, setLoading] = useState(true);
@@ -65,27 +47,10 @@ export function AuthProvider({ children }) {
 
     /**
      * login(email, password)
-     * Tries demo credentials first, then real Supabase auth.
+     * Authenticates via Supabase.
      */
     const login = async (email, password) => {
         setAuthError('');
-        // 1. Demo users
-        const demo = matchDemo(email, password);
-        if (demo) {
-            const u = {
-                id: demo.id,
-                email: demo.email,
-                name: demo.name,
-                role: demo.role,
-                avatarLetter: demo.name[0].toUpperCase(),
-                isDemo: true,
-            };
-            setUser(u);
-            sessionStorage.setItem('tec_user', JSON.stringify(u));
-            return { ok: true, user: u };
-        }
-
-        // 2. Real Supabase auth
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) {
             setAuthError(error.message);
@@ -139,7 +104,7 @@ export function AuthProvider({ children }) {
     const isBuilder = () => hasRole('builder');
 
     return (
-        <AuthContext.Provider value={{ user, loading, authError, login, register, logout, hasRole, isAdmin, isModerator, isBuilder, DEMO_USERS }}>
+        <AuthContext.Provider value={{ user, loading, authError, login, register, logout, hasRole, isAdmin, isModerator, isBuilder }}>
             {children}
         </AuthContext.Provider>
     );

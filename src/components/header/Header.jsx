@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -28,6 +28,18 @@ export default function Header() {
     const { user, logout } = useAuth();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [showModal, setShowModal] = useState(false);
+    const [theme, setTheme] = useState(() => localStorage.getItem('tec-theme') || 'dark');
+
+    useEffect(() => {
+        if (theme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+        }
+        localStorage.setItem('tec-theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
     const [form, setForm] = useState({ name: '', sapId: '', personalEmail: '', collegeEmail: '', batch: '', year: '', course: '' });
     const [memberId, setMemberId] = useState('');
     const [success, setSuccess] = useState(false);
@@ -179,6 +191,16 @@ export default function Header() {
                 <div className="tec-topbar-right" style={{ alignItems: 'center', gap: 10, marginLeft: 'auto', flexShrink: 0 }}>
                     {user ? (
                         <>
+                            <button onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} style={{
+                                width: 34, height: 34, borderRadius: 8, background: 'rgba(255,255,255,0.06)',
+                                border: '1px solid rgba(255,255,255,0.09)', display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)',
+                                transition: 'all 0.15s', flexShrink: 0,
+                            }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
+                                    {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+                                </span>
+                            </button>
                             <span className="tec-role-pill" style={{
                                 color: ROLE_COLORS[user.role] || '#CC97FF',
                                 borderColor: `${ROLE_COLORS[user.role] || '#CC97FF'}45`,
@@ -195,6 +217,16 @@ export default function Header() {
                         </>
                     ) : (
                         <>
+                            <button onClick={toggleTheme} title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} style={{
+                                width: 34, height: 34, borderRadius: 8, background: 'rgba(255,255,255,0.06)',
+                                border: '1px solid rgba(255,255,255,0.09)', display: 'flex', alignItems: 'center',
+                                justifyContent: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.7)',
+                                transition: 'all 0.15s', flexShrink: 0,
+                            }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
+                                    {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+                                </span>
+                            </button>
                             <Link to="/login" className="tec-signin-link">Sign in</Link>
                             <button onClick={() => setShowModal(true)} className="tec-join-btn">Join TEC</button>
                         </>
@@ -261,6 +293,19 @@ export default function Header() {
                                             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: ROLE_COLORS[user.role] || '#CC97FF' }}>{user.role}</div>
                                         </div>
                                     </div>
+                                    <button onClick={toggleTheme} style={{
+                                        width: '100%', padding: '10px', background: 'rgba(255,255,255,0.04)',
+                                        border: '1px solid rgba(255,255,255,0.08)', borderRadius: 10,
+                                        color: 'rgba(255,255,255,0.7)', fontFamily: "'Bebas Neue', sans-serif",
+                                        fontSize: 15, letterSpacing: '0.1em', cursor: 'pointer',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                                        marginBottom: 8,
+                                    }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 17 }}>
+                                            {theme === 'dark' ? 'light_mode' : 'dark_mode'}
+                                        </span>
+                                        {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+                                    </button>
                                     <button onClick={() => { logout(); setMobileOpen(false); }} style={{
                                         width: '100%', padding: '11px', background: 'transparent',
                                         border: '1px solid rgba(255,110,132,0.25)', borderRadius: 10,
