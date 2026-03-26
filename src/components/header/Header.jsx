@@ -7,16 +7,13 @@ const ROLE_COLORS = {
 };
 
 const NAV = [
-    { icon: 'storefront', label: 'Bazaar', to: '/assignments' },
-    { icon: 'construction', label: 'Builds', to: '/builds' },
+    { icon: 'storefront', label: 'Marketplace', to: '/assignments' },
     { icon: 'explore', label: 'Explore', to: '/' },
     { icon: 'campaign', label: 'Feed', to: '/feed' },
     { icon: 'sell', label: 'Deals', to: '/discounts' },
     { icon: 'location_city', label: 'Listings', to: '/listings' },
     { icon: 'how_to_vote', label: 'Pulse', to: '/poll' },
-    { icon: 'event', label: 'Events', to: '/events' },
     { icon: 'info', label: 'About', to: '/about' },
-    { icon: 'badge', label: 'Members', to: '/member' },
 ];
 
 function generateMemberId() {
@@ -41,278 +38,255 @@ export default function Header() {
         setMemberId(''); setSuccess(false);
     };
 
-    /* ── Fake player stats (replace with real data when auth XP is wired) ── */
-    const PLAYER_LEVEL = 7;
-    const XP_PCT = 72;
-    const CREDITS = 1240;
-    const REP_STARS = 3;
-
     const isActive = (to) => to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
 
     return (
         <>
-            {/* ── Material Symbols icon font ── */}
-            <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-            <style>{`.material-symbols-outlined{font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;user-select:none;}`}</style>
+            {/* ── Fonts ── */}
+            <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+            <style>{`
+                .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; user-select:none; }
 
-            {/* ── TOP NAV ── */}
+                /* ── Nav link ── */
+                .tec-nav-link {
+                    display: flex; align-items: center; gap: 7px;
+                    padding: 0 15px; height: 100%;
+                    position: relative; text-decoration: none;
+                    font-family: 'Bebas Neue', 'Barlow Condensed', sans-serif;
+                    font-size: 15px; letter-spacing: 0.09em;
+                    color: rgba(255,255,255,0.38);
+                    transition: color 0.14s;
+                    white-space: nowrap;
+                }
+                .tec-nav-link::after {
+                    content: ''; position: absolute; bottom: 0; left: 15px; right: 15px;
+                    height: 2px; border-radius: 2px 2px 0 0;
+                    background: #CC97FF;
+                    transform: scaleX(0); transform-origin: center;
+                    transition: transform 0.2s cubic-bezier(0.34,1.56,0.64,1);
+                }
+                .tec-nav-link:hover { color: rgba(255,255,255,0.8); }
+                .tec-nav-link.tec-active {
+                    color: #CC97FF;
+                    text-shadow: 0 0 18px rgba(204,151,255,0.6);
+                }
+                .tec-nav-link.tec-active::after { transform: scaleX(1); box-shadow: 0 0 8px rgba(204,151,255,0.7); }
+                .tec-nav-link .tec-nav-icon { font-size: 15px; }
+
+                /* ── Mobile nav link ── */
+                .tec-mob-link {
+                    display: flex; align-items: center; gap: 14px;
+                    padding: 11px 14px; border-radius: 10px; margin-bottom: 2px;
+                    text-decoration: none;
+                    font-family: 'Bebas Neue', sans-serif; font-size: 17px; letter-spacing: 0.1em;
+                    color: rgba(255,255,255,0.4); transition: all 0.14s;
+                }
+                .tec-mob-link:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.04); }
+                .tec-mob-link.tec-active { color: #CC97FF; background: rgba(204,151,255,0.08); }
+
+                /* ── Right side user ── */
+                .tec-user-name {
+                    font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700;
+                    letter-spacing: 0.03em; color: rgba(255,255,255,0.82);
+                    max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+                }
+                .tec-role-pill {
+                    font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 800;
+                    letter-spacing: 0.12em; text-transform: uppercase;
+                    padding: 2px 8px; border-radius: 5px; border: 1px solid;
+                }
+                .tec-signout {
+                    cursor: pointer; background: transparent;
+                    border: 1px solid rgba(255,110,132,0.3); color: #FF6E84;
+                    font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 800;
+                    letter-spacing: 0.12em; text-transform: uppercase;
+                    padding: 6px 14px; border-radius: 7px; transition: background 0.14s;
+                }
+                .tec-signout:hover { background: rgba(255,110,132,0.08); }
+                .tec-join-btn {
+                    cursor: pointer;
+                    font-family: 'Bebas Neue', sans-serif !important;
+                    font-size: 15px !important; letter-spacing: 0.1em !important;
+                    padding: 7px 20px; border-radius: 8px; border: none;
+                    background: linear-gradient(135deg, #9C48EA, #CC97FF);
+                    color: #fff; transition: opacity 0.14s, transform 0.14s;
+                }
+                .tec-join-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+                .tec-signin-link {
+                    font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700;
+                    letter-spacing: 0.1em; text-transform: uppercase;
+                    color: rgba(255,255,255,0.4); text-decoration: none; transition: color 0.14s;
+                    padding: 6px 10px;
+                }
+                .tec-signin-link:hover { color: #fff; }
+
+                /* ── Responsive ── */
+                .tec-desktop-nav { display: flex; }
+                .tec-topbar-right { display: flex; }
+                .tec-hamburger { display: none; }
+                @media (max-width: 1023px) {
+                    .tec-desktop-nav { display: none !important; }
+                    .tec-topbar-right { display: none !important; }
+                    .tec-hamburger { display: flex !important; }
+                }
+            `}</style>
+
+            {/* ══════════════ TOP NAV ══════════════ */}
             <nav style={{
-                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: 64,
-                background: 'rgba(14,14,14,0.85)', backdropFilter: 'blur(20px)',
-                borderBottom: '1px solid rgba(255,255,255,0.06)',
-                boxShadow: '0 0 20px rgba(204,151,255,0.04)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px',
+                position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200, height: 68,
+                display: 'flex', alignItems: 'stretch',
+                background: 'rgba(8,8,9,0.95)', backdropFilter: 'blur(28px)', WebkitBackdropFilter: 'blur(28px)',
+                borderBottom: '1px solid rgba(255,255,255,0.07)',
+                boxShadow: '0 2px 40px rgba(0,0,0,0.7), inset 0 -1px 0 rgba(204,151,255,0.04)',
+                padding: '0 24px',
             }}>
+
                 {/* Logo */}
-                <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 12, textDecoration: 'none' }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22, color: 'var(--primary)', letterSpacing: '-0.04em', fontStyle: 'italic' }}>TEC</span>
+                <Link to="/" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', textDecoration: 'none', marginRight: 28, flexShrink: 0, gap: 0 }}>
+                    <span style={{
+                        fontFamily: "'Bebas Neue', sans-serif", fontSize: 34, fontStyle: 'italic',
+                        color: '#CC97FF', letterSpacing: '0.03em', lineHeight: 1,
+                        textShadow: '0 0 28px rgba(204,151,255,0.55), 0 0 64px rgba(204,151,255,0.18)',
+                    }}>TEC</span>
+                    <span style={{
+                        fontFamily: "'Barlow Condensed', sans-serif", fontSize: 7.5, fontWeight: 700,
+                        letterSpacing: '0.28em', color: 'rgba(255,255,255,0.18)', textTransform: 'uppercase',
+                        marginTop: -1,
+                    }}>The Echo Community</span>
                 </Link>
 
-                {/* Desktop nav links — hidden on mobile */}
-                <div className="desktop-nav-links" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                    {['/', '/feed', '/assignments', '/builds'].map((to, i) => {
-                        const labels = ['Explore', 'Feed', 'Bazaar', 'Builds'];
-                        return (
-                            <Link key={to} to={to} style={{
-                                padding: '5px 12px', borderRadius: 8, fontFamily: 'var(--font-display)',
-                                fontSize: 12, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase',
-                                color: isActive(to) ? 'var(--primary)' : 'var(--on-surface-var)',
-                                background: isActive(to) ? 'rgba(204,151,255,0.08)' : 'transparent',
-                                textDecoration: 'none', transition: 'all 0.14s',
-                            }}>{labels[i]}</Link>
-                        );
-                    })}
-                </div>
+                {/* Divider */}
+                <div style={{ width: 1, background: 'rgba(255,255,255,0.07)', margin: '16px 4px', flexShrink: 0 }} />
 
-                {/* Right actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    {user ? (
-                        <>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                <span className="topbar-role-text" style={{ fontSize: 10, fontWeight: 800, color: ROLE_COLORS[user.role] || 'var(--primary)', letterSpacing: '0.08em', fontFamily: 'var(--font-display)', textTransform: 'uppercase' }}>{user.role}</span>
-                                <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(204,151,255,0.12)', border: '1.5px solid rgba(204,151,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: 'var(--primary)', fontFamily: 'var(--font-display)' }}>
-                                    {(user.avatarLetter || user.name?.[0] || 'U').toUpperCase()}
-                                </div>
-                                <span className="topbar-user-name" style={{ fontSize: 13, fontWeight: 700, color: 'var(--on-surface)', fontFamily: 'var(--font-body)', maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.name}</span>
-                            </div>
-                            <button className="topbar-signout-btn" onClick={logout} style={{ padding: '6px 14px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(255,110,132,0.25)', color: 'var(--error)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', letterSpacing: '0.05em', transition: 'all 0.14s' }}
-                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,110,132,0.08)'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                Sign out
-                            </button>
-                        </>
-                    ) : (
-                        <>
-                            <Link className="topbar-signin-link" to="/login" style={{ padding: '6px 14px', fontFamily: 'var(--font-display)', fontSize: 12, fontWeight: 700, color: 'var(--on-surface-var)', letterSpacing: '0.06em', textTransform: 'uppercase', textDecoration: 'none', transition: 'color 0.14s' }}
-                                onMouseEnter={e => e.currentTarget.style.color = 'var(--on-surface)'}
-                                onMouseLeave={e => e.currentTarget.style.color = 'var(--on-surface-var)'}>
-                                Sign in
-                            </Link>
-                            <button onClick={() => setShowModal(true)} className="btn-primary topbar-join-btn" style={{ padding: '7px 16px', fontSize: 11, letterSpacing: '0.08em' }}>
-                                Join TEC
-                            </button>
-                        </>
-                    )}
-                    {/* Echo Credits — hidden on mobile */}
-                    <div className="credits-display topbar-join-btn" style={{ cursor: 'default' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 13 }}>toll</span>
-                        {CREDITS.toLocaleString()} EC
-                    </div>
-                    {/* Rep stars — hidden on mobile */}
-                    <div className="topbar-join-btn" style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        {[1, 2, 3, 4, 5].map(i => (
-                            <span key={i} className={`rep-star ${i <= REP_STARS ? 'filled' : 'empty'}`}>★</span>
-                        ))}
-                    </div>
-                    {/* Hamburger */}
-                    <button onClick={() => setMobileOpen(o => !o)} style={{ display: 'none', flexDirection: 'column', gap: 4, background: 'transparent', border: 'none', cursor: 'pointer', padding: 6 }} className="hamburger-btn">
-                        {[0, 1, 2].map(i => <span key={i} style={{ display: 'block', width: 20, height: 2, background: 'var(--on-surface-var)', borderRadius: 2 }} />)}
-                    </button>
-                </div>
-            </nav>
-
-            {/* ── XP strip pinned under topnav ── */}
-            <div className="topnav-xp-strip">
-                <div style={{ height: '100%', width: `${XP_PCT}%`, background: 'linear-gradient(90deg, #9c48ea, #cc97ff)', opacity: 0.7, transition: 'width 1s ease' }} />
-            </div>
-
-            {/* ── SIDEBAR ── */}
-            <aside style={{
-                position: 'fixed', left: 0, top: 0, paddingTop: 72, paddingBottom: 24,
-                display: 'flex', flexDirection: 'column', height: '100vh', width: 256,
-                background: 'var(--bg)', borderRight: '1px solid rgba(255,255,255,0.04)', zIndex: 100,
-                overflowY: 'auto',
-            }} className="sidebar">
-
-                {/* ── Player card ── */}
-                <div className="player-card hud-bracket">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-                        {/* Avatar */}
-                        <div style={{
-                            width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-                            background: 'linear-gradient(135deg, rgba(204,151,255,0.2), rgba(83,221,252,0.1))',
-                            border: '1.5px solid rgba(204,151,255,0.35)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: 15, fontWeight: 900, color: 'var(--primary)', fontFamily: 'var(--font-display)',
-                        }}>
-                            {user ? (user.avatarLetter || user.name?.[0] || 'U').toUpperCase() : '?'}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 12, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {user ? user.name : 'GHOST'}
-                                </span>
-                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'rgba(255,255,255,0.3)', flexShrink: 0 }}>LVL</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 1 }}>
-                                <div style={{ display: 'flex', gap: 2 }}>
-                                    {[1, 2, 3, 4, 5].map(i => (
-                                        <span key={i} className={`rep-star ${i <= REP_STARS ? 'filled' : 'empty'}`} style={{ fontSize: 10 }}>★</span>
-                                    ))}
-                                </div>
-                                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 14, fontWeight: 900, color: 'var(--primary)', lineHeight: 1 }}>{PLAYER_LEVEL}</span>
-                            </div>
-                        </div>
-                    </div>
-                    {/* XP bar */}
-                    <div style={{ marginBottom: 8 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.1em' }}>XP</span>
-                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: 8, color: 'rgba(255,255,255,0.3)' }}>{XP_PCT}/100</span>
-                        </div>
-                        <div className="stat-bar-track">
-                            <div className="stat-bar-fill" style={{ width: `${XP_PCT}%`, background: 'linear-gradient(90deg, #9c48ea, #cc97ff)' }} />
-                        </div>
-                    </div>
-                    {/* Credits */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-display)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Echo Credits</span>
-                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 800, color: '#e3b341' }}>
-                            <span style={{ fontSize: 9, marginRight: 2, opacity: 0.7 }}>$</span>{CREDITS.toLocaleString()}
-                        </span>
-                    </div>
-                </div>
-
-                <nav style={{ flex: 1, padding: '0 8px' }}>
-                    {NAV.map(({ icon, label, to }, idx) => {
-                        const active = isActive(to);
-                        return (
-                            <Link key={to} to={to} style={{
-                                display: 'flex', alignItems: 'center', gap: 12, padding: '9px 12px',
-                                borderRadius: 10, marginBottom: 2, textDecoration: 'none',
-                                fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
-                                letterSpacing: '0.08em', textTransform: 'uppercase',
-                                color: active ? 'var(--primary)' : 'var(--on-surface-var)',
-                                background: active ? 'rgba(204,151,255,0.08)' : 'transparent',
-                                borderLeft: active ? '2px solid var(--primary)' : '2px solid transparent',
-                                transition: 'all 0.14s',
-                            }}
-                                onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-highest)'; e.currentTarget.style.color = 'var(--on-surface)'; } }}
-                                onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--on-surface-var)'; } }}>
-                                {/* Mission number */}
-                                <span style={{
-                                    fontFamily: 'var(--font-mono)', fontSize: 8,
-                                    color: active ? 'var(--primary)' : 'rgba(255,255,255,0.15)',
-                                    width: 16, flexShrink: 0, textAlign: 'center',
-                                }}>{String(idx + 1).padStart(2, '0')}</span>
-                                <span className="material-symbols-outlined" style={{ fontSize: 17, flexShrink: 0, color: active ? 'var(--primary)' : 'inherit' }}>{icon}</span>
-                                <span style={{ flex: 1 }}>{label}</span>
-                                {active && (
-                                    <span style={{
-                                        width: 6, height: 6, borderRadius: '50%', flexShrink: 0,
-                                        background: 'var(--primary)',
-                                        boxShadow: '0 0 6px var(--primary)',
-                                    }} />
-                                )}
-                            </Link>
-                        );
-                    })}
+                {/* Desktop nav */}
+                <div className="tec-desktop-nav" style={{ flex: 1, alignItems: 'stretch', gap: 0, overflow: 'hidden' }}>
+                    {NAV.map(({ icon, label, to }) => (
+                        <Link key={to} to={to} className={`tec-nav-link${isActive(to) ? ' tec-active' : ''}`}>
+                            <span className="material-symbols-outlined tec-nav-icon">{icon}</span>
+                            {label}
+                        </Link>
+                    ))}
                     {user?.role === 'admin' && (
-                        <Link to="/admin" style={{
-                            display: 'flex', alignItems: 'center', gap: 14, padding: '10px 12px',
-                            borderRadius: 10, marginBottom: 2, textDecoration: 'none',
-                            fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700,
-                            letterSpacing: '0.1em', textTransform: 'uppercase',
-                            color: isActive('/admin') ? 'var(--error)' : 'var(--on-surface-var)',
-                            background: isActive('/admin') ? 'rgba(255,110,132,0.08)' : 'transparent',
-                            borderRight: isActive('/admin') ? '2px solid var(--error)' : '2px solid transparent',
-                            transition: 'all 0.14s',
-                        }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>admin_panel_settings</span>
+                        <Link to="/admin" className={`tec-nav-link${isActive('/admin') ? ' tec-active' : ''}`}
+                            style={{ color: isActive('/admin') ? '#FF6E84' : undefined }}>
+                            <span className="material-symbols-outlined tec-nav-icon">admin_panel_settings</span>
                             Admin
                         </Link>
                     )}
-                </nav>
+                </div>
 
-                {/* Bottom panel: status + join/profile */}
-                <div style={{ padding: '0 12px', marginTop: 8 }}>
-                    {/* Status strip */}
-                    <div style={{
-                        display: 'grid', gridTemplateColumns: '1fr 1fr',
-                        gap: 6, marginBottom: 10,
-                    }}>
-                        {[
-                            { label: 'HEALTH', pct: 88, color: '#4ade80' },
-                            { label: 'ARMOR', pct: 55, color: '#53DDFC' },
-                        ].map(s => (
-                            <div key={s.label}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3 }}>
-                                    <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: 'rgba(255,255,255,0.25)', letterSpacing: '0.1em' }}>{s.label}</span>
-                                    <span style={{ fontSize: 8, fontFamily: 'var(--font-mono)', color: s.color }}>{s.pct}%</span>
-                                </div>
-                                <div className="stat-bar-track">
-                                    <div className="stat-bar-fill" style={{ width: `${s.pct}%`, background: s.color }} />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    {!user && (
-                        <button onClick={() => setShowModal(true)} className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px', fontSize: 11, letterSpacing: '0.1em' }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 15 }}>rocket_launch</span>
-                            JOIN TEC
-                        </button>
-                    )}
-                    {user && (
-                        <button onClick={logout} style={{ width: '100%', padding: '9px', background: 'transparent', border: '1px solid rgba(255,110,132,0.2)', borderRadius: 10, color: 'var(--error)', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-display)', letterSpacing: '0.08em', transition: 'all 0.14s' }}>
-                            DISCONNECT
-                        </button>
+                {/* Right: user / auth */}
+                <div className="tec-topbar-right" style={{ alignItems: 'center', gap: 10, marginLeft: 'auto', flexShrink: 0 }}>
+                    {user ? (
+                        <>
+                            <span className="tec-role-pill" style={{
+                                color: ROLE_COLORS[user.role] || '#CC97FF',
+                                borderColor: `${ROLE_COLORS[user.role] || '#CC97FF'}45`,
+                                background: `${ROLE_COLORS[user.role] || '#CC97FF'}12`,
+                            }}>{user.role}</span>
+                            <div style={{
+                                width: 34, height: 34, borderRadius: 9, flexShrink: 0,
+                                background: 'rgba(204,151,255,0.1)', border: '1.5px solid rgba(204,151,255,0.28)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: '#CC97FF',
+                            }}>{(user.avatarLetter || user.name?.[0] || 'U').toUpperCase()}</div>
+                            <span className="tec-user-name">{user.name}</span>
+                            <button className="tec-signout" onClick={logout}>Sign out</button>
+                        </>
+                    ) : (
+                        <>
+                            <Link to="/login" className="tec-signin-link">Sign in</Link>
+                            <button onClick={() => setShowModal(true)} className="tec-join-btn">Join TEC</button>
+                        </>
                     )}
                 </div>
-            </aside>
 
-            {/* ── MOBILE DRAWER ── */}
+                {/* Hamburger */}
+                <button onClick={() => setMobileOpen(o => !o)} className="tec-hamburger" style={{
+                    flexDirection: 'column', gap: 5, background: 'transparent', border: 'none',
+                    cursor: 'pointer', padding: 8, marginLeft: 'auto', alignSelf: 'center',
+                }}>
+                    <span style={{ display: 'block', width: 22, height: 2, background: 'rgba(255,255,255,0.65)', borderRadius: 2 }} />
+                    <span style={{ display: 'block', width: 16, height: 2, background: 'rgba(255,255,255,0.65)', borderRadius: 2 }} />
+                    <span style={{ display: 'block', width: 22, height: 2, background: 'rgba(255,255,255,0.65)', borderRadius: 2 }} />
+                </button>
+            </nav>
+
+            {/* ══════════════ MOBILE DRAWER ══════════════ */}
             {mobileOpen && (
-                <div onClick={() => setMobileOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 150, backdropFilter: 'blur(4px)' }}>
-                    <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 256, background: 'var(--surface-low)', padding: '80px 16px 24px', overflowY: 'auto' }}>
+                <div onClick={() => setMobileOpen(false)} style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.78)',
+                    zIndex: 300, backdropFilter: 'blur(8px)',
+                }}>
+                    <div onClick={e => e.stopPropagation()} style={{
+                        position: 'absolute', left: 0, top: 0, bottom: 0, width: 272,
+                        background: 'rgba(10,10,11,0.98)', backdropFilter: 'blur(24px)',
+                        borderRight: '1px solid rgba(255,255,255,0.06)',
+                        padding: '92px 12px 28px', overflowY: 'auto',
+                        display: 'flex', flexDirection: 'column',
+                    }}>
+                        {/* Mobile logo */}
+                        <div style={{
+                            position: 'absolute', top: 20, left: 20,
+                            fontFamily: "'Bebas Neue', sans-serif", fontSize: 30, fontStyle: 'italic',
+                            color: '#CC97FF', letterSpacing: '0.03em', lineHeight: 1,
+                            textShadow: '0 0 20px rgba(204,151,255,0.5)',
+                        }}>TEC</div>
+
                         {NAV.map(({ icon, label, to }) => (
-                            <Link key={to} to={to} onClick={() => setMobileOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 10, marginBottom: 2, textDecoration: 'none', fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: isActive(to) ? 'var(--primary)' : 'var(--on-surface-var)' }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{icon}</span>
+                            <Link key={to} to={to} onClick={() => setMobileOpen(false)}
+                                className={`tec-mob-link${isActive(to) ? ' tec-active' : ''}`}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 19 }}>{icon}</span>
                                 {label}
                             </Link>
                         ))}
+                        {user?.role === 'admin' && (
+                            <Link to="/admin" onClick={() => setMobileOpen(false)}
+                                className={`tec-mob-link${isActive('/admin') ? ' tec-active' : ''}`}
+                                style={{ color: isActive('/admin') ? '#FF6E84' : undefined }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 19 }}>admin_panel_settings</span>
+                                Admin
+                            </Link>
+                        )}
+
+                        <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            {user ? (
+                                <>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                                        <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(204,151,255,0.1)', border: '1.5px solid rgba(204,151,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: '#CC97FF' }}>
+                                            {(user.avatarLetter || user.name?.[0] || 'U').toUpperCase()}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700, fontSize: 14, color: '#fff' }}>{user.name}</div>
+                                            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: ROLE_COLORS[user.role] || '#CC97FF' }}>{user.role}</div>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => { logout(); setMobileOpen(false); }} style={{
+                                        width: '100%', padding: '11px', background: 'transparent',
+                                        border: '1px solid rgba(255,110,132,0.25)', borderRadius: 10,
+                                        color: '#FF6E84', fontFamily: "'Bebas Neue', sans-serif",
+                                        fontSize: 15, letterSpacing: '0.1em', cursor: 'pointer',
+                                    }}>Disconnect</button>
+                                </>
+                            ) : (
+                                <button onClick={() => { setShowModal(true); setMobileOpen(false); }} style={{
+                                    width: '100%', padding: '12px', background: 'linear-gradient(135deg, #9C48EA, #CC97FF)',
+                                    border: 'none', borderRadius: 10, color: '#fff',
+                                    fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, letterSpacing: '0.1em', cursor: 'pointer',
+                                }}>Join TEC</button>
+                            )}
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* ── RESPONSIVE STYLES ── */}
-            <style>{`
-        .sidebar { display: flex !important; }
-        .desktop-nav-links { display: flex !important; }
-        .hamburger-btn { display: none !important; }
-        @media (max-width: 1023px) {
-          .sidebar { display: none !important; }
-          .hamburger-btn { display: flex !important; }
-          .desktop-nav-links { display: none !important; }
-        }
-      `}</style>
-
-            {/* ── JOIN MODAL ── */}
+            {/* ══════════════ JOIN MODAL ══════════════ */}
             {showModal && (
                 <div className="modal-overlay" onClick={handleClose}>
                     <div className="modal-box" onClick={e => e.stopPropagation()}>
                         {!success ? (
                             <form onSubmit={e => { e.preventDefault(); setMemberId(generateMemberId()); setSuccess(true); }}>
-                                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 6 }}>
+                                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: '0.06em', marginBottom: 6 }}>
                                     Join <span className="accent-primary">TEC</span>
                                 </h2>
                                 <p style={{ color: 'var(--on-surface-var)', fontSize: 13, marginBottom: 24 }}>Create your campus profile.</p>
@@ -336,7 +310,7 @@ export default function Header() {
                             </form>
                         ) : (
                             <div style={{ textAlign: 'center' }}>
-                                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 8 }}>Welcome, <span className="accent-primary">{form.name}</span></h2>
+                                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: 28, letterSpacing: '0.06em', marginBottom: 8 }}>Welcome, <span className="accent-primary">{form.name}</span></h2>
                                 <p style={{ color: 'var(--on-surface-var)', fontSize: 13, marginBottom: 20 }}>Your member ID</p>
                                 <div style={{ fontFamily: 'var(--font-mono)', fontSize: 28, fontWeight: 800, color: 'var(--primary)', background: 'rgba(204,151,255,0.08)', border: '1px solid rgba(204,151,255,0.2)', borderRadius: 12, padding: '16px 28px', letterSpacing: 6, display: 'inline-block', marginBottom: 24, boxShadow: '0 0 24px rgba(204,151,255,0.15)' }}>{memberId}</div>
                                 <p style={{ fontSize: 12, color: 'var(--on-surface-var)', marginBottom: 20 }}>Save this to access your profile.</p>

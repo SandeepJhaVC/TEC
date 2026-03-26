@@ -49,8 +49,7 @@
       --font-mono: ui-monospace, 'SF Mono', Consolas, monospace;
       --radius: 1rem;
       --radius-lg: 2rem;
-      --sidebar-w: 256px;
-      --topnav-h: 64px;
+      --topnav-h: 68px;
     }
 
     body {
@@ -103,7 +102,7 @@
 
     /* Layout — single scroll container, app-shell pattern */
     .app-content {
-      margin-left: var(--sidebar-w);
+      margin-left: 0;
       padding-top: var(--topnav-h);
       height: 100vh;
       overflow-y: auto;
@@ -111,12 +110,6 @@
       overscroll-behavior: contain;
       -webkit-overflow-scrolling: touch;
       background: var(--bg);
-    }
-
-    @media (max-width: 1023px) {
-      .app-content {
-        margin-left: 0;
-      }
     }
 
     /* ── Responsive two-column grid ── */
@@ -734,27 +727,6 @@
       50% {
         box-shadow: 0 0 0 4px rgba(255, 110, 132, 0.15);
       }
-    }
-
-    /* ── Topnav XP strip ── */
-    .topnav-xp-strip {
-      position: fixed;
-      top: 64px;
-      left: 0;
-      right: 0;
-      height: 2px;
-      z-index: 201;
-      pointer-events: none;
-    }
-
-    /* ── Sidebar player card ── */
-    .player-card {
-      margin: 0 12px 12px;
-      padding: 14px;
-      background: rgba(204, 151, 255, 0.04);
-      border: 1px solid rgba(204, 151, 255, 0.1);
-      border-radius: 12px;
-      position: relative;
     }
 
     /* ── Notification badge ── */

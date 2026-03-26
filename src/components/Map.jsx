@@ -51,12 +51,34 @@ const ANIM_CSS = `
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-.tec-cat-pill { transition: all 0.15s ease; }
+.tec-cat-pill { transition: all 0.15s ease; pointer-events: auto; }
 .tec-cat-pill:hover { transform: translateY(-1px); }
 .tec-explore-hud { left: 14px; }
-@media (min-width: 1024px) { .tec-explore-hud { left: 270px; } }
-.tec-cat-pills { left: 50%; }
-@media (min-width: 1024px) { .tec-cat-pills { left: calc(50% + 128px); } }
+.tec-cat-pills { left: 268px; right: 320px; justify-content: center; pointer-events: none; }
+@media (max-width: 900px) { .tec-cat-pills { left: 14px; right: 14px; } }
+@keyframes tecUserBlipPulse {
+  0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.75; }
+  70%  { transform: translate(-50%,-50%) scale(2.4); opacity: 0; }
+  100% { transform: translate(-50%,-50%) scale(2.4); opacity: 0; }
+}
+.tec-user-blip-ring {
+  position: absolute; top: 50%; left: 50%;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(83,221,252,0.18);
+  border: 1.5px solid rgba(83,221,252,0.5);
+  transform: translate(-50%,-50%);
+  animation: tecUserBlipPulse 2s ease-out infinite;
+  pointer-events: none;
+}
+.tec-user-blip-dot {
+  position: absolute; top: 50%; left: 50%;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #53DDFC;
+  border: 2px solid rgba(255,255,255,0.9);
+  box-shadow: 0 0 10px rgba(83,221,252,0.9), 0 0 24px rgba(83,221,252,0.5);
+  transform: translate(-50%,-50%);
+  pointer-events: none;
+}
 `;
 
 const GLASS = {
@@ -276,6 +298,8 @@ export default function Map() {
     const mapInstance = useRef(null);
     const zonesDataRef = useRef(null);
 
+    const [userLocation, setUserLocation] = useState(null);
+    const userMarkerRef = useRef(null);
     const [coords, setCoords] = useState({ lng: '—', lat: '—', zoom: '—' });
     const [currentDistrict, setCurrentDistrict] = useState(null);
 
@@ -293,6 +317,35 @@ export default function Map() {
         return () => timers.forEach(clearTimeout);
     }, []);
 
+    /* ── Geolocation watcher — device coordinates + user blip ── */
+    useEffect(() => {
+        if (!navigator.geolocation) return;
+        const watchId = navigator.geolocation.watchPosition(
+            pos => {
+                const { longitude: lng, latitude: lat, accuracy } = pos.coords;
+                setUserLocation({ lng, lat, accuracy });
+                if (!mapInstance.current || !window.maplibregl) return;
+                if (!userMarkerRef.current) {
+                    const el = document.createElement('div');
+                    el.style.cssText = 'position:relative;width:32px;height:32px;';
+                    el.innerHTML = '<div class="tec-user-blip-ring"></div><div class="tec-user-blip-dot"></div>';
+                    userMarkerRef.current = new window.maplibregl.Marker({ element: el, anchor: 'center' })
+                        .setLngLat([lng, lat])
+                        .addTo(mapInstance.current);
+                } else {
+                    userMarkerRef.current.setLngLat([lng, lat]);
+                }
+            },
+            () => { /* location denied or unavailable */ },
+            { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
+        );
+        return () => {
+            navigator.geolocation.clearWatch(watchId);
+            userMarkerRef.current?.remove();
+            userMarkerRef.current = null;
+        };
+    }, []);
+
     useEffect(() => {
         if (!mapContainerRef.current || !window.maplibregl) return;
         /* Start close to campus at a pulled-back zoom — fly in cinematically */
@@ -302,6 +355,9 @@ export default function Map() {
             style: MAP_STYLE,
             center: CAMPUS_CENTER,
             zoom: 11.5,
+            minZoom: 11.0,
+            maxZoom: 18,
+            maxBounds: [[77.60, 30.20], [78.25, 30.58]],
             attributionControl: false,
         });
         map.on('load', () => {
@@ -472,7 +528,7 @@ export default function Map() {
     const districtZone = currentDistrict ? ZONES.find(z => z.name === currentDistrict) : null;
 
     return (
-        <div style={{ position: 'fixed', top: 64, left: 0, right: 0, bottom: 0, zIndex: 1, background: '#09090a', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', top: 68, left: 0, right: 0, bottom: 0, zIndex: 1, background: '#09090a', overflow: 'hidden' }}>
             <style>{ANIM_CSS}</style>
 
             {/* ══════════════════ MAP CANVAS ══════════════════ */}
@@ -595,7 +651,7 @@ export default function Map() {
                 )}
             </div>
 
-            {/* ══════════════════ LOCKED ZONE CHIPS ══════════════════ */}
+            {/* ══════════════════ LOCKED ZONE LABELS ══════════════════ */}
             {phase >= 3 && LOCKED_ZONES.map(z => {
                 const isLocked = z.status === 'locked';
                 const accent = isLocked ? '#FF6E84' : '#e3b341';
@@ -603,48 +659,37 @@ export default function Map() {
                     <div key={z.id} style={{
                         position: 'absolute', zIndex: 15,
                         ...z.chipStyle,
+                        transform: 'translateX(-50%)',
                         animation: 'tecSubIn 0.55s cubic-bezier(0.16,1,0.3,1) 0.7s both',
                         pointerEvents: 'none',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                     }}>
-                        {/* Crosshatch darkening patch */}
+                        {/* District-style name label */}
                         <div style={{
-                            position: 'absolute',
-                            top: '50%', left: '50%',
-                            transform: 'translate(-50%,-50%)',
-                            width: 90, height: 90, borderRadius: 12,
-                            backgroundImage: `repeating-linear-gradient(
-                                45deg,
-                                ${accent}08 0px, ${accent}08 1px,
-                                transparent 1px, transparent 8px
-                            )`,
-                            border: `1px solid ${accent}28`,
-                        }} />
-                        {/* Label chip */}
-                        <div style={{
-                            position: 'relative',
-                            display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                             background: 'rgba(9,9,10,0.88)',
-                            backdropFilter: 'blur(14px)',
-                            WebkitBackdropFilter: 'blur(14px)',
-                            border: `1px solid ${accent}45`,
-                            borderRadius: 8,
-                            padding: '6px 10px',
+                            border: `1px solid ${accent}40`,
+                            borderRadius: 4,
+                            padding: '2px 9px',
+                            fontSize: 9, fontWeight: 700,
+                            color: accent,
+                            fontFamily: 'var(--font-display)',
+                            letterSpacing: '0.08em',
+                            whiteSpace: 'nowrap',
+                            display: 'flex', alignItems: 'center', gap: 4,
                             animation: `${isLocked ? 'tecLockPulse' : 'tecSoonPulse'} 2.4s ease-in-out infinite`,
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 11, color: accent }}>
-                                    {isLocked ? 'lock' : 'schedule'}
-                                </span>
-                                <span style={{
-                                    fontFamily: 'var(--font-display)', fontWeight: 900,
-                                    fontSize: 9, color: accent, letterSpacing: '0.12em',
-                                }}>{z.label}</span>
-                            </div>
-                            <span style={{
-                                fontFamily: 'var(--font-mono)', fontSize: 8,
-                                color: 'rgba(255,255,255,0.3)', letterSpacing: '0.06em',
-                            }}>{z.reason}</span>
+                            <span className="material-symbols-outlined" style={{ fontSize: 8, color: accent, fontVariationSettings: "'FILL' 1" }}>
+                                {isLocked ? 'lock' : 'schedule'}
+                            </span>
+                            {z.label}
                         </div>
+                        {/* Status sub-label */}
+                        <div style={{
+                            fontSize: 7.5, fontWeight: 700,
+                            color: `${accent}99`,
+                            fontFamily: 'var(--font-mono)',
+                            letterSpacing: '0.1em',
+                        }}>{z.reason.toUpperCase()}</div>
                     </div>
                 );
             })}
@@ -653,27 +698,48 @@ export default function Map() {
 
             {/* ── EXPLORE info card (top-left) ── */}
             {phase >= 3 && (
-                <div className="tec-explore-hud" style={{ position: 'absolute', top: 14, zIndex: 20, ...hud('FromLeft', 0.05) }}>
-                    <div style={{ ...GLASS, borderRadius: 10, padding: '11px 14px', minWidth: 176 }} className="hud-bracket">
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 9 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                                <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#CC97FF' }}>radar</span>
-                                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11.5, color: '#fff', letterSpacing: '0.09em' }}>EXPLORE</span>
+                <div className="tec-explore-hud" style={{ position: 'absolute', top: 16, zIndex: 20, ...hud('FromLeft', 0.05) }}>
+                    <div style={{ ...GLASS, borderRadius: 12, padding: '14px 18px', minWidth: 208 }} className="hud-bracket">
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span className="material-symbols-outlined" style={{ fontSize: 17, color: '#CC97FF' }}>radar</span>
+                                <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#fff', letterSpacing: '0.09em' }}>EXPLORE</span>
                             </div>
-                            <span style={{ fontSize: 7.5, fontWeight: 800, color: '#53DDFC', letterSpacing: '0.08em', background: 'rgba(83,221,252,0.1)', border: '1px solid rgba(83,221,252,0.25)', borderRadius: 3, padding: '2px 6px', fontFamily: 'var(--font-display)' }}>LIVE</span>
+                            <span style={{ fontSize: 8.5, fontWeight: 800, color: '#53DDFC', letterSpacing: '0.08em', background: 'rgba(83,221,252,0.1)', border: '1px solid rgba(83,221,252,0.25)', borderRadius: 4, padding: '3px 8px', fontFamily: 'var(--font-display)' }}>LIVE</span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {userLocation && (
+                            <div style={{ marginBottom: 10 }}>
+                                <div style={{ fontSize: 8, color: '#53DDFC', letterSpacing: '0.1em', fontWeight: 700, fontFamily: 'var(--font-display)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5 }}>
+                                    <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#53DDFC', boxShadow: '0 0 6px #53DDFC', animation: 'tecPulse 1.4s ease-in-out infinite' }} />
+                                    MY POSITION
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                    {[
+                                        { label: 'LNG', val: userLocation.lng.toFixed(5) },
+                                        { label: 'LAT', val: userLocation.lat.toFixed(5) },
+                                        { label: 'ACC', val: `${Math.round(userLocation.accuracy)}m` },
+                                    ].map(c => (
+                                        <div key={c.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                                            <span style={{ fontSize: 9, color: 'rgba(83,221,252,0.45)', fontFamily: 'var(--font-display)', letterSpacing: '0.1em' }}>{c.label}</span>
+                                            <span style={{ fontSize: 11, color: '#53DDFC', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{c.val}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '9px 0 0' }} />
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {[{ label: 'LNG', val: coords.lng }, { label: 'LAT', val: coords.lat }, { label: 'ZOOM', val: coords.zoom }].map(c => (
-                                <div key={c.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                                    <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.22)', fontFamily: 'var(--font-display)', letterSpacing: '0.09em' }}>{c.label}</span>
-                                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-mono)' }}>{c.val}</span>
+                                <div key={c.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.3)', fontFamily: 'var(--font-display)', letterSpacing: '0.1em' }}>{c.label}</span>
+                                    <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.7)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{c.val}</span>
                                 </div>
                             ))}
                         </div>
                         {districtZone && (
-                            <div style={{ marginTop: 9, padding: '6px 9px', borderRadius: 7, background: `${districtZone.accent}09`, border: `1px solid ${districtZone.accent}25` }}>
-                                <div style={{ fontSize: 7.5, color: districtZone.accent, letterSpacing: '0.1em', fontWeight: 700, fontFamily: 'var(--font-display)', marginBottom: 2 }}>DISTRICT</div>
-                                <span style={{ fontSize: 11.5, color: '#fff', fontWeight: 700, fontFamily: 'var(--font-display)' }}>{districtZone.name}</span>
+                            <div style={{ marginTop: 12, padding: '8px 11px', borderRadius: 8, background: `${districtZone.accent}0d`, border: `1px solid ${districtZone.accent}30` }}>
+                                <div style={{ fontSize: 8, color: districtZone.accent, letterSpacing: '0.1em', fontWeight: 700, fontFamily: 'var(--font-display)', marginBottom: 3 }}>DISTRICT</div>
+                                <span style={{ fontSize: 13, color: '#fff', fontWeight: 800, fontFamily: 'var(--font-display)' }}>{districtZone.name}</span>
                             </div>
                         )}
                     </div>
@@ -683,21 +749,20 @@ export default function Map() {
             {/* ── Category filter pills (top-center) ── */}
             {phase >= 3 && (
                 <div className="tec-cat-pills" style={{
-                    position: 'absolute', top: 14, zIndex: 20,
-                    transform: 'translateX(-50%)',
-                    display: 'flex', gap: 5, alignItems: 'center',
+                    position: 'absolute', top: 16, zIndex: 20,
+                    display: 'flex', gap: 6, alignItems: 'center',
                     ...hud('FromTop', 0.15),
                 }}>
                     {CAT_WITH_ZONES.map(c => (
                         <button key={c.id} className="tec-cat-pill" onClick={() => setCat(c.id)} style={{
-                            padding: '7px 13px', borderRadius: 20,
-                            fontFamily: 'var(--font-display)', fontSize: 9.5, fontWeight: 800, letterSpacing: '0.07em',
+                            padding: '9px 18px', borderRadius: 24,
+                            fontFamily: 'var(--font-display)', fontSize: 11, fontWeight: 800, letterSpacing: '0.07em',
                             cursor: 'pointer',
-                            background: cat === c.id ? `${c.color}1c` : 'rgba(9,9,10,0.8)',
-                            backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
-                            border: cat === c.id ? `1.5px solid ${c.color}55` : '1px solid rgba(255,255,255,0.1)',
-                            color: cat === c.id ? c.color : 'rgba(255,255,255,0.43)',
-                            boxShadow: cat === c.id ? `0 0 16px ${c.color}25, 0 4px 12px rgba(0,0,0,0.4)` : '0 4px 12px rgba(0,0,0,0.3)',
+                            background: cat === c.id ? `${c.color}22` : 'rgba(9,9,10,0.82)',
+                            backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                            border: cat === c.id ? `1.5px solid ${c.color}66` : '1px solid rgba(255,255,255,0.12)',
+                            color: cat === c.id ? c.color : 'rgba(255,255,255,0.5)',
+                            boxShadow: cat === c.id ? `0 0 20px ${c.color}30, 0 4px 16px rgba(0,0,0,0.5)` : '0 4px 14px rgba(0,0,0,0.35)',
                         }}>{c.id.toUpperCase()}</button>
                     ))}
                 </div>
@@ -706,8 +771,8 @@ export default function Map() {
             {/* ── Location list card (right side) ── */}
             {phase >= 3 && (
                 <div style={{
-                    position: 'absolute', top: 14, right: 14, zIndex: 20,
-                    width: 262, maxHeight: 'calc(100% - 76px)',
+                    position: 'absolute', top: 16, right: 16, zIndex: 20,
+                    width: 296, maxHeight: 'calc(100% - 80px)',
                     display: 'flex', flexDirection: 'column',
                     ...hud('FromRight', 0.25),
                 }}>
@@ -715,31 +780,31 @@ export default function Map() {
                     <div
                         style={{
                             ...GLASS,
-                            borderRadius: listOpen ? '10px 10px 0 0' : 10,
-                            padding: '10px 12px',
+                            borderRadius: listOpen ? '12px 12px 0 0' : 12,
+                            padding: '12px 14px',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                             cursor: 'pointer',
-                            borderBottom: listOpen ? '1px solid rgba(255,255,255,0.05)' : undefined,
+                            borderBottom: listOpen ? '1px solid rgba(255,255,255,0.06)' : undefined,
                         }}
                         onClick={() => setListOpen(o => !o)}
                     >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                            <span className="material-symbols-outlined" style={{ fontSize: 13, color: isZoneView ? '#e3b341' : catMeta.color }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 16, color: isZoneView ? '#e3b341' : catMeta.color }}>
                                 {isZoneView ? 'terrain' : thumb.icon}
                             </span>
-                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, color: '#fff', letterSpacing: '0.06em' }}>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#fff', letterSpacing: '0.06em' }}>
                                 {isZoneView ? 'ZONES' : cat.toUpperCase()}
                             </span>
                             <span style={{
-                                fontSize: 8.5, fontWeight: 700,
+                                fontSize: 9, fontWeight: 700,
                                 color: isZoneView ? '#e3b341' : catMeta.color,
                                 background: isZoneView ? 'rgba(227,179,65,0.1)' : `${catMeta.color}12`,
                                 border: `1px solid ${isZoneView ? 'rgba(227,179,65,0.25)' : `${catMeta.color}30`}`,
-                                borderRadius: 3, padding: '1px 5px', fontFamily: 'var(--font-mono)',
+                                borderRadius: 4, padding: '2px 7px', fontFamily: 'var(--font-mono)',
                             }}>{isZoneView ? ZONES.length : locations.length}</span>
                         </div>
                         <span className="material-symbols-outlined" style={{
-                            fontSize: 16, color: 'rgba(255,255,255,0.35)',
+                            fontSize: 18, color: 'rgba(255,255,255,0.4)',
                             transition: 'transform 0.22s ease',
                             transform: listOpen ? 'rotate(0deg)' : 'rotate(-90deg)',
                         }}>expand_more</span>
@@ -771,21 +836,21 @@ export default function Map() {
                         }}>
                             {isZoneView ? ZONES.map(zone => (
                                 <div key={zone.name} onClick={() => flyToZone(zone.name)} style={{
-                                    borderRadius: 8, padding: '9px 10px', cursor: 'pointer',
+                                    borderRadius: 10, padding: '10px 12px', cursor: 'pointer',
                                     transition: 'background 0.12s,border-color 0.12s',
                                     background: activeZone === zone.name ? `${zone.accent}10` : 'rgba(255,255,255,0.02)',
                                     border: `1px solid ${activeZone === zone.name ? `${zone.accent}40` : 'rgba(255,255,255,0.04)'}`,
-                                    display: 'flex', gap: 9, alignItems: 'center',
+                                    display: 'flex', gap: 10, alignItems: 'center',
                                 }}>
-                                    <div style={{ width: 34, height: 34, borderRadius: 7, flexShrink: 0, background: zone.color, border: `2px solid ${zone.accent}50`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 16, color: zone.accent }}>terrain</span>
+                                    <div style={{ width: 38, height: 38, borderRadius: 8, flexShrink: 0, background: zone.color, border: `2px solid ${zone.accent}50`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: zone.accent }}>terrain</span>
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 2 }}>
-                                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11.5, color: '#fff' }}>{zone.name}</span>
-                                            {activeZone === zone.name && <span style={{ fontSize: 7.5, fontWeight: 800, color: zone.accent, background: `${zone.accent}12`, border: `1px solid ${zone.accent}30`, borderRadius: 3, padding: '1px 5px', letterSpacing: '0.06em', flexShrink: 0 }}>VIEWING</span>}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 3 }}>
+                                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, color: '#fff' }}>{zone.name}</span>
+                                            {activeZone === zone.name && <span style={{ fontSize: 8, fontWeight: 800, color: zone.accent, background: `${zone.accent}12`, border: `1px solid ${zone.accent}30`, borderRadius: 3, padding: '1px 5px', letterSpacing: '0.06em', flexShrink: 0 }}>VIEWING</span>}
                                         </div>
-                                        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)' }}>{zone.desc}</span>
+                                        <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{zone.desc}</span>
                                     </div>
                                 </div>
                             )) : locations.map((loc, i) => (
@@ -795,28 +860,28 @@ export default function Map() {
                                     if (next && loc.lng && loc.lat && mapInstance.current)
                                         mapInstance.current.flyTo({ center: [loc.lng, loc.lat], zoom: 15, duration: 700 });
                                 }} style={{
-                                    borderRadius: 8, padding: '8px 10px', cursor: 'pointer',
+                                    borderRadius: 10, padding: '9px 11px', cursor: 'pointer',
                                     transition: 'background 0.12s,border-color 0.12s',
                                     background: activePin === loc.name ? `${catMeta.color}0e` : 'rgba(255,255,255,0.02)',
                                     border: `1px solid ${activePin === loc.name ? `${catMeta.color}35` : 'rgba(255,255,255,0.04)'}`,
-                                    display: 'flex', gap: 9, alignItems: 'center',
+                                    display: 'flex', gap: 10, alignItems: 'center',
                                 }}>
-                                    <div style={{ width: 34, height: 34, borderRadius: 7, flexShrink: 0, background: thumb.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${thumb.accent}18` }}>
-                                        <span className="material-symbols-outlined" style={{ fontSize: 16, color: thumb.accent }}>{thumb.icon}</span>
+                                    <div style={{ width: 38, height: 38, borderRadius: 8, flexShrink: 0, background: thumb.grad, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${thumb.accent}18` }}>
+                                        <span className="material-symbols-outlined" style={{ fontSize: 18, color: thumb.accent }}>{thumb.icon}</span>
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 2 }}>
-                                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 11, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{loc.name}</span>
-                                            {loc.live && <span style={{ fontSize: 7.5, fontWeight: 800, color: '#53DDFC', background: 'rgba(83,221,252,0.1)', border: '1px solid rgba(83,221,252,0.25)', borderRadius: 3, padding: '1px 4px', letterSpacing: '0.06em', flexShrink: 0 }}>LIVE</span>}
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 3 }}>
+                                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 12, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{loc.name}</span>
+                                            {loc.live && <span style={{ fontSize: 8, fontWeight: 800, color: '#53DDFC', background: 'rgba(83,221,252,0.1)', border: '1px solid rgba(83,221,252,0.25)', borderRadius: 3, padding: '1px 4px', letterSpacing: '0.06em', flexShrink: 0 }}>LIVE</span>}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)' }}>{loc.sub}</span>
+                                            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>{loc.sub}</span>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
-                                                <span style={{ fontSize: 9.5, color: '#e3b341' }}>★ {loc.rating}</span>
-                                                <span style={{ fontSize: 9.5, fontWeight: 700, color: catMeta.color, fontFamily: 'var(--font-mono)' }}>{loc.dist}</span>
+                                                <span style={{ fontSize: 10, color: '#e3b341' }}>★ {loc.rating}</span>
+                                                <span style={{ fontSize: 10, fontWeight: 700, color: catMeta.color, fontFamily: 'var(--font-mono)' }}>{loc.dist}</span>
                                             </div>
                                         </div>
-                                        {loc.badge && <div style={{ marginTop: 3 }}><span style={{ fontSize: 8, fontWeight: 700, color: 'rgba(255,255,255,0.28)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 3, padding: '1px 5px' }}>{loc.badge}</span></div>}
+                                        {loc.badge && <div style={{ marginTop: 4 }}><span style={{ fontSize: 8.5, fontWeight: 700, color: 'rgba(255,255,255,0.35)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 3, padding: '1px 5px' }}>{loc.badge}</span></div>}
                                     </div>
                                 </div>
                             ))}
@@ -831,49 +896,68 @@ export default function Map() {
                     position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
                     ...hud('FromBottom', 0.35),
                     ...GLASS,
-                    borderTop: '1px solid rgba(255,255,255,0.06)',
+                    borderTop: '1px solid rgba(255,255,255,0.07)',
                     borderLeft: 'none', borderRight: 'none', borderBottom: 'none',
-                    padding: '7px 18px', display: 'flex', alignItems: 'center',
+                    padding: '9px 22px', display: 'flex', alignItems: 'center',
                 }}>
-                    <div style={{ display: 'flex', gap: 20, flex: 1 }}>
+                    <div style={{ display: 'flex', gap: 24, flex: 1 }}>
                         {[{ label: 'LNG', val: coords.lng }, { label: 'LAT', val: coords.lat }, { label: 'ZOOM', val: coords.zoom }].map(c => (
-                            <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                <span style={{ fontSize: 8.5, color: 'rgba(255,255,255,0.2)', fontFamily: 'var(--font-display)', letterSpacing: '0.09em' }}>{c.label}</span>
-                                <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-mono)' }}>{c.val}</span>
+                            <div key={c.label} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                                <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.25)', fontFamily: 'var(--font-display)', letterSpacing: '0.09em' }}>{c.label}</span>
+                                <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{c.val}</span>
                             </div>
                         ))}
                     </div>
-                    <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.13)', fontFamily: 'var(--font-display)', letterSpacing: '0.08em' }}>TEC KINETIC OS · EXPLORE v2</span>
+                    <span style={{ fontSize: 9.5, color: 'rgba(255,255,255,0.18)', fontFamily: 'var(--font-display)', letterSpacing: '0.08em' }}>TEC KINETIC OS · EXPLORE v2</span>
                 </div>
             )}
 
             {/* ── Zoom controls ── */}
-            <div style={{ position: 'absolute', right: 14, bottom: 46, zIndex: 20, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ position: 'absolute', right: 16, bottom: 52, zIndex: 20, display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {[['add', () => mapInstance.current?.zoomIn()], ['remove', () => mapInstance.current?.zoomOut()]].map(([icon, handler]) => (
                     <button key={icon} onClick={handler} style={{
-                        width: 34, height: 34, borderRadius: 8, ...GLASS,
+                        width: 38, height: 38, borderRadius: 10, ...GLASS,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', color: 'rgba(255,255,255,0.55)', transition: 'all 0.12s',
+                        cursor: 'pointer', color: 'rgba(255,255,255,0.6)', transition: 'all 0.12s',
                     }}
                         onMouseEnter={e => { e.currentTarget.style.background = 'rgba(30,30,32,0.96)'; e.currentTarget.style.color = '#fff'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(9,9,10,0.84)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'rgba(9,9,10,0.84)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
                     >
-                        <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{icon}</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{icon}</span>
                     </button>
                 ))}
             </div>
 
             {/* ── Re-center ── */}
             <button onClick={recenterMap} style={{
-                position: 'absolute', right: 14, bottom: 124, zIndex: 20,
-                width: 34, height: 34, borderRadius: 8, ...GLASS,
+                position: 'absolute', right: 16, bottom: 136, zIndex: 20,
+                width: 38, height: 38, borderRadius: 10, ...GLASS,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'rgba(255,255,255,0.55)', transition: 'all 0.12s',
+                cursor: 'pointer', color: 'rgba(255,255,255,0.6)', transition: 'all 0.12s',
             }}
                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(30,30,32,0.96)'; e.currentTarget.style.color = '#fff'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(9,9,10,0.84)'; e.currentTarget.style.color = 'rgba(255,255,255,0.55)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(9,9,10,0.84)'; e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; }}
             >
-                <span className="material-symbols-outlined" style={{ fontSize: 16 }}>center_focus_strong</span>
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>center_focus_strong</span>
+            </button>
+
+            {/* ── Locate me ── */}
+            <button onClick={() => {
+                if (userLocation) {
+                    mapInstance.current?.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 16, duration: 900 });
+                }
+            }} style={{
+                position: 'absolute', right: 16, bottom: 184, zIndex: 20,
+                width: 38, height: 38, borderRadius: 10, ...GLASS,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: userLocation ? 'pointer' : 'default',
+                color: userLocation ? '#53DDFC' : 'rgba(255,255,255,0.22)',
+                transition: 'all 0.12s',
+            }}
+                onMouseEnter={e => { if (userLocation) { e.currentTarget.style.background = 'rgba(30,30,32,0.96)'; } }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(9,9,10,0.84)'; }}
+            >
+                <span className="material-symbols-outlined" style={{ fontSize: 18 }}>my_location</span>
             </button>
         </div>
     );
