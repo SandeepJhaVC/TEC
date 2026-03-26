@@ -79,6 +79,47 @@ const ANIM_CSS = `
   transform: translate(-50%,-50%);
   pointer-events: none;
 }
+/* ─── Mobile sheet handle ─── */
+.tec-sheet-handle { display: none; }
+/* ─── Mobile layout (<768px) ─── */
+@media (max-width: 767px) {
+  .tec-explore-hud { display: none !important; }
+  .tec-cat-pills {
+    left: 0 !important; right: 0 !important; top: 8px !important;
+    overflow-x: auto; flex-wrap: nowrap !important;
+    padding: 0 10px; scrollbar-width: none;
+    justify-content: flex-start !important;
+  }
+  .tec-cat-pills::-webkit-scrollbar { display: none; }
+  .tec-location-panel {
+    position: fixed !important;
+    top: auto !important; right: 0 !important; left: 0 !important; bottom: 0 !important;
+    width: 100% !important; max-height: 72vh !important;
+    border-radius: 16px 16px 0 0 !important;
+    animation: tecFromBottom 0.4s cubic-bezier(0.16,1,0.3,1) both !important;
+  }
+  .tec-sheet-handle {
+    display: block;
+    width: 36px; height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.18);
+    margin: 10px auto 4px;
+    flex-shrink: 0;
+  }
+  .tec-status-bar { display: none !important; }
+  .tec-locked-chip { display: none !important; }
+  .tec-zoom-controls {
+    right: 10px !important;
+    bottom: auto !important;
+    top: 58px !important;
+  }
+  .tec-recenter-btn { display: none !important; }
+  .tec-locate-btn {
+    right: 10px !important;
+    bottom: auto !important;
+    top: 106px !important;
+  }
+}
 `;
 
 const GLASS = {
@@ -280,6 +321,8 @@ const LOCKED_ZONES = [
     },
 ];
 
+const CAMPUS_CENTER = [77.9620, 30.4020];
+
 /* Ray-cast point-in-polygon — returns true if [lng, lat] is inside the ring */
 function pointInPolygon([x, y], ring) {
     let inside = false;
@@ -298,6 +341,7 @@ export default function Map() {
     const mapInstance = useRef(null);
     const zonesDataRef = useRef(null);
 
+    const [mapCenter, setMapCenter] = useState(null);
     const [userLocation, setUserLocation] = useState(null);
     const userMarkerRef = useRef(null);
     const [coords, setCoords] = useState({ lng: '—', lat: '—', zoom: '—' });
@@ -315,6 +359,18 @@ export default function Map() {
             setTimeout(() => setPhase(3), 2500),
         ];
         return () => timers.forEach(clearTimeout);
+    }, []);
+
+    /* ── Resolve initial map center from device GPS ── */
+    useEffect(() => {
+        if (!navigator.geolocation) { setMapCenter(CAMPUS_CENTER); return; }
+        const fallback = setTimeout(() => setMapCenter(CAMPUS_CENTER), 4000);
+        navigator.geolocation.getCurrentPosition(
+            pos => { clearTimeout(fallback); setMapCenter([pos.coords.longitude, pos.coords.latitude]); },
+            () => { clearTimeout(fallback); setMapCenter(CAMPUS_CENTER); },
+            { enableHighAccuracy: false, timeout: 4000, maximumAge: 60000 }
+        );
+        return () => clearTimeout(fallback);
     }, []);
 
     /* ── Geolocation watcher — device coordinates + user blip ── */
@@ -347,13 +403,11 @@ export default function Map() {
     }, []);
 
     useEffect(() => {
-        if (!mapContainerRef.current || !window.maplibregl) return;
-        /* Start close to campus at a pulled-back zoom — fly in cinematically */
-        const CAMPUS_CENTER = [77.9620, 30.4020];
+        if (!mapCenter || !mapContainerRef.current || !window.maplibregl) return;
         const map = new window.maplibregl.Map({
             container: mapContainerRef.current,
             style: MAP_STYLE,
-            center: CAMPUS_CENTER,
+            center: mapCenter,
             zoom: 11.5,
             minZoom: 11.0,
             maxZoom: 18,
@@ -361,10 +415,10 @@ export default function Map() {
             attributionControl: false,
         });
         map.on('load', () => {
-            /* ── Cinematic fly-in: zoom from 11.5 → 14 over the campus ── */
+            /* ── Cinematic fly-in: zoom from 11.5 → 14 ── */
             setTimeout(() => {
                 map.flyTo({
-                    center: CAMPUS_CENTER,
+                    center: mapCenter,
                     zoom: 14,
                     duration: 3200,
                     easing: t => t * t * t,
@@ -482,7 +536,7 @@ export default function Map() {
         map.on('zoom', updateCoords);
         mapInstance.current = map;
         return () => { map.remove(); };
-    }, []);
+    }, [mapCenter]);
 
     const isZoneView = cat === 'Zones';
     const catMeta = CATS.find(c => c.id === cat) || CATS[0];
@@ -656,7 +710,7 @@ export default function Map() {
                 const isLocked = z.status === 'locked';
                 const accent = isLocked ? '#FF6E84' : '#e3b341';
                 return (
-                    <div key={z.id} style={{
+                    <div key={z.id} className="tec-locked-chip" style={{
                         position: 'absolute', zIndex: 15,
                         ...z.chipStyle,
                         transform: 'translateX(-50%)',
@@ -770,12 +824,14 @@ export default function Map() {
 
             {/* ── Location list card (right side) ── */}
             {phase >= 3 && (
-                <div style={{
+                <div className="tec-location-panel" style={{
                     position: 'absolute', top: 16, right: 16, zIndex: 20,
                     width: 296, maxHeight: 'calc(100% - 80px)',
                     display: 'flex', flexDirection: 'column',
                     ...hud('FromRight', 0.25),
                 }}>
+                    {/* Mobile drag handle */}
+                    <div className="tec-sheet-handle" />
                     {/* Header */}
                     <div
                         style={{
@@ -892,7 +948,7 @@ export default function Map() {
 
             {/* ── Status bar (bottom) ── */}
             {phase >= 3 && (
-                <div style={{
+                <div className="tec-status-bar" style={{
                     position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 20,
                     ...hud('FromBottom', 0.35),
                     ...GLASS,
@@ -913,7 +969,7 @@ export default function Map() {
             )}
 
             {/* ── Zoom controls ── */}
-            <div style={{ position: 'absolute', right: 16, bottom: 52, zIndex: 20, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div className="tec-zoom-controls" style={{ position: 'absolute', right: 16, bottom: 52, zIndex: 20, display: 'flex', flexDirection: 'column', gap: 3 }}>
                 {[['add', () => mapInstance.current?.zoomIn()], ['remove', () => mapInstance.current?.zoomOut()]].map(([icon, handler]) => (
                     <button key={icon} onClick={handler} style={{
                         width: 38, height: 38, borderRadius: 10, ...GLASS,
@@ -929,7 +985,7 @@ export default function Map() {
             </div>
 
             {/* ── Re-center ── */}
-            <button onClick={recenterMap} style={{
+            <button className="tec-recenter-btn" onClick={recenterMap} style={{
                 position: 'absolute', right: 16, bottom: 136, zIndex: 20,
                 width: 38, height: 38, borderRadius: 10, ...GLASS,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -942,7 +998,7 @@ export default function Map() {
             </button>
 
             {/* ── Locate me ── */}
-            <button onClick={() => {
+            <button className="tec-locate-btn" onClick={() => {
                 if (userLocation) {
                     mapInstance.current?.flyTo({ center: [userLocation.lng, userLocation.lat], zoom: 16, duration: 900 });
                 }
