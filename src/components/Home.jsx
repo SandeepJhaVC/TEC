@@ -43,6 +43,12 @@ export default function Home() {
   const [totalXp, setTotalXp] = useState(0);
   const [promoCards, setPromoCards] = useState([]);
   const [realtimeStatus, setRealtimeStatus] = useState('connecting'); // connecting | live | error
+  const [isAnon, setIsAnon] = useState(false);
+  const [expandedReplies, setExpandedReplies] = useState(new Set());
+  const [repliesData, setRepliesData] = useState({});
+  const [replyText, setReplyText] = useState({});
+  const [replyAnon, setReplyAnon] = useState({});
+  const [submittingReply, setSubmittingReply] = useState({});
 
   useEffect(() => {
     Promise.all([
@@ -60,18 +66,19 @@ export default function Home() {
 
   useEffect(() => {
     // ── Initial load ──
+    const normalizePost = p => ({
+      ...p,
+      user: p.is_anonymous ? 'Anonymous' : (p.user_name || 'Anonymous'),
+      real_name: p.user_name,
+      time: p.created_at ? new Date(p.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
+      badge: p.is_anonymous ? null : ((p.user_role && p.user_role !== 'student') ? p.user_role : null),
+      missionColor: p.is_anonymous ? '#53DDFC' : (p.user_role === 'builder' ? '#CC97FF' : p.user_role === 'admin' ? '#FF6E84' : '#53DDFC'),
+      missionType: 'PULSE',
+      xpReward: null, kernel: null, code: null, replyCount: p.reply_count ?? 0,
+    });
     supabase.from('feed_posts').select('*').order('created_at', { ascending: false })
       .then(({ data }) => {
-        const normalize = p => ({
-          ...p,
-          user: p.user_name || 'Anonymous',
-          time: p.created_at ? new Date(p.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
-          badge: (p.user_role && p.user_role !== 'student') ? p.user_role : null,
-          missionColor: p.user_role === 'builder' ? '#CC97FF' : p.user_role === 'admin' ? '#FF6E84' : '#53DDFC',
-          missionType: 'PULSE',
-          xpReward: null, kernel: null, code: null, replies: 0,
-        });
-        const loaded = (data || []).map(normalize);
+        const loaded = (data || []).map(normalizePost);
         setPosts(loaded);
         setVotes(loaded.reduce((acc, p) => ({ ...acc, [p.id]: p.vote_count ?? 0 }), {}));
         setLoadingPosts(false);
@@ -82,30 +89,45 @@ export default function Home() {
       .channel('feed_realtime')
       // New post inserted by anyone
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'feed_posts' }, ({ new: row }) => {
-        const normalized = {
-          ...row,
-          user: row.user_name || 'Anonymous',
-          time: new Date(row.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-          badge: (row.user_role && row.user_role !== 'student') ? row.user_role : null,
-          missionColor: row.user_role === 'builder' ? '#CC97FF' : row.user_role === 'admin' ? '#FF6E84' : '#53DDFC',
-          missionType: 'PULSE',
-          xpReward: null, kernel: null, code: null, replies: 0,
-        };
+        const normalized = normalizePost(row);
         setPosts(prev => {
-          // Don't duplicate if we already added it optimistically
           if (prev.some(p => p.id === row.id)) return prev;
           return [normalized, ...prev];
         });
         setVotes(v => ({ ...v, [row.id]: row.vote_count ?? 0 }));
       })
-      // Vote count updated by trigger
+      // Vote / reply count updated by trigger
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'feed_posts' }, ({ new: row }) => {
         setVotes(v => ({ ...v, [row.id]: row.vote_count ?? 0 }));
+        setPosts(prev => prev.map(p => p.id === row.id ? { ...p, replyCount: row.reply_count ?? p.replyCount } : p));
       })
       // Post deleted
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'feed_posts' }, ({ old: row }) => {
         setPosts(prev => prev.filter(p => p.id !== row.id));
         setVotes(v => { const next = { ...v }; delete next[row.id]; return next; });
+      })
+      // New reply — update count + append if thread is open
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'post_replies' }, ({ new: row }) => {
+        setPosts(prev => prev.map(p => p.id === row.post_id ? { ...p, replyCount: (p.replyCount || 0) + 1 } : p));
+        setRepliesData(prev => {
+          if (prev[row.post_id] === undefined) return prev;
+          if (prev[row.post_id].some(r => r.id === row.id)) return prev;
+          const nr = {
+            ...row,
+            user: row.is_anonymous ? 'Anonymous' : (row.user_name || 'Anonymous'),
+            real_name: row.user_name,
+            time: new Date(row.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          };
+          return { ...prev, [row.post_id]: [...prev[row.post_id], nr] };
+        });
+      })
+      // Reply deleted
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'post_replies' }, ({ old: row }) => {
+        setPosts(prev => prev.map(p => p.id === row.post_id ? { ...p, replyCount: Math.max((p.replyCount || 1) - 1, 0) } : p));
+        setRepliesData(prev => {
+          if (!prev[row.post_id]) return prev;
+          return { ...prev, [row.post_id]: prev[row.post_id].filter(r => r.id !== row.id) };
+        });
       })
       .subscribe(status => {
         if (status === 'SUBSCRIBED') setRealtimeStatus('live');
@@ -135,20 +157,23 @@ export default function Home() {
       user_name: user.name,
       user_role: user.role || 'student',
       body: postText.trim(),
+      is_anonymous: isAnon,
     }).select().single();
     if (!error && data) {
       const normalized = {
         ...data,
-        user: data.user_name || user.name,
+        user: isAnon ? 'Anonymous' : (data.user_name || user.name),
+        real_name: data.user_name,
         time: 'Just now',
-        badge: (user.role && user.role !== 'student') ? user.role : null,
-        missionColor: user.role === 'builder' ? '#CC97FF' : user.role === 'admin' ? '#FF6E84' : '#53DDFC',
+        badge: isAnon ? null : ((user.role && user.role !== 'student') ? user.role : null),
+        missionColor: isAnon ? '#53DDFC' : (user.role === 'builder' ? '#CC97FF' : user.role === 'admin' ? '#FF6E84' : '#53DDFC'),
         missionType: 'PULSE',
-        xpReward: null, kernel: null, code: null, replies: 0,
+        xpReward: null, kernel: null, code: null, replyCount: 0,
       };
       setPosts(p => [normalized, ...p]);
       setVotes(v => ({ ...v, [data.id]: 0 }));
       setPostText('');
+      setIsAnon(false);
     } else {
       setPostError(error?.message || 'Failed to post. Please try again.');
     }
@@ -173,6 +198,58 @@ export default function Home() {
         setVotes(v => ({ ...v, [id]: Math.max((v[id] || 1) - 1, 0) }));
       }
     }
+  };
+
+  const toggleReplies = async (postId) => {
+    const isOpen = expandedReplies.has(postId);
+    setExpandedReplies(prev => {
+      const next = new Set(prev);
+      isOpen ? next.delete(postId) : next.add(postId);
+      return next;
+    });
+    if (!isOpen && repliesData[postId] === undefined) {
+      const { data } = await supabase.from('post_replies')
+        .select('*').eq('post_id', postId).order('created_at', { ascending: true });
+      if (data) {
+        setRepliesData(prev => ({
+          ...prev,
+          [postId]: data.map(r => ({
+            ...r,
+            user: r.is_anonymous ? 'Anonymous' : (r.user_name || 'Anonymous'),
+            real_name: r.user_name,
+            time: r.created_at ? new Date(r.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
+          })),
+        }));
+      }
+    }
+  };
+
+  const handleSubmitReply = async (postId) => {
+    const text = (replyText[postId] || '').trim();
+    if (!text || !user) return;
+    const anon = replyAnon[postId] || false;
+    setSubmittingReply(prev => ({ ...prev, [postId]: true }));
+    const { data, error } = await supabase.from('post_replies').insert({
+      post_id: postId,
+      user_id: user.id,
+      member_id: user.memberCode || null,
+      user_name: user.name,
+      user_role: user.role || 'student',
+      is_anonymous: anon,
+      body: text,
+    }).select().single();
+    if (!error && data) {
+      const normalized = {
+        ...data,
+        user: anon ? 'Anonymous' : (data.user_name || user.name),
+        real_name: data.user_name,
+        time: 'Just now',
+      };
+      setRepliesData(prev => ({ ...prev, [postId]: [...(prev[postId] || []), normalized] }));
+      setPosts(prev => prev.map(p => p.id === postId ? { ...p, replyCount: (p.replyCount || 0) + 1 } : p));
+      setReplyText(prev => ({ ...prev, [postId]: '' }));
+    }
+    setSubmittingReply(prev => ({ ...prev, [postId]: false }));
   };
 
   return (
@@ -231,9 +308,19 @@ export default function Home() {
               </div>
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: postText.length > 900 ? '#e3b341' : 'var(--on-surface-var)', opacity: 0.65, transition: 'color 0.2s' }}>
-                {postText.length}/1000
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: postText.length > 900 ? '#e3b341' : 'var(--on-surface-var)', opacity: 0.65, transition: 'color 0.2s' }}>
+                  {postText.length}/1000
+                </span>
+                {user && (
+                  <button onClick={() => setIsAnon(a => !a)}
+                    title={isAnon ? 'Posting anonymously — identity hidden from others, visible to admins' : 'Post as yourself'}
+                    style={{ display: 'flex', alignItems: 'center', gap: 5, background: isAnon ? 'rgba(204,151,255,0.1)' : 'transparent', border: isAnon ? '1px solid rgba(204,151,255,0.35)' : '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: isAnon ? 'var(--primary)' : 'var(--on-surface-var)', fontSize: 11, fontFamily: 'var(--font-body)', transition: 'all 0.15s' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 13 }}>{isAnon ? 'visibility_off' : 'visibility'}</span>
+                    {isAnon ? 'Anon' : 'Public'}
+                  </button>
+                )}
+              </div>
               <button className="btn-ghost-cyan" onClick={handleRelay}
                 disabled={submittingPost || !postText.trim() || !user}
                 style={{ fontSize: 11, padding: '6px 20px', letterSpacing: '0.08em', opacity: (submittingPost || !postText.trim() || !user) ? 0.4 : 1, display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -297,8 +384,14 @@ export default function Home() {
                     </div>
                     {/* Content */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 700, color: 'var(--on-surface)', fontFamily: 'var(--font-display)' }}>{post.user}</span>
+                        {post.is_anonymous && user?.role === 'admin' && (
+                          <span style={{ fontSize: 10, color: 'rgba(204,151,255,0.6)', fontFamily: 'var(--font-mono)', letterSpacing: '0.03em' }}>({post.real_name})</span>
+                        )}
+                        {post.is_anonymous && (
+                          <span style={{ fontSize: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '1px 6px', color: 'var(--on-surface-var)', fontFamily: 'var(--font-mono)', letterSpacing: '0.06em' }}>ANON</span>
+                        )}
                         <span style={{ fontSize: 12, color: 'var(--on-surface-var)' }}>{post.time}</span>
                         {post.badge && (
                           <span className="tag-primary" style={{ fontSize: 8, letterSpacing: '0.1em' }}>{post.badge.toUpperCase()}</span>
@@ -310,20 +403,68 @@ export default function Home() {
                           <pre style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--secondary)', margin: 0, whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>{post.code}</pre>
                         </div>
                       )}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                        <button style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--on-surface-var)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, transition: 'color 0.14s', fontFamily: 'var(--font-body)' }}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <button onClick={() => toggleReplies(post.id)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 6, color: expandedReplies.has(post.id) ? 'var(--secondary)' : 'var(--on-surface-var)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, transition: 'color 0.14s', fontFamily: 'var(--font-body)', padding: 0 }}
                           onMouseEnter={e => e.currentTarget.style.color = 'var(--secondary)'}
-                          onMouseLeave={e => e.currentTarget.style.color = 'var(--on-surface-var)'}>
-                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>chat_bubble</span>
-                          {post.replies} Responses
-                        </button>
-                        <button style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--on-surface-var)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, transition: 'color 0.14s', fontFamily: 'var(--font-body)' }}
-                          onMouseEnter={e => e.currentTarget.style.color = 'var(--primary)'}
-                          onMouseLeave={e => e.currentTarget.style.color = 'var(--on-surface-var)'}>
-                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>share</span>
-                          Relay
+                          onMouseLeave={e => e.currentTarget.style.color = expandedReplies.has(post.id) ? 'var(--secondary)' : 'var(--on-surface-var)'}>
+                          <span className="material-symbols-outlined" style={{ fontSize: 16 }}>{expandedReplies.has(post.id) ? 'chat_bubble' : 'chat_bubble_outline'}</span>
+                          {post.replyCount > 0 ? `${post.replyCount} Response${post.replyCount !== 1 ? 's' : ''}` : 'Reply'}
                         </button>
                       </div>
+
+                      {/* ── Replies section ── */}
+                      {expandedReplies.has(post.id) && (
+                        <div style={{ marginTop: 14, paddingLeft: 14, borderLeft: '2px solid rgba(255,255,255,0.07)' }}>
+                          {(repliesData[post.id] || []).length === 0 && (
+                            <p style={{ fontSize: 12, color: 'var(--on-surface-var)', opacity: 0.45, margin: '0 0 10px' }}>No responses yet. Be the first.</p>
+                          )}
+                          {(repliesData[post.id] || []).map((reply, ri) => (
+                            <div key={reply.id} style={{ marginBottom: 12, paddingBottom: 12, borderBottom: ri < (repliesData[post.id].length - 1) ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4, flexWrap: 'wrap' }}>
+                                <span style={{ fontWeight: 700, fontSize: 12, color: 'var(--on-surface)', fontFamily: 'var(--font-display)' }}>{reply.user}</span>
+                                {reply.is_anonymous && user?.role === 'admin' && (
+                                  <span style={{ fontSize: 10, color: 'rgba(204,151,255,0.55)', fontFamily: 'var(--font-mono)' }}>({reply.real_name})</span>
+                                )}
+                                {reply.is_anonymous && (
+                                  <span style={{ fontSize: 9, background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 4, padding: '1px 5px', color: 'var(--on-surface-var)', fontFamily: 'var(--font-mono)' }}>ANON</span>
+                                )}
+                                <span style={{ fontSize: 11, color: 'var(--on-surface-var)' }}>{reply.time}</span>
+                              </div>
+                              <p style={{ fontSize: 13, color: 'var(--on-surface-var)', lineHeight: 1.55, margin: 0 }}>{reply.body}</p>
+                            </div>
+                          ))}
+                          {user && (
+                            <div style={{ marginTop: 6 }}>
+                              <input
+                                value={replyText[post.id] || ''}
+                                onChange={e => setReplyText(prev => ({ ...prev, [post.id]: e.target.value }))}
+                                onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitReply(post.id); } }}
+                                className="neon-input"
+                                placeholder="Write a response..."
+                                maxLength={500}
+                                style={{ width: '100%', height: 36, borderRadius: 8, fontSize: 13, boxSizing: 'border-box', marginBottom: 8 }}
+                              />
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <button
+                                  onClick={() => setReplyAnon(prev => ({ ...prev, [post.id]: !prev[post.id] }))}
+                                  title={replyAnon[post.id] ? 'Replying anonymously' : 'Reply as yourself'}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 5, background: replyAnon[post.id] ? 'rgba(204,151,255,0.1)' : 'transparent', border: replyAnon[post.id] ? '1px solid rgba(204,151,255,0.35)' : '1px solid rgba(255,255,255,0.08)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', color: replyAnon[post.id] ? 'var(--primary)' : 'var(--on-surface-var)', fontSize: 11, fontFamily: 'var(--font-body)', transition: 'all 0.15s' }}>
+                                  <span className="material-symbols-outlined" style={{ fontSize: 13 }}>{replyAnon[post.id] ? 'visibility_off' : 'visibility'}</span>
+                                  {replyAnon[post.id] ? 'Anon' : 'Public'}
+                                </button>
+                                <button
+                                  onClick={() => handleSubmitReply(post.id)}
+                                  disabled={!replyText[post.id]?.trim() || submittingReply[post.id]}
+                                  style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(83,221,252,0.08)', border: '1px solid rgba(83,221,252,0.25)', borderRadius: 8, padding: '5px 14px', cursor: 'pointer', color: 'var(--secondary)', fontSize: 11, fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.06em', opacity: (!replyText[post.id]?.trim() || submittingReply[post.id]) ? 0.4 : 1, transition: 'all 0.14s' }}>
+                                  <span className="material-symbols-outlined" style={{ fontSize: 12 }}>send</span>
+                                  {submittingReply[post.id] ? '...' : 'REPLY'}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.article>

@@ -144,10 +144,36 @@ export default function AdminPanel() {
 
   const saveMember = async () => {
     if (!editMember) return;
-    const { id, auth_id, email, created_at, ...fields } = editMember;
-    await supabase.from('members').update(fields).eq('id', id);
-    setMembers(p => p.map(m => m.id === id ? editMember : m));
-    setEditMember(null); showToast('Member updated.');
+    // Explicit payload — avoids sending joined_at or unknown columns
+    const payload = {
+      name: editMember.name || null,
+      email: editMember.email || null,
+      college_email: editMember.college_email || null,
+      phone: editMember.phone || null,
+      role: editMember.role || 'student',
+      status: editMember.status || 'Active Member',
+      sap_id: editMember.sap_id || null,
+      batch: editMember.batch || null,
+      course: editMember.course || null,
+      certificates: editMember.certificates || [],
+    };
+    const { error } = await supabase.rpc('admin_update_member', {
+      p_member_id: editMember.id,
+      p_name: payload.name,
+      p_email: payload.email,
+      p_college_email: payload.college_email,
+      p_phone: payload.phone,
+      p_role: payload.role,
+      p_status: payload.status,
+      p_sap_id: payload.sap_id,
+      p_batch: payload.batch,
+      p_course: payload.course,
+      p_certificates: payload.certificates,
+    });
+    if (error) { showToast('Error: ' + error.message); return; }
+    setMembers(p => p.map(m => m.id === editMember.id ? { ...m, ...payload } : m));
+    setEditMember(null);
+    showToast('Member updated.');
   };
 
   const deleteMember = async (id) => {
@@ -680,50 +706,64 @@ export default function AdminPanel() {
       <AnimatePresence>
         {editMember && (
           <div className="modal-overlay" onClick={() => setEditMember(null)}>
-            <motion.div className="modal-box" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }} onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+            <motion.div className="modal-box" initial={{ opacity: 0, scale: 0.94 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.94 }} onClick={e => e.stopPropagation()} style={{ maxWidth: 500, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18, flexShrink: 0 }}>
                 <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 900, letterSpacing: '-0.03em' }}>Edit <span style={{ color: 'var(--primary)' }}>Member</span></h2>
                 <button onClick={() => setEditMember(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--on-surface-var)' }}><span className="material-symbols-outlined">close</span></button>
               </div>
-              <div style={{ marginBottom: 10, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--secondary)' }}>{editMember.id}</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-                <input className="neon-input" placeholder="Full Name" value={editMember.name || ''} onChange={e => setEditMember({ ...editMember, name: e.target.value })} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <select className="neon-select" value={editMember.role || 'student'} onChange={e => setEditMember({ ...editMember, role: e.target.value })}>
-                    {['student', 'builder', 'moderator', 'admin'].map(r => <option key={r}>{r}</option>)}
-                  </select>
-                  <select className="neon-select" value={editMember.status || 'Active Member'} onChange={e => setEditMember({ ...editMember, status: e.target.value })}>
-                    {['Active Member', 'Inactive', 'Suspended', 'Alumni'].map(s => <option key={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                  <input className="neon-input" placeholder="SAP ID" value={editMember.sap_id || ''} onChange={e => setEditMember({ ...editMember, sap_id: e.target.value })} />
-                  <input className="neon-input" placeholder="Batch (e.g. 2024)" value={editMember.batch || ''} onChange={e => setEditMember({ ...editMember, batch: e.target.value })} />
-                </div>
-                <input className="neon-input" placeholder="Course (e.g. B.Tech CSE)" value={editMember.course || ''} onChange={e => setEditMember({ ...editMember, course: e.target.value })} />
-              </div>
-              {/* Certificates */}
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--on-surface-var)', marginBottom: 8, textTransform: 'uppercase' }}>Certificates</div>
-                {(editMember.certificates || []).length > 0 && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                    {(editMember.certificates || []).map((cert, i) => {
-                      const name = typeof cert === 'string' ? cert : cert.name || 'Certificate';
-                      return (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: 'rgba(204,151,255,0.1)', border: '1px solid rgba(204,151,255,0.25)', borderRadius: 6, fontSize: 12, color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
-                          {name}
-                          <button onClick={() => removeCert(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--error)', padding: 0, lineHeight: 1, marginLeft: 2 }}>×</button>
-                        </div>
-                      );
-                    })}
+              <div style={{ overflowY: 'auto', flex: 1, paddingRight: 4 }}>
+                <div style={{ marginBottom: 10, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--secondary)' }}>{editMember.id}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+
+                  {/* ── Identity ── */}
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--on-surface-var)', textTransform: 'uppercase', opacity: 0.55, paddingTop: 2 }}>Identity</div>
+                  <input className="neon-input" placeholder="Full Name" value={editMember.name || ''} onChange={e => setEditMember({ ...editMember, name: e.target.value })} />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <select className="neon-select" value={editMember.role || 'student'} onChange={e => setEditMember({ ...editMember, role: e.target.value })}>
+                      {['student', 'builder', 'moderator', 'admin'].map(r => <option key={r}>{r}</option>)}
+                    </select>
+                    <select className="neon-select" value={editMember.status || 'Active Member'} onChange={e => setEditMember({ ...editMember, status: e.target.value })}>
+                      {['Active Member', 'Inactive', 'Suspended', 'Alumni'].map(s => <option key={s}>{s}</option>)}
+                    </select>
                   </div>
-                )}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <input className="neon-input" placeholder="Award certificate name…" value={certInput} onChange={e => setCertInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCertToMember()} style={{ flex: 1 }} />
-                  <button onClick={addCertToMember} className="btn-secondary" style={{ padding: '8px 14px', fontSize: 12 }}>Add</button>
+
+                  {/* ── Contact ── */}
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--on-surface-var)', textTransform: 'uppercase', opacity: 0.55, marginTop: 4 }}>Contact</div>
+                  <input className="neon-input" type="email" placeholder="Personal Email" value={editMember.email || ''} onChange={e => setEditMember({ ...editMember, email: e.target.value })} />
+                  <input className="neon-input" type="email" placeholder="College Email (e.g. name@upes.ac.in)" value={editMember.college_email || ''} onChange={e => setEditMember({ ...editMember, college_email: e.target.value })} />
+                  <input className="neon-input" type="tel" placeholder="Contact Number" value={editMember.phone || ''} onChange={e => setEditMember({ ...editMember, phone: e.target.value })} />
+
+                  {/* ── Academic ── */}
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--on-surface-var)', textTransform: 'uppercase', opacity: 0.55, marginTop: 4 }}>Academic</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <input className="neon-input" placeholder="SAP ID" value={editMember.sap_id || ''} onChange={e => setEditMember({ ...editMember, sap_id: e.target.value })} />
+                    <input className="neon-input" placeholder="Batch (e.g. 2024)" value={editMember.batch || ''} onChange={e => setEditMember({ ...editMember, batch: e.target.value })} />
+                  </div>
+                  <input className="neon-input" placeholder="Course (e.g. B.Tech CSE)" value={editMember.course || ''} onChange={e => setEditMember({ ...editMember, course: e.target.value })} />
                 </div>
-              </div>
-              <div style={{ display: 'flex', gap: 10 }}>
+                {/* Certificates */}
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: 'var(--on-surface-var)', marginBottom: 8, textTransform: 'uppercase' }}>Certificates</div>
+                  {(editMember.certificates || []).length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
+                      {(editMember.certificates || []).map((cert, i) => {
+                        const name = typeof cert === 'string' ? cert : cert.name || 'Certificate';
+                        return (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', background: 'rgba(204,151,255,0.1)', border: '1px solid rgba(204,151,255,0.25)', borderRadius: 6, fontSize: 12, color: 'var(--primary)', fontFamily: 'var(--font-display)', fontWeight: 700 }}>
+                            {name}
+                            <button onClick={() => removeCert(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--error)', padding: 0, lineHeight: 1, marginLeft: 2 }}>×</button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input className="neon-input" placeholder="Award certificate name…" value={certInput} onChange={e => setCertInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCertToMember()} style={{ flex: 1 }} />
+                    <button onClick={addCertToMember} className="btn-secondary" style={{ padding: '8px 14px', fontSize: 12 }}>Add</button>
+                  </div>
+                </div>
+              </div>{/* end scrollable area */}
+              <div style={{ display: 'flex', gap: 10, flexShrink: 0, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                 <button className="btn-primary" onClick={saveMember} style={{ flex: 1, justifyContent: 'center' }}>Save Changes</button>
                 <button className="btn-secondary" onClick={() => setEditMember(null)} style={{ padding: '12px 20px' }}>Cancel</button>
               </div>
