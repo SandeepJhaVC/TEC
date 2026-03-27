@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
 
     /**
      * login(email, password)
-     * Authenticates via Supabase.
+     * Authenticates via Supabase. Reads canonical role & member code from members table.
      */
     const login = async (email, password) => {
         setAuthError('');
@@ -56,13 +56,18 @@ export function AuthProvider({ children }) {
             setAuthError(error.message);
             return { ok: false, error: error.message };
         }
-        const role = data.user.user_metadata?.role || 'student';
+        // Fetch member record for canonical role and member code
+        const { data: memberData } = await supabase
+            .from('members').select('*').eq('auth_id', data.user.id).single();
+        const role = memberData?.role || data.user.user_metadata?.role || 'student';
+        const displayName = memberData?.name || data.user.user_metadata?.name || email.split('@')[0];
         const u = {
             id: data.user.id,
             email: data.user.email,
-            name: data.user.user_metadata?.name || email.split('@')[0],
+            name: displayName,
             role,
-            avatarLetter: (data.user.user_metadata?.name || email)[0].toUpperCase(),
+            avatarLetter: displayName[0].toUpperCase(),
+            memberCode: memberData?.id || null,
         };
         setUser(u);
         sessionStorage.setItem('tec_user', JSON.stringify(u));
@@ -70,21 +75,32 @@ export function AuthProvider({ children }) {
     };
 
     /**
-     * register(email, password, name, role?)
-     * Registers via Supabase, defaults to 'student' role.
+     * register(email, password, name)
+     * Registers via Supabase as 'student'. Creates a members row with a TEC member code.
      */
-    const register = async (email, password, name, role = 'student') => {
+    const register = async (email, password, name) => {
         setAuthError('');
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
-            options: { data: { name, role } },
+            options: { data: { name, role: 'student' } },
         });
         if (error) {
             setAuthError(error.message);
             return { ok: false, error: error.message };
         }
-        return { ok: true, data };
+        // Generate unique member code and create members row
+        const memberCode = 'TEC-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+        await supabase.from('members').insert({
+            id: memberCode,
+            auth_id: data.user.id,
+            name,
+            email,
+            role: 'student',
+            status: 'Active Member',
+            joined_at: new Date().toISOString(),
+        });
+        return { ok: true, data, memberCode };
     };
 
     const logout = async () => {
