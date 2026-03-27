@@ -8,7 +8,7 @@ const ROLE_COLORS = {
 
 const NAV = [
     { icon: 'storefront', label: 'Marketplace', to: '/assignments' },
-    { icon: 'explore', label: 'Explore', to: '/' },
+    { icon: 'explore', label: 'Explore', to: '/map' },
     { icon: 'campaign', label: 'Feed', to: '/feed' },
     { icon: 'sell', label: 'Deals', to: '/discounts' },
     { icon: 'location_city', label: 'Listings', to: '/listings' },
@@ -209,7 +209,7 @@ export default function Header() {
             }}>
 
                 {/* Logo */}
-                <Link to="/" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', textDecoration: 'none', marginRight: 28, flexShrink: 0, gap: 0 }}>
+                <Link to="/feed" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', textDecoration: 'none', marginRight: 28, flexShrink: 0, gap: 0 }}>
                     <span style={{
                         fontFamily: "'Bebas Neue', sans-serif", fontSize: 34, fontStyle: 'italic',
                         color: '#CC97FF', letterSpacing: '0.03em', lineHeight: 1,
@@ -268,6 +268,11 @@ export default function Header() {
                                 fontFamily: "'Bebas Neue', sans-serif", fontSize: 16, color: '#CC97FF',
                             }}>{(user.avatarLetter || user.name?.[0] || 'U').toUpperCase()}</div>
                             <span className="tec-user-name">{user.name}</span>
+                            <Link to="/profile" style={{ fontSize: 11, fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--on-surface-var)', textDecoration: 'none', letterSpacing: '0.06em', padding: '5px 10px', borderRadius: 7, border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.04)', transition: 'all 0.14s' }}
+                                onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary)'; e.currentTarget.style.borderColor = 'rgba(204,151,255,0.3)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.color = 'var(--on-surface-var)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; }}>
+                                PROFILE
+                            </Link>
                             <button className="tec-signout" onClick={logout}>Sign out</button>
                         </>
                     ) : (
@@ -374,6 +379,16 @@ export default function Header() {
                                     {isActive(to) && <span className="tec-mob-active-dot" />}
                                 </Link>
                             ))}
+                            {user && (
+                                <Link to="/profile" onClick={() => setMobileOpen(false)}
+                                    className={`tec-mob-link${isActive('/profile') ? ' tec-active' : ''}`}
+                                    style={{ color: isActive('/profile') ? 'var(--primary)' : undefined, borderLeftColor: isActive('/profile') ? 'var(--primary)' : undefined }}>
+                                    <span className="tec-mob-row-num">{String(NAV.length + 1).padStart(2, '0')}</span>
+                                    <span className="material-symbols-outlined" style={{ fontSize: 19, opacity: isActive('/profile') ? 0.9 : 0.5 }}>account_circle</span>
+                                    <span style={{ flex: 1 }}>My Profile</span>
+                                    {isActive('/profile') && <span className="tec-mob-active-dot" />}
+                                </Link>
+                            )}
                             {user?.role === 'admin' && (
                                 <Link to="/admin" onClick={() => setMobileOpen(false)}
                                     className={`tec-mob-link${isActive('/admin') ? ' tec-active' : ''}`}
@@ -381,7 +396,7 @@ export default function Header() {
                                         color: isActive('/admin') ? '#FF6E84' : undefined,
                                         borderLeftColor: isActive('/admin') ? '#FF6E84' : undefined,
                                     }}>
-                                    <span className="tec-mob-row-num" style={{ color: isActive('/admin') ? 'rgba(255,110,132,0.5)' : undefined }}>{String(NAV.length + 1).padStart(2, '0')}</span>
+                                    <span className="tec-mob-row-num" style={{ color: isActive('/admin') ? 'rgba(255,110,132,0.5)' : undefined }}>{String(NAV.length + 2).padStart(2, '0')}</span>
                                     <span className="material-symbols-outlined" style={{ fontSize: 19, opacity: isActive('/admin') ? 0.9 : 0.5, color: '#FF6E84' }}>admin_panel_settings</span>
                                     <span style={{ flex: 1 }}>Admin</span>
                                     {isActive('/admin') && <span className="tec-mob-active-dot" style={{ background: '#FF6E84', boxShadow: '0 0 8px rgba(255,110,132,0.9)' }} />}

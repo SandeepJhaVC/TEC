@@ -75,11 +75,27 @@ export function AuthProvider({ children }) {
     };
 
     /**
-     * register(email, password, name)
-     * Registers via Supabase as 'student'. Creates a members row with a TEC member code.
+     * register(email, password, name, referralCode)
+     * Validates the single-use referral code, registers via Supabase as 'student',
+     * creates a members row with a TEC member code, then marks the referral as used.
      */
-    const register = async (email, password, name) => {
+    const register = async (email, password, name, referralCode) => {
         setAuthError('');
+
+        // 1. Validate referral code
+        const normalized = (referralCode || '').trim().toUpperCase();
+        if (!normalized) return { ok: false, error: 'A referral code is required to register.' };
+
+        const { data: refData, error: refError } = await supabase
+            .from('referral_codes')
+            .select('id, used_by_auth_id')
+            .eq('code', normalized)
+            .single();
+
+        if (refError || !refData) return { ok: false, error: 'Invalid referral code. Check with the admin.' };
+        if (refData.used_by_auth_id) return { ok: false, error: 'This referral code has already been used.' };
+
+        // 2. Create auth user
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -89,7 +105,8 @@ export function AuthProvider({ children }) {
             setAuthError(error.message);
             return { ok: false, error: error.message };
         }
-        // Generate unique member code and create members row
+
+        // 3. Generate unique member code and create members row
         const memberCode = 'TEC-' + Math.random().toString(36).substring(2, 6).toUpperCase();
         await supabase.from('members').insert({
             id: memberCode,
@@ -100,6 +117,16 @@ export function AuthProvider({ children }) {
             status: 'Active Member',
             joined_at: new Date().toISOString(),
         });
+
+        // 4. Mark referral code as consumed
+        await supabase.from('referral_codes').update({
+            used_by_auth_id: data.user.id,
+            used_by_name: name,
+            used_by_email: email,
+            used_at: new Date().toISOString(),
+            member_code: memberCode,
+        }).eq('id', refData.id);
+
         return { ok: true, data, memberCode };
     };
 
