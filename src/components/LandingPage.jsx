@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
@@ -23,49 +23,52 @@ const STEPS = [
 
 /* ─── UI MOCKS ────────────────────────────────────────────────────── */
 
-function MapMock() {
-  const zones = [
-    { name: 'Academic Block', left: '18%', top: '22%', w: 130, h: 88, color: '#CC97FF' },
-    { name: 'Hostels', left: '58%', top: '50%', w: 110, h: 90, color: '#53DDFC' },
-    { name: 'Food Court', left: '10%', top: '58%', w: 92, h: 66, color: '#FF95A0' },
-    { name: 'Sports Zone', left: '55%', top: '14%', w: 96, h: 70, color: '#a8f0ff' },
-  ];
-  const pins = [
-    { label: 'Best Chai', left: '15%', top: '52%', color: '#FF95A0' },
-    { label: 'Main Library', left: '36%', top: '16%', color: '#CC97FF' },
-    { label: 'Shortcut →', left: '46%', top: '40%', color: '#53DDFC' },
-    { label: 'ATM', left: '72%', top: '38%', color: '#a8f0ff' },
-    { label: 'Print Shop', left: '28%', top: '72%', color: '#FF95A0' },
-  ];
+const LANDING_MAP_STYLE = {
+  version: 8,
+  sources: { myarea: { type: 'geojson', data: '/map.geojson' } },
+  layers: [
+    { id: 'background', type: 'background', paint: { 'background-color': '#09090a' } },
+    { id: 'landuse-residential', type: 'fill', source: 'myarea', filter: ['==', ['get', 'landuse'], 'residential'], paint: { 'fill-color': '#0f100d' } },
+    { id: 'landuse-commercial', type: 'fill', source: 'myarea', filter: ['==', ['get', 'landuse'], 'commercial'], paint: { 'fill-color': '#131410' } },
+    { id: 'landuse-park', type: 'fill', source: 'myarea', filter: ['any', ['in', ['get', 'landuse'], ['literal', ['park', 'forest', 'grass', 'meadow', 'farmland', 'orchard']]], ['in', ['get', 'leisure'], ['literal', ['park', 'garden', 'pitch', 'golf_course']]], ['==', ['get', 'natural'], 'wood']], paint: { 'fill-color': '#0c1509' } },
+    { id: 'water-fill', type: 'fill', source: 'myarea', filter: ['all', ['==', ['geometry-type'], 'Polygon'], ['any', ['==', ['get', 'natural'], 'water'], ['==', ['get', 'landuse'], 'reservoir'], ['in', ['get', 'waterway'], ['literal', ['riverbank', 'dock']]]]], paint: { 'fill-color': '#070e1a' } },
+    { id: 'roads-motorway-casing', type: 'line', source: 'myarea', filter: ['in', ['get', 'highway'], ['literal', ['motorway', 'trunk']]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#050505', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 9, 16, 26] } },
+    { id: 'roads-primary-casing', type: 'line', source: 'myarea', filter: ['in', ['get', 'highway'], ['literal', ['primary', 'secondary']]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#050505', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 6, 16, 18] } },
+    { id: 'roads-tertiary-casing', type: 'line', source: 'myarea', filter: ['in', ['get', 'highway'], ['literal', ['tertiary', 'residential', 'unclassified', 'living_street']]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#050505', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 3.5, 16, 12] } },
+    { id: 'roads-motorway', type: 'line', source: 'myarea', filter: ['in', ['get', 'highway'], ['literal', ['motorway', 'trunk']]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#e2d8a8', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 5, 16, 18] } },
+    { id: 'roads-primary', type: 'line', source: 'myarea', filter: ['in', ['get', 'highway'], ['literal', ['primary', 'secondary']]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#c0b888', 'line-width': ['interpolate', ['linear'], ['zoom'], 10, 2.5, 16, 12] } },
+    { id: 'roads-tertiary', type: 'line', source: 'myarea', filter: ['in', ['get', 'highway'], ['literal', ['tertiary', 'residential', 'unclassified', 'living_street']]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#7e7860', 'line-width': ['interpolate', ['linear'], ['zoom'], 12, 1.2, 16, 7] } },
+    { id: 'roads-small', type: 'line', source: 'myarea', filter: ['in', ['get', 'highway'], ['literal', ['service', 'footway', 'path', 'track', 'steps', 'pedestrian']]], layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': '#403e30', 'line-width': ['interpolate', ['linear'], ['zoom'], 14, 0.6, 16, 3] } },
+  ],
+};
+
+function LiveMapPreview() {
+  const containerRef = useRef(null);
+  useEffect(() => {
+    if (!containerRef.current || !window.maplibregl) return;
+    const map = new window.maplibregl.Map({
+      container: containerRef.current,
+      style: LANDING_MAP_STYLE,
+      center: [77.9620, 30.4020],
+      zoom: 13.5,
+      interactive: false,
+      attributionControl: false,
+    });
+    return () => map.remove();
+  }, []);
   return (
-    <div style={{ position: 'relative', width: 500, height: 380, flexShrink: 0, background: 'rgba(8,8,16,0.97)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.022) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.022) 1px,transparent 1px)', backgroundSize: '38px 38px', pointerEvents: 'none' }} />
-      {zones.map(z => (
-        <div key={z.name} style={{ position: 'absolute', left: z.left, top: z.top, width: z.w, height: z.h, background: `${z.color}07`, border: `1px solid ${z.color}20`, borderRadius: 10, display: 'flex', alignItems: 'flex-end', padding: '5px 8px' }}>
-          <span style={{ fontSize: 8, fontWeight: 800, color: `${z.color}70`, letterSpacing: '0.1em', textTransform: 'uppercase' }}>{z.name}</span>
-        </div>
-      ))}
-      <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-        <path d="M 75 214 Q 188 172 232 152" stroke="rgba(83,221,252,0.18)" strokeWidth="1.5" fill="none" strokeDasharray="4 3" />
-        <path d="M 232 152 Q 295 185 340 134" stroke="rgba(204,151,255,0.14)" strokeWidth="1.5" fill="none" strokeDasharray="4 3" />
-        <path d="M 140 267 Q 230 240 250 200" stroke="rgba(255,149,160,0.12)" strokeWidth="1.5" fill="none" strokeDasharray="4 3" />
-      </svg>
-      {pins.map(p => (
-        <div key={p.label} style={{ position: 'absolute', left: p.left, top: p.top, transform: 'translate(-50%,-50%)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, zIndex: 2 }}>
-          <div style={{ width: 9, height: 9, borderRadius: '50%', background: p.color, boxShadow: `0 0 12px ${p.color}90` }} />
-          <span style={{ fontSize: 8, fontWeight: 800, color: p.color, whiteSpace: 'nowrap', background: 'rgba(8,8,16,0.88)', padding: '2px 6px', borderRadius: 4, letterSpacing: '0.04em' }}>{p.label}</span>
-        </div>
-      ))}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 40, background: 'rgba(8,8,14,0.94)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8 }}>
+    <div className="landing-map-wrap" style={{ position: 'relative', width: '100%', maxWidth: 500, aspectRatio: '4/3', flexShrink: 0, background: '#09090a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
+      <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 40, background: 'rgba(8,8,14,0.94)', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8, zIndex: 2 }}>
         <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#53DDFC', lineHeight: 1, fontStyle: 'normal', userSelect: 'none' }}>explore</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-display)', letterSpacing: '0.06em' }}>Campus Map</span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 5 }}>
+        <div className="landing-map-tags" style={{ marginLeft: 'auto', display: 'flex', gap: 5 }}>
           {['Food', 'Shortcuts', 'Labs', 'Hostels'].map(tag => (
             <span key={tag} style={{ fontSize: 8, padding: '2px 8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, color: 'rgba(255,255,255,0.3)', fontWeight: 700 }}>{tag}</span>
           ))}
         </div>
       </div>
-      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 34, background: 'rgba(8,8,14,0.92)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 14 }}>
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 34, background: 'rgba(8,8,14,0.92)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 14, zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <div style={{ width: 32, height: 2, background: 'rgba(255,255,255,0.1)', borderRadius: 1 }} />
           <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>UPES Campus</span>
@@ -75,6 +78,8 @@ function MapMock() {
           <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.28)', fontWeight: 700 }}>Live · 47 members online</span>
         </div>
       </div>
+      {/* Vignette overlay */}
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse, transparent 50%, rgba(9,9,10,0.5) 100%)', pointerEvents: 'none', zIndex: 1 }} />
     </div>
   );
 }
@@ -86,7 +91,7 @@ function FeedMock() {
     { avatar: 'R', name: 'Rohan T.', role: 'MOD', roleColor: '#53DDFC', time: '1d', text: 'New vendor deal dropped — 30% off Campus Café for TEC members. Check Deals tab.' },
   ];
   return (
-    <div style={{ width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="landing-mock" style={{ width: '100%', maxWidth: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ background: 'rgba(8,8,14,0.97)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#CC97FF', lineHeight: 1, fontStyle: 'normal', userSelect: 'none' }}>dynamic_feed</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-display)', letterSpacing: '0.06em' }}>Community Feed</span>
@@ -122,7 +127,7 @@ function MarketMock() {
     { icon: 'headphones', title: 'Sony WH-1000XM4', price: '₹18,000', badge: 'Used', color: '#a8f0ff' },
   ];
   return (
-    <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10, width: 380 }}>
+    <div className="landing-mock" style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 380 }}>
       <div style={{ background: 'rgba(8,8,14,0.97)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#FF95A0', lineHeight: 1, fontStyle: 'normal', userSelect: 'none' }}>storefront</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-display)', letterSpacing: '0.06em' }}>Marketplace</span>
@@ -155,7 +160,7 @@ function DealsMock() {
     { vendor: 'Xerox Point', discount: '₹0.50/pg', code: 'TECXRX', expires: 'Ongoing', color: '#a8f0ff', icon: 'content_copy' },
   ];
   return (
-    <div style={{ width: 400, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="landing-mock" style={{ width: '100%', maxWidth: 400, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ background: 'rgba(8,8,14,0.97)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#53DDFC', lineHeight: 1, fontStyle: 'normal', userSelect: 'none' }}>sell</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-display)', letterSpacing: '0.06em' }}>Member Deals</span>
@@ -187,7 +192,7 @@ function AssignmentsMock() {
     { title: 'CN Mini Project', due: 'Apr 7', status: 'Done', members: ['S', 'P', 'A'], color: '#53DDFC', pct: 100 },
   ];
   return (
-    <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="landing-mock" style={{ width: '100%', maxWidth: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ background: 'rgba(8,8,14,0.97)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
         <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#CC97FF', lineHeight: 1, fontStyle: 'normal', userSelect: 'none' }}>assignment</span>
         <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.45)', fontFamily: 'var(--font-display)', letterSpacing: '0.06em' }}>Assignments Board</span>
@@ -222,7 +227,7 @@ function AssignmentsMock() {
 
 function MemberCard() {
   return (
-    <div style={{ width: 300, flexShrink: 0, background: 'linear-gradient(135deg,rgba(123,47,190,0.25) 0%,rgba(18,18,28,0.92) 45%,rgba(83,221,252,0.08) 100%)', border: '1px solid rgba(204,151,255,0.2)', borderRadius: 20, padding: '28px 24px', backdropFilter: 'blur(12px)', position: 'relative', overflow: 'hidden', boxShadow: '0 24px 60px rgba(0,0,0,0.55),0 0 0 1px rgba(255,255,255,0.03)' }}>
+    <div className="landing-mock" style={{ width: '100%', maxWidth: 300, flexShrink: 0, background: 'linear-gradient(135deg,rgba(123,47,190,0.25) 0%,rgba(18,18,28,0.92) 45%,rgba(83,221,252,0.08) 100%)', border: '1px solid rgba(204,151,255,0.2)', borderRadius: 20, padding: '28px 24px', backdropFilter: 'blur(12px)', position: 'relative', overflow: 'hidden', boxShadow: '0 24px 60px rgba(0,0,0,0.55),0 0 0 1px rgba(255,255,255,0.03)' }}>
       <div style={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle,rgba(204,151,255,0.12) 0%,transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ width: 36, height: 28, borderRadius: 6, background: 'linear-gradient(135deg,rgba(255,220,100,0.28),rgba(255,180,50,0.12))', border: '1px solid rgba(255,200,80,0.22)', marginBottom: 28, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 2, padding: 4 }}>
         {[0, 1, 2, 3].map(i => <div key={i} style={{ background: 'rgba(255,200,80,0.18)', borderRadius: 2 }} />)}
@@ -262,9 +267,9 @@ function Ticker() {
 /* ─── FEATURE SECTION HELPER ──────────────────────────────────────── */
 function FeatureSection({ tag, tagColor, headline, sub, bullets, visual, reverse }) {
   return (
-    <section style={{ padding: '0 28px 120px', maxWidth: 1100, margin: '0 auto' }}>
-      <div style={{ display: 'flex', gap: 72, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', flexDirection: reverse ? 'row-reverse' : 'row' }}>
-        <div style={{ position: 'relative', flexShrink: 0 }}>
+    <section className="landing-feature" style={{ padding: '0 20px 80px', maxWidth: 1100, margin: '0 auto' }}>
+      <div style={{ display: 'flex', gap: 'clamp(32px, 5vw, 72px)', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center', flexDirection: reverse ? 'row-reverse' : 'row' }}>
+        <div style={{ position: 'relative', flexShrink: 0, width: '100%', maxWidth: 500, display: 'flex', justifyContent: 'center' }}>
           <div style={{ position: 'absolute', inset: -24, borderRadius: 40, background: `radial-gradient(ellipse,${tagColor}18 0%,transparent 70%)`, filter: 'blur(8px)', pointerEvents: 'none' }} />
           {visual}
         </div>
@@ -387,8 +392,8 @@ export default function LandingPage() {
       <Ticker />
 
       {/* STATS */}
-      <section style={{ padding: '72px 28px 110px', maxWidth: 960, margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18, overflow: 'hidden' }}>
+      <section style={{ padding: 'clamp(40px, 8vw, 72px) 20px clamp(60px, 10vw, 110px)', maxWidth: 960, margin: '0 auto' }}>
+        <div className="landing-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18, overflow: 'hidden' }}>
           {STATS.map((s, i) => (
             <div key={s.label} style={{ padding: '36px 20px', textAlign: 'center', background: 'var(--surface)', borderRight: i < 3 ? '1px solid rgba(255,255,255,0.05)' : 'none', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: -20, left: '50%', transform: 'translateX(-50%)', width: '120%', height: 80, background: `radial-gradient(ellipse,${s.color}10 0%,transparent 70%)`, pointerEvents: 'none' }} />
@@ -412,7 +417,7 @@ export default function LandingPage() {
           'Live member presence indicator',
           'Works offline — cached for every session',
         ]}
-        visual={<MapMock />}
+        visual={<LiveMapPreview />}
         reverse={false}
       />
 
@@ -485,8 +490,8 @@ export default function LandingPage() {
       />
 
       {/* MEMBER CARD */}
-      <section style={{ padding: '0 28px 120px', maxWidth: 1060, margin: '0 auto' }}>
-        <div style={{ display: 'flex', gap: 56, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+      <section className="landing-feature" style={{ padding: '0 20px 80px', maxWidth: 1060, margin: '0 auto' }}>
+        <div style={{ display: 'flex', gap: 'clamp(28px, 5vw, 56px)', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div style={{ position: 'relative', flexShrink: 0 }}>
             <div style={{ position: 'absolute', inset: -20, borderRadius: 36, background: 'radial-gradient(ellipse,rgba(123,47,190,0.22) 0%,transparent 70%)', filter: 'blur(6px)', pointerEvents: 'none' }} />
             <MemberCard />
@@ -516,7 +521,7 @@ export default function LandingPage() {
       </section>
 
       {/* HOW IT WORKS */}
-      <section style={{ padding: '0 28px 120px', maxWidth: 1060, margin: '0 auto' }}>
+      <section className="landing-feature" style={{ padding: '0 20px 80px', maxWidth: 1060, margin: '0 auto' }}>
         <div style={{ marginBottom: 52 }}>
           <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.2em', color: 'var(--tertiary)', textTransform: 'uppercase', marginBottom: 12 }}>How to join</div>
           <h2 style={{ fontSize: 'clamp(26px,4vw,42px)', fontFamily: 'var(--font-display)', fontWeight: 900, letterSpacing: '-0.025em', lineHeight: 1.1 }}>Three steps. That is it.</h2>
@@ -537,8 +542,8 @@ export default function LandingPage() {
       </section>
 
       {/* ACCESS POLICY */}
-      <section style={{ padding: '0 28px 120px', maxWidth: 1060, margin: '0 auto' }}>
-        <div style={{ border: '1px solid rgba(255,149,160,0.12)', borderRadius: 20, padding: '36px 32px', background: 'rgba(255,149,160,0.025)', display: 'flex', flexWrap: 'wrap', gap: 28, alignItems: 'center' }}>
+      <section className="landing-feature" style={{ padding: '0 20px 80px', maxWidth: 1060, margin: '0 auto' }}>
+        <div style={{ border: '1px solid rgba(255,149,160,0.12)', borderRadius: 20, padding: 'clamp(24px, 4vw, 36px) clamp(18px, 3vw, 32px)', background: 'rgba(255,149,160,0.025)', display: 'flex', flexWrap: 'wrap', gap: 28, alignItems: 'center' }}>
           <div style={{ flex: '1 1 260px' }}>
             <div style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.2em', color: 'var(--tertiary)', textTransform: 'uppercase', marginBottom: 10 }}>Access policy</div>
             <h3 style={{ fontSize: 'clamp(20px,3vw,32px)', fontFamily: 'var(--font-display)', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1.15, marginBottom: 12 }}>We do not do open sign-ups.</h3>
@@ -561,7 +566,7 @@ export default function LandingPage() {
       </section>
 
       {/* FINAL CTA */}
-      <section style={{ padding: '0 28px 140px' }}>
+      <section style={{ padding: '0 20px 100px' }}>
         <div style={{ maxWidth: 680, margin: '0 auto', position: 'relative' }}>
           <div style={{ position: 'absolute', inset: -1, borderRadius: 28, background: 'linear-gradient(135deg,#7B2FBE 0%,#53DDFC 50%,#FF95A0 100%)', opacity: 0.22, filter: 'blur(1px)', zIndex: 0 }} />
           <div style={{ position: 'relative', zIndex: 1, background: 'rgba(10,10,16,0.97)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 26, padding: 'clamp(40px,6vw,72px)', textAlign: 'center', overflow: 'hidden' }}>
@@ -600,7 +605,10 @@ export default function LandingPage() {
       <style>{`
         @keyframes marquee { from { transform: translateX(0) } to { transform: translateX(-33.333%) } }
         @media (max-width: 640px) {
-          .stats-grid { grid-template-columns: repeat(2,1fr) !important; }
+          .landing-stats { grid-template-columns: repeat(2,1fr) !important; }
+          .landing-feature { padding-left: 16px !important; padding-right: 16px !important; padding-bottom: 56px !important; }
+          .landing-map-tags { display: none !important; }
+          .landing-map-wrap { border-radius: 14px !important; }
         }
       `}</style>
     </div>

@@ -67,6 +67,7 @@ export default function AdminPanel() {
   const [refForm, setRefForm] = useState({ assigned_to_name: '', assigned_to_email: '' });
   const [showRefForm, setShowRefForm] = useState(false);
   const [refLoading, setRefLoading] = useState(false);
+  const [refMembersList, setRefMembersList] = useState([]);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -81,8 +82,12 @@ export default function AdminPanel() {
 
   const fetchReferrals = async () => {
     setRefLoading(true);
-    const { data } = await supabase.from('referral_codes').select('*').order('created_at', { ascending: false });
-    setReferrals(data || []);
+    const [{ data: refs }, { data: mems }] = await Promise.all([
+      supabase.from('referral_codes').select('*').order('created_at', { ascending: false }),
+      supabase.from('members').select('id, name, email').order('name', { ascending: true }),
+    ]);
+    setReferrals(refs || []);
+    setRefMembersList(mems || []);
     setRefLoading(false);
   };
 
@@ -104,7 +109,7 @@ export default function AdminPanel() {
     if (error) { showToast('Error creating code: ' + error.message); return; }
     setShowRefForm(false);
     setRefForm({ assigned_to_name: '', assigned_to_email: '' });
-    showToast(`Code created: ${code}`);
+    showToast(`Code created: ${code} — share it with the invitee.`);
     fetchReferrals();
   };
 
@@ -530,20 +535,44 @@ export default function AdminPanel() {
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
                   style={{ background: 'var(--surface)', border: '1px solid rgba(204,151,255,0.2)', borderRadius: 12, padding: 20, marginBottom: 20, overflow: 'hidden' }}>
                   <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 15, marginBottom: 14, color: 'var(--primary)' }}>New Referral Code</div>
+
+                  {/* Member picker */}
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--on-surface-var)', letterSpacing: '0.06em', display: 'block', marginBottom: 6, textTransform: 'uppercase' }}>Select Existing Member (optional)</label>
+                    <select
+                      className="neon-input"
+                      style={{ width: '100%', boxSizing: 'border-box', cursor: 'pointer' }}
+                      value={refForm._memberId || ''}
+                      onChange={e => {
+                        const picked = refMembersList.find(m => m.id === e.target.value);
+                        if (picked) {
+                          setRefForm(p => ({ ...p, _memberId: picked.id, assigned_to_name: picked.name, assigned_to_email: picked.email }));
+                        } else {
+                          setRefForm(p => ({ ...p, _memberId: '', assigned_to_name: '', assigned_to_email: '' }));
+                        }
+                      }}
+                    >
+                      <option value=''>— Pick a member or fill manually below —</option>
+                      {refMembersList.map(m => (
+                        <option key={m.id} value={m.id}>{m.name} ({m.id}) · {m.email}</option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--on-surface-var)', letterSpacing: '0.06em', display: 'block', marginBottom: 6, textTransform: 'uppercase' }}>Assigned To (Name)</label>
-                      <input className="neon-input" value={refForm.assigned_to_name} onChange={e => setRefForm(p => ({ ...p, assigned_to_name: e.target.value }))} placeholder="Student's name" style={{ width: '100%', boxSizing: 'border-box' }} />
+                      <input className="neon-input" value={refForm.assigned_to_name} onChange={e => setRefForm(p => ({ ...p, _memberId: '', assigned_to_name: e.target.value }))} placeholder="Student's name" style={{ width: '100%', boxSizing: 'border-box' }} />
                     </div>
                     <div>
                       <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--on-surface-var)', letterSpacing: '0.06em', display: 'block', marginBottom: 6, textTransform: 'uppercase' }}>Assigned To (Email)</label>
-                      <input className="neon-input" type="email" value={refForm.assigned_to_email} onChange={e => setRefForm(p => ({ ...p, assigned_to_email: e.target.value }))} placeholder="student@example.com" style={{ width: '100%', boxSizing: 'border-box' }} />
+                      <input className="neon-input" type="email" value={refForm.assigned_to_email} onChange={e => setRefForm(p => ({ ...p, _memberId: '', assigned_to_email: e.target.value }))} placeholder="student@example.com" style={{ width: '100%', boxSizing: 'border-box' }} />
                     </div>
                   </div>
                   <p style={{ fontSize: 11, color: 'var(--on-surface-var)', marginBottom: 14, lineHeight: 1.5 }}>A random code will be generated. Share it with the invitee — it expires on use.</p>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={createReferral} className="btn-primary" style={{ fontSize: 13 }}>Generate &amp; Save</button>
-                    <button onClick={() => setShowRefForm(false)} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: 'var(--on-surface-var)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-display)' }}>Cancel</button>
+                    <button onClick={() => { setShowRefForm(false); setRefForm({ assigned_to_name: '', assigned_to_email: '' }); }} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 8, color: 'var(--on-surface-var)', cursor: 'pointer', fontSize: 13, fontFamily: 'var(--font-display)' }}>Cancel</button>
                   </div>
                 </motion.div>
               )}

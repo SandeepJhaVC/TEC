@@ -3,12 +3,12 @@ import { useNavigate, useLocation, useSearchParams, Link } from "react-router-do
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 
-const fade = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22,1,0.36,1] } } };
+const fade = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } } };
 const stag = { show: { transition: { staggerChildren: 0.07 } } };
 
-function Field({ label, type = "text", value, onChange, placeholder, required, mono }) {
+function Field({ label, type = "text", value, onChange, placeholder, required, mono, noMargin }) {
   return (
-    <motion.div variants={fade} style={{ marginBottom: 16 }}>
+    <motion.div variants={fade} style={{ marginBottom: noMargin ? 0 : 16 }}>
       <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "var(--on-surface-var)", letterSpacing: "0.1em", marginBottom: 7, textTransform: "uppercase" }}>
         {label}
       </label>
@@ -43,9 +43,14 @@ export default function Login() {
   // Register state
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
+  const [regCollegeEmail, setRegCollegeEmail] = useState("");
+  const [regPhone, setRegPhone] = useState("");
   const [regPassword, setRegPassword] = useState("");
   const [regConfirm, setRegConfirm] = useState("");
   const [regReferral, setRegReferral] = useState("");
+  const [regSapId, setRegSapId] = useState("");
+  const [regBatch, setRegBatch] = useState("");
+  const [regCourse, setRegCourse] = useState("");
   const [regSuccess, setRegSuccess] = useState(false);
 
   const handleLogin = async (e) => {
@@ -65,7 +70,13 @@ export default function Login() {
     if (regPassword.length < 8) { setLocalError("Password must be at least 8 characters."); return; }
     if (!regReferral.trim()) { setLocalError("A referral code is required."); return; }
     setSubmitting(true);
-    const { ok, error } = await register(regEmail, regPassword, regName, regReferral);
+    const { ok, error } = await register(regEmail, regPassword, regName, regReferral, {
+      sap_id: regSapId.trim() || null,
+      batch: regBatch.trim() || null,
+      course: regCourse.trim() || null,
+      college_email: regCollegeEmail.trim() || null,
+      phone: regPhone.trim() || null,
+    });
     setSubmitting(false);
     if (!ok) { setLocalError(error || "Registration failed. Try again."); return; }
     setRegSuccess(true);
@@ -74,7 +85,7 @@ export default function Login() {
   const err = localError || authError;
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--bg)", display: "flex", flexDirection: "column" }}>
+    <div style={{ height: "100vh", overflowY: "auto", overflowX: "hidden", background: "var(--bg)", display: "flex", flexDirection: "column" }}>
 
       {/* Minimal nav */}
       <nav style={{ height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", borderBottom: "1px solid rgba(255,255,255,0.05)", flexShrink: 0 }}>
@@ -125,7 +136,7 @@ export default function Login() {
                   </AnimatePresence>
 
                   <motion.button variants={fade} type="submit" disabled={submitting} className="btn-primary" style={{ width: "100%", justifyContent: "center", opacity: submitting ? 0.7 : 1 }}>
-                    {submitting ? "Signing in…" : "Sign In"}
+                    {submitting ? "Signing inï¿½" : "Sign In"}
                   </motion.button>
                 </form>
 
@@ -151,9 +162,37 @@ export default function Login() {
                 <form onSubmit={handleRegister}>
                   <motion.div variants={stag} initial="hidden" animate="show">
                     <Field label="Full Name" value={regName} onChange={e => setRegName(e.target.value)} placeholder="Your name" required />
-                    <Field label="Email" type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="you@example.com" required />
+
+                    {/* Personal email â€” login credential */}
+                    <motion.div variants={fade} style={{ marginBottom: 16 }}>
+                      <label style={{ display: "block", fontSize: 10, fontWeight: 800, color: "var(--on-surface-var)", letterSpacing: "0.1em", marginBottom: 7, textTransform: "uppercase" }}>
+                        Personal Email <span style={{ color: "var(--primary)", fontWeight: 700, textTransform: "none", letterSpacing: 0 }}>Â· you'll sign in with this</span>
+                      </label>
+                      <input className="neon-input" type="email" value={regEmail} onChange={e => setRegEmail(e.target.value)} placeholder="you@gmail.com" required style={{ width: "100%", boxSizing: "border-box" }} />
+                    </motion.div>
+
+                    <Field label="College Email" type="email" value={regCollegeEmail} onChange={e => setRegCollegeEmail(e.target.value)} placeholder="name@xyz.ac.in" />
+                    <Field label="Contact Number" type="tel" value={regPhone} onChange={e => setRegPhone(e.target.value)} placeholder="+91 XXXXX XXXXX" />
                     <Field label="Password" type="password" value={regPassword} onChange={e => setRegPassword(e.target.value)} placeholder="Min. 8 characters" required />
                     <Field label="Confirm Password" type="password" value={regConfirm} onChange={e => setRegConfirm(e.target.value)} placeholder="Repeat password" required />
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+                      <Field label="SAP ID" value={regSapId} onChange={e => setRegSapId(e.target.value)} placeholder="500XXXXXXX" noMargin />
+                      <Field label="Batch" value={regBatch} onChange={e => setRegBatch(e.target.value)} placeholder="e.g. 2025" noMargin />
+                    </div>
+                    <Field label="Course" value={regCourse} onChange={e => setRegCourse(e.target.value)} placeholder="e.g. B.Tech CSE" />
+
+                    {/* Privacy / verification notice */}
+                    <motion.div variants={fade} style={{
+                      display: "flex", gap: 10, alignItems: "flex-start",
+                      background: "rgba(83,221,252,0.05)", border: "1px solid rgba(83,221,252,0.14)",
+                      borderRadius: 10, padding: "12px 14px", marginBottom: 16,
+                    }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 16, color: "var(--secondary)", flexShrink: 0, marginTop: 1 }}>shield</span>
+                      <p style={{ fontSize: 11, color: "var(--on-surface-var)", lineHeight: 1.6, margin: 0 }}>
+                        This information helps us <strong style={{ color: "var(--on-surface)" }}>verify your identity</strong> and ensure platform safety. Your college email, SAP ID, and contact number are visible only to admins and are never shared publicly.
+                      </p>
+                    </motion.div>
+
                     <Field label="Referral Code *" value={regReferral} onChange={e => setRegReferral(e.target.value.toUpperCase())} placeholder="e.g. A7B2K9X3" required mono />
                   </motion.div>
 
@@ -167,7 +206,7 @@ export default function Login() {
                   </AnimatePresence>
 
                   <motion.button variants={fade} type="submit" disabled={submitting} className="btn-primary" style={{ width: "100%", justifyContent: "center", opacity: submitting ? 0.7 : 1 }}>
-                    {submitting ? "Creating account…" : "Create Account"}
+                    {submitting ? "Creating accountï¿½" : "Create Account"}
                   </motion.button>
                 </form>
 

@@ -79,7 +79,7 @@ export function AuthProvider({ children }) {
      * Validates the single-use referral code, registers via Supabase as 'student',
      * creates a members row with a TEC member code, then marks the referral as used.
      */
-    const register = async (email, password, name, referralCode) => {
+    const register = async (email, password, name, referralCode, extra = {}) => {
         setAuthError('');
 
         // 1. Validate referral code
@@ -106,26 +106,24 @@ export function AuthProvider({ children }) {
             return { ok: false, error: error.message };
         }
 
-        // 3. Generate unique member code and create members row
+        // 3. Complete registration atomically via RPC (SECURITY DEFINER — works
+        //    even when no session exists yet, e.g. email confirmation is ON)
         const memberCode = 'TEC-' + Math.random().toString(36).substring(2, 6).toUpperCase();
-        await supabase.from('members').insert({
-            id: memberCode,
-            auth_id: data.user.id,
-            name,
-            email,
-            role: 'student',
-            status: 'Active Member',
-            joined_at: new Date().toISOString(),
+        const { error: regError } = await supabase.rpc('complete_registration', {
+            p_auth_id: data.user.id,
+            p_ref_id: refData.id,
+            p_member_code: memberCode,
+            p_name: name,
+            p_email: email,
+            p_sap_id: extra.sap_id || null,
+            p_batch: extra.batch || null,
+            p_course: extra.course || null, p_college_email: extra.college_email || null,
+            p_phone: extra.phone || null,
         });
 
-        // 4. Mark referral code as consumed
-        await supabase.from('referral_codes').update({
-            used_by_auth_id: data.user.id,
-            used_by_name: name,
-            used_by_email: email,
-            used_at: new Date().toISOString(),
-            member_code: memberCode,
-        }).eq('id', refData.id);
+        if (regError) {
+            return { ok: false, error: 'Profile setup failed: ' + regError.message };
+        }
 
         return { ok: true, data, memberCode };
     };

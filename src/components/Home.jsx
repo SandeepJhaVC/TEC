@@ -38,9 +38,11 @@ export default function Home() {
   const [voted, setVoted] = useState({});
   const [postText, setPostText] = useState('');
   const [submittingPost, setSubmittingPost] = useState(false);
+  const [postError, setPostError] = useState('');
   const [xpPopups, setXpPopups] = useState({});
   const [totalXp, setTotalXp] = useState(0);
   const [promoCards, setPromoCards] = useState([]);
+  const [realtimeStatus, setRealtimeStatus] = useState('connecting'); // connecting | live | error
 
   useEffect(() => {
     Promise.all([
@@ -57,9 +59,10 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    // ── Initial load ──
     supabase.from('feed_posts').select('*').order('created_at', { ascending: false })
       .then(({ data }) => {
-        const loaded = (data || []).map(p => ({
+        const normalize = p => ({
           ...p,
           user: p.user_name || 'Anonymous',
           time: p.created_at ? new Date(p.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '',
@@ -67,19 +70,71 @@ export default function Home() {
           missionColor: p.user_role === 'builder' ? '#CC97FF' : p.user_role === 'admin' ? '#FF6E84' : '#53DDFC',
           missionType: 'PULSE',
           xpReward: null, kernel: null, code: null, replies: 0,
-        }));
+        });
+        const loaded = (data || []).map(normalize);
         setPosts(loaded);
-        setVotes(loaded.reduce((acc, p) => ({ ...acc, [p.id]: p.votes }), {}));
+        setVotes(loaded.reduce((acc, p) => ({ ...acc, [p.id]: p.vote_count ?? 0 }), {}));
         setLoadingPosts(false);
       });
+
+    // ── Real-time WebSocket channel ──
+    const channel = supabase
+      .channel('feed_realtime')
+      // New post inserted by anyone
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'feed_posts' }, ({ new: row }) => {
+        const normalized = {
+          ...row,
+          user: row.user_name || 'Anonymous',
+          time: new Date(row.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          badge: (row.user_role && row.user_role !== 'student') ? row.user_role : null,
+          missionColor: row.user_role === 'builder' ? '#CC97FF' : row.user_role === 'admin' ? '#FF6E84' : '#53DDFC',
+          missionType: 'PULSE',
+          xpReward: null, kernel: null, code: null, replies: 0,
+        };
+        setPosts(prev => {
+          // Don't duplicate if we already added it optimistically
+          if (prev.some(p => p.id === row.id)) return prev;
+          return [normalized, ...prev];
+        });
+        setVotes(v => ({ ...v, [row.id]: row.vote_count ?? 0 }));
+      })
+      // Vote count updated by trigger
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'feed_posts' }, ({ new: row }) => {
+        setVotes(v => ({ ...v, [row.id]: row.vote_count ?? 0 }));
+      })
+      // Post deleted
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'feed_posts' }, ({ old: row }) => {
+        setPosts(prev => prev.filter(p => p.id !== row.id));
+        setVotes(v => { const next = { ...v }; delete next[row.id]; return next; });
+      })
+      .subscribe(status => {
+        if (status === 'SUBSCRIBED') setRealtimeStatus('live');
+        else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') setRealtimeStatus('error');
+        else setRealtimeStatus('connecting');
+      });
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // Load which posts the current user has already voted on
+  useEffect(() => {
+    if (!user?.id) return;
+    supabase.from('post_votes').select('post_id').eq('user_id', user.id)
+      .then(({ data }) => {
+        if (data) setVoted(data.reduce((acc, v) => ({ ...acc, [v.post_id]: true }), {}));
+      });
+  }, [user?.id]);
 
   const handleRelay = async () => {
     if (!postText.trim() || !user) return;
     setSubmittingPost(true);
+    setPostError('');
     const { data, error } = await supabase.from('feed_posts').insert({
-      user_id: user.id, user_name: user.name, user_role: user.role,
-      body: postText.trim(), votes: 1,
+      user_id: user.id,
+      member_id: user.memberCode || null,
+      user_name: user.name,
+      user_role: user.role || 'student',
+      body: postText.trim(),
     }).select().single();
     if (!error && data) {
       const normalized = {
@@ -92,18 +147,32 @@ export default function Home() {
         xpReward: null, kernel: null, code: null, replies: 0,
       };
       setPosts(p => [normalized, ...p]);
-      setVotes(v => ({ ...v, [data.id]: 1 }));
+      setVotes(v => ({ ...v, [data.id]: 0 }));
       setPostText('');
+    } else {
+      setPostError(error?.message || 'Failed to post. Please try again.');
     }
     setSubmittingPost(false);
   };
 
-  const handleVote = (id) => {
-    if (voted[id]) return;
-    const newCount = (votes[id] || 0) + 1;
-    setVotes(v => ({ ...v, [id]: newCount }));
-    setVoted(v => ({ ...v, [id]: true }));
-    supabase.from('feed_posts').update({ votes: newCount }).eq('id', id);
+  const handleVote = async (id) => {
+    if (!user) return;
+    if (voted[id]) {
+      // Toggle off — optimistic unvote
+      setVoted(v => ({ ...v, [id]: false }));
+      setVotes(v => ({ ...v, [id]: Math.max((v[id] || 1) - 1, 0) }));
+      await supabase.from('post_votes').delete().match({ post_id: id, user_id: user.id });
+    } else {
+      // Toggle on — optimistic upvote
+      setVoted(v => ({ ...v, [id]: true }));
+      setVotes(v => ({ ...v, [id]: (v[id] || 0) + 1 }));
+      const { error } = await supabase.from('post_votes').insert({ post_id: id, user_id: user.id });
+      if (error) {
+        // Revert if DB rejected (e.g. already voted from another session)
+        setVoted(v => ({ ...v, [id]: false }));
+        setVotes(v => ({ ...v, [id]: Math.max((v[id] || 1) - 1, 0) }));
+      }
+    }
   };
 
   return (
@@ -120,10 +189,15 @@ export default function Home() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8, marginTop: 4 }}>
               <div style={{ display: 'flex', gap: 8 }}>
-                <span className="tag-error" style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span className="live-dot" /> ACTIVE
+                <span
+                  className={realtimeStatus === 'live' ? 'tag-error' : 'tag-secondary'}
+                  style={{ display: 'flex', alignItems: 'center', gap: 5 }}
+                  title={realtimeStatus === 'live' ? 'Real-time connected' : realtimeStatus === 'error' ? 'Connection error' : 'Connecting...'}
+                >
+                  <span className="live-dot" style={realtimeStatus === 'error' ? { background: '#e3b341' } : realtimeStatus === 'connecting' ? { background: 'var(--on-surface-var)', animationPlayState: 'running' } : {}} />
+                  {realtimeStatus === 'live' ? 'LIVE' : realtimeStatus === 'error' ? 'OFFLINE' : 'CONNECTING'}
                 </span>
-                <span className="tag-secondary">LIVE</span>
+                <span className="tag-secondary">ACTIVE</span>
               </div>
               {/* Running XP tally */}
               {totalXp > 0 && (
@@ -140,20 +214,32 @@ export default function Home() {
 
           {/* Post composer */}
           <div className="neon-card" style={{ padding: 20, marginBottom: 24 }}>
-            <textarea value={postText} onChange={e => setPostText(e.target.value)}
-              className="neon-input" rows={3} placeholder="Relay a pulse to the campus..."
-              style={{ resize: 'none', borderRadius: 10, marginBottom: 12 }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 12, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-              <div style={{ display: 'flex', gap: 16 }}>
-                {['image', 'terminal', 'poll'].map(icon => (
-                  <button key={icon} style={{ background: 'none', border: 'none', color: 'var(--on-surface-var)', cursor: 'pointer', display: 'flex', alignItems: 'center', transition: 'color 0.14s' }}
-                    onMouseEnter={e => e.currentTarget.style.color = 'var(--secondary)'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'var(--on-surface-var)'}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 20 }}>{icon}</span>
-                  </button>
-                ))}
+            {!user && (
+              <div style={{ color: 'var(--on-surface-var)', fontSize: 13, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: 10, border: '1px solid rgba(255,255,255,0.06)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 16, opacity: 0.5 }}>lock</span>
+                Sign in to relay a pulse
               </div>
-              <button className="btn-ghost-cyan" onClick={handleRelay} disabled={submittingPost || !postText.trim()} style={{ fontSize: 11, padding: '6px 16px', letterSpacing: '0.08em', opacity: (submittingPost || !postText.trim()) ? 0.45 : 1 }}>{submittingPost ? '...' : 'RELAY'}</button>
+            )}
+            <textarea value={postText} onChange={e => { setPostText(e.target.value); if (postError) setPostError(''); }}
+              className="neon-input" rows={3} placeholder="Relay a pulse to the campus..."
+              style={{ resize: 'none', borderRadius: 10, marginBottom: 10 }}
+              maxLength={1000} disabled={!user} />
+            {postError && (
+              <div style={{ color: '#FF6E84', fontSize: 12, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>error</span>
+                {postError}
+              </div>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: postText.length > 900 ? '#e3b341' : 'var(--on-surface-var)', opacity: 0.65, transition: 'color 0.2s' }}>
+                {postText.length}/1000
+              </span>
+              <button className="btn-ghost-cyan" onClick={handleRelay}
+                disabled={submittingPost || !postText.trim() || !user}
+                style={{ fontSize: 11, padding: '6px 20px', letterSpacing: '0.08em', opacity: (submittingPost || !postText.trim() || !user) ? 0.4 : 1, display: 'flex', alignItems: 'center', gap: 7 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: 14 }}>send</span>
+                {submittingPost ? 'POSTING...' : 'RELAY'}
+              </button>
             </div>
           </div>
 
@@ -185,9 +271,9 @@ export default function Home() {
                       {post.missionType}
                     </span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#e3b341', letterSpacing: '0.08em' }}>
-                        +{post.xpReward} XP
-                      </span>
+                      {post.xpReward && (
+                        <span style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: '#e3b341', letterSpacing: '0.08em' }}>+{post.xpReward} XP</span>
+                      )}
                       {post.kernel && (
                         <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--secondary)', opacity: 0.5 }}>{post.kernel}</span>
                       )}
@@ -202,13 +288,12 @@ export default function Home() {
                           +{post.xpReward} XP
                         </div>
                       )}
-                      <button className="upvote-btn" onClick={() => handleVote(post.id)} style={voted[post.id] ? { background: `${post.missionColor}25`, borderColor: `${post.missionColor}60` } : {}}>
+                      <button className="upvote-btn" onClick={() => handleVote(post.id)}
+                        title={voted[post.id] ? 'Remove upvote' : 'Upvote this post'}
+                        style={voted[post.id] ? { background: `${post.missionColor}25`, borderColor: `${post.missionColor}60` } : {}}>
                         <span className="material-symbols-outlined" style={{ fontSize: 18, color: voted[post.id] ? post.missionColor : undefined }}>expand_less</span>
                       </button>
-                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: voted[post.id] ? post.missionColor : 'var(--on-surface)' }}>{votes[post.id]}</span>
-                      <button style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--surface-highest)', border: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--on-surface-var)', fontSize: 16, transition: 'color 0.14s' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 18 }}>expand_more</span>
-                      </button>
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 16, color: voted[post.id] ? post.missionColor : 'var(--on-surface)', minWidth: 20, textAlign: 'center' }}>{votes[post.id] ?? 0}</span>
                     </div>
                     {/* Content */}
                     <div style={{ flex: 1, minWidth: 0 }}>
