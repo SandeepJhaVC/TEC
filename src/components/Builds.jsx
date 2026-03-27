@@ -1,5 +1,6 @@
 ﻿import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import AdBanner from './AdBanner';
 
 const TABS = ['Latest_Builds', 'Trending', 'Web3_Protocols', 'AI_Systems'];
 
@@ -202,6 +203,8 @@ export default function Builds() {
                             </div>
                         ))}
                     </div>
+
+                    <AdBanner variant="sidebar" offset={2} />
                 </div>
             </div>
 

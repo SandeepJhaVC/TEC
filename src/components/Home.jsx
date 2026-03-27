@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import AdBanner from './AdBanner';
 
 const FEED = [];
 
@@ -22,6 +23,12 @@ const LIVE_LOGS = [
 const TRENDING_NODES = ["#placement", "#hackathon", "#hostels", "#assignments", "#cafeteria", "#UPES2025", "#internship", "#exam-prep"];
 
 const LOG_COLORS = { CONN: '#53DDFC', TX: '#3fb950', ERR: '#FF6E84', INFO: '#CC97FF' };
+
+const FALLBACK_PROMO = [
+  { type: 'deal', data: { name: 'Campus Café', cat: 'Food', discount: '15% OFF', desc: 'Show your TEC student ID for a discount on all beverages and snacks at the Block-A canteen.' } },
+  { type: 'listing', data: { name: 'TEC Housing Board', tab: 'Stay', price: 'From ₹4,500/mo', loc: 'On-campus accommodation options available' } },
+  { type: 'deal', data: { name: 'PrintZone', cat: 'Study', discount: '₹2/page', desc: 'Discounted printing rates exclusively for TEC members at the library ground floor.' } },
+];
 
 export default function Home() {
   const { user } = useAuth();
@@ -45,7 +52,7 @@ export default function Home() {
       (deals.data || []).forEach(d => cards.push({ type: 'deal', data: d }));
       (listings.data || []).forEach(l => cards.push({ type: 'listing', data: l }));
       if (issues.data?.[0]) cards.push({ type: 'issue', data: issues.data[0] });
-      setPromoCards(cards);
+      setPromoCards(cards.length > 0 ? cards : FALLBACK_PROMO);
     });
   }, []);
 
@@ -239,51 +246,76 @@ export default function Home() {
                 {/* Inject promo card every 3 posts */}
                 {(idx + 1) % 3 === 0 && promoCards.length > 0 && (() => {
                   const card = promoCards[Math.floor((idx + 1) / 3 - 1) % promoCards.length];
-                  if (card.type === 'deal') return (
-                    <Link to="/discounts" key={`promo-${idx}`} style={{ textDecoration: 'none' }}>
-                      <div className="neon-card" style={{ padding: '14px 18px', borderLeft: '3px solid var(--secondary)', display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(83,221,252,0.03)', cursor: 'pointer' }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(83,221,252,0.1)', border: '1px solid rgba(83,221,252,0.2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--secondary)' }}>sell</span>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            <span style={{ fontSize: 8, fontFamily: 'var(--font-display)', letterSpacing: '0.18em', fontWeight: 800, color: 'rgba(83,221,252,0.5)' }}>DEAL</span>
-                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--on-surface)' }}>{card.data.name}</span>
+                  const DEAL_ACCENT = { Food: '#53DDFC', Study: '#FF95A0', Shopping: '#e3b341', Health: '#FF6E84', Transport: '#CC97FF', Stay: '#a889ff' };
+                  if (card.type === 'deal') {
+                    const accent = DEAL_ACCENT[card.data.cat] || '#53DDFC';
+                    return (
+                      <Link to="/discounts" key={`promo-${idx}`} style={{ textDecoration: 'none' }}>
+                        <div className="neon-card" style={{ overflow: 'hidden', borderTop: `2px solid ${accent}`, background: `linear-gradient(135deg, ${accent}09 0%, transparent 65%)` }}>
+                          <div style={{ padding: '9px 16px', borderBottom: `1px solid ${accent}18`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: 7, fontFamily: 'var(--font-display)', letterSpacing: '0.22em', fontWeight: 800, color: `${accent}80`, background: `${accent}12`, padding: '2px 7px', borderRadius: 4 }}>SPONSORED</span>
+                              <span style={{ fontSize: 9, fontFamily: 'var(--font-display)', color: accent, fontWeight: 700, letterSpacing: '0.08em' }}>{(card.data.cat || 'DEAL').toUpperCase()}</span>
+                            </div>
+                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20, color: accent, letterSpacing: '-0.02em' }}>{card.data.discount}</span>
                           </div>
-                          <div style={{ fontSize: 11, color: 'var(--on-surface-var)' }}>{card.data.desc?.slice(0, 60)}{card.data.desc?.length > 60 ? '…' : ''}</div>
+                          <div style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 13 }}>
+                            <div style={{ width: 34, height: 34, borderRadius: 9, background: `${accent}12`, border: `1px solid ${accent}28`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <span className="material-symbols-outlined" style={{ fontSize: 16, color: accent }}>sell</span>
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--on-surface)', marginBottom: 2 }}>{card.data.name}</div>
+                              <div style={{ fontSize: 11, color: 'var(--on-surface-var)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{card.data.desc}</div>
+                            </div>
+                            <span style={{ fontSize: 10, fontFamily: 'var(--font-display)', fontWeight: 700, color: accent, flexShrink: 0, letterSpacing: '0.03em' }}>View →</span>
+                          </div>
                         </div>
-                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 20, color: 'var(--secondary)', flexShrink: 0 }}>{card.data.discount}</span>
-                      </div>
-                    </Link>
-                  );
+                      </Link>
+                    );
+                  }
                   if (card.type === 'listing') return (
                     <Link to="/listings" key={`promo-${idx}`} style={{ textDecoration: 'none' }}>
-                      <div className="neon-card" style={{ padding: '14px 18px', borderLeft: '3px solid var(--primary)', display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(204,151,255,0.03)', cursor: 'pointer' }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(204,151,255,0.1)', border: '1px solid rgba(204,151,255,0.2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'var(--primary)' }}>location_city</span>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            <span style={{ fontSize: 8, fontFamily: 'var(--font-display)', letterSpacing: '0.18em', fontWeight: 800, color: 'rgba(204,151,255,0.5)' }}>{card.data.tab?.toUpperCase()}</span>
-                            <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--on-surface)' }}>{card.data.name}</span>
+                      <div className="neon-card" style={{ overflow: 'hidden', borderTop: '2px solid var(--primary)', background: 'linear-gradient(135deg, rgba(204,151,255,0.07) 0%, transparent 65%)' }}>
+                        <div style={{ padding: '9px 16px', borderBottom: '1px solid rgba(204,151,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 7, fontFamily: 'var(--font-display)', letterSpacing: '0.22em', fontWeight: 800, color: 'rgba(204,151,255,0.55)', background: 'rgba(204,151,255,0.1)', padding: '2px 7px', borderRadius: 4 }}>FEATURED</span>
+                            <span style={{ fontSize: 9, fontFamily: 'var(--font-display)', color: 'var(--primary)', fontWeight: 700, letterSpacing: '0.08em' }}>{(card.data.tab || 'LISTING').toUpperCase()}</span>
                           </div>
-                          <div style={{ fontSize: 11, color: 'var(--on-surface-var)' }}>{card.data.loc}</div>
+                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 15, color: 'var(--tertiary)', letterSpacing: '-0.01em' }}>{card.data.price}</span>
                         </div>
-                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 16, color: 'var(--tertiary)', flexShrink: 0 }}>{card.data.price}</span>
+                        <div style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 13 }}>
+                          <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(204,151,255,0.1)', border: '1px solid rgba(204,151,255,0.22)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--primary)' }}>location_city</span>
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--on-surface)', marginBottom: 2 }}>{card.data.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--on-surface-var)' }}>{card.data.loc}</div>
+                          </div>
+                          <span style={{ fontSize: 10, fontFamily: 'var(--font-display)', fontWeight: 700, color: 'var(--primary)', flexShrink: 0 }}>Explore →</span>
+                        </div>
                       </div>
                     </Link>
                   );
                   if (card.type === 'issue') return (
                     <Link to="/poll" key={`promo-${idx}`} style={{ textDecoration: 'none' }}>
-                      <div className="neon-card" style={{ padding: '14px 18px', borderLeft: '3px solid #e3b341', display: 'flex', alignItems: 'center', gap: 16, background: 'rgba(227,179,65,0.03)', cursor: 'pointer' }}>
-                        <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(227,179,65,0.1)', border: '1px solid rgba(227,179,65,0.2)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#e3b341' }}>how_to_vote</span>
+                      <div className="neon-card" style={{ overflow: 'hidden', borderTop: '2px solid #e3b341', background: 'linear-gradient(135deg, rgba(227,179,65,0.07) 0%, transparent 65%)' }}>
+                        <div style={{ padding: '9px 16px', borderBottom: '1px solid rgba(227,179,65,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 7, fontFamily: 'var(--font-display)', letterSpacing: '0.22em', fontWeight: 800, color: 'rgba(227,179,65,0.55)', background: 'rgba(227,179,65,0.1)', padding: '2px 7px', borderRadius: 4 }}>TRENDING</span>
+                            <span style={{ fontSize: 9, fontFamily: 'var(--font-display)', color: '#e3b341', fontWeight: 700, letterSpacing: '0.08em' }}>PULSE ISSUE</span>
+                          </div>
+                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#e3b341' }}>{card.data.votes} votes</span>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 8, fontFamily: 'var(--font-display)', letterSpacing: '0.18em', fontWeight: 800, color: 'rgba(227,179,65,0.5)', marginBottom: 2 }}>TOP PULSE ISSUE</div>
-                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--on-surface)' }}>{card.data.title}</div>
+                        <div style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 13 }}>
+                          <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(227,179,65,0.1)', border: '1px solid rgba(227,179,65,0.22)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#e3b341' }}>how_to_vote</span>
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--on-surface)', marginBottom: 2 }}>{card.data.title}</div>
+                            <div style={{ fontSize: 11, color: 'var(--on-surface-var)' }}>Cast your vote · make your voice heard</div>
+                          </div>
+                          <span style={{ fontSize: 10, fontFamily: 'var(--font-display)', fontWeight: 700, color: '#e3b341', flexShrink: 0 }}>Vote →</span>
                         </div>
-                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 16, color: '#e3b341', flexShrink: 0 }}>{card.data.votes} votes</span>
                       </div>
                     </Link>
                   );
@@ -362,6 +394,7 @@ export default function Home() {
               ))}
             </div>
           </div>
+          <AdBanner variant="sidebar" offset={0} />
         </div>
       </div>
     </div>

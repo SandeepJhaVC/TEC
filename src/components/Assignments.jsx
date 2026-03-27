@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import AdBanner from './AdBanner';
 
 const CATEGORIES = ['All', 'Hardware', 'Study Sessions', 'Software', 'Books', 'Services'];
 const CONDITIONS = ['Any', 'New', 'Like New', 'Good', 'Functional'];
@@ -206,6 +207,8 @@ export default function Assignments() {
                             </button>
                         ))}
                     </div>
+
+                    <AdBanner variant="sidebar" offset={0} />
                 </div>
             </div>
 

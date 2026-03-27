@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
+import AdBanner from './AdBanner';
 
 const AREAS = ["All", "Pondha", "Bidholi", "Premnagar", "Sahastradhara", "Raipur"];
 const CATS = ["All", "Transport", "Healthcare", "Banking", "Infrastructure", "Safety", "Housing", "Technology", "Environment", "Food"];
@@ -182,7 +183,7 @@ export default function Poll() {
                 </div>
 
                 {/* RIGHT: Active Polls */}
-                <div style={{ position: "sticky", top: 80 }}>
+                <div style={{ position: "sticky", top: 80, display: 'flex', flexDirection: 'column', gap: 20 }}>
                     <span className="eyebrow" style={{ display: "block", marginBottom: 16 }}>Active Polls</span>
                     {polls.length === 0 && (
                         <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--on-surface-var)', fontSize: 13 }}>
@@ -190,10 +191,10 @@ export default function Poll() {
                             No active polls.
                         </div>
                     )}
-                    {polls.map(poll => {
+                    {polls.map((poll, pollIdx) => {
                         const max = Math.max(...poll.options.map(o => o.votes));
                         return (
-                            <div key={poll.id} className="neon-card" style={{ padding: 20, marginBottom: 16 }}>
+                            <div key={poll.id} className="neon-card" style={{ padding: 20, marginBottom: pollIdx < polls.length - 1 ? 0 : 0 }}>
                                 <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 14, letterSpacing: "-0.01em", marginBottom: 16, lineHeight: 1.4 }}>{poll.q}</p>
                                 {poll.options.map((opt, i) => {
                                     const pct = Math.round((opt.votes / poll.totalVotes) * 100);
@@ -218,6 +219,8 @@ export default function Poll() {
                             </div>
                         );
                     })}
+
+                    <AdBanner variant="sidebar" offset={1} />
                 </div>
             </div>
 

@@ -77,6 +77,31 @@ export default function Discounts() {
           </motion.div>
         ))}
       </div>
+
+      {/* Partner CTA */}
+      <div className="neon-card" style={{
+        marginTop: 40, padding: "28px 32px",
+        background: "linear-gradient(135deg, rgba(83,221,252,0.05) 0%, rgba(204,151,255,0.05) 100%)",
+        borderTop: "2px solid rgba(83,221,252,0.25)",
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap",
+      }}>
+        <div>
+          <div style={{ fontSize: 9, fontFamily: "var(--font-display)", letterSpacing: "0.22em", color: "rgba(255,255,255,0.25)", marginBottom: 6, fontWeight: 700 }}>ADVERTISE WITH US</div>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 900, fontSize: 22, letterSpacing: "-0.03em", color: "var(--on-surface)", marginBottom: 6 }}>
+            Have a student-friendly <span style={{ color: "var(--secondary)" }}>deal?</span>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--on-surface-var)", lineHeight: 1.6, maxWidth: 480 }}>
+            Partner with TEC to reach 5,000+ UPES students. Deals added by our admin team appear here and get promoted across the Feed, Listings, and more.
+          </p>
+        </div>
+        <a href="mailto:tec@upes.ac.in?subject=Partner%20Deal%20Request" style={{ textDecoration: "none", flexShrink: 0 }}>
+          <button className="btn-ghost-cyan" style={{ fontSize: 12, padding: "10px 24px", whiteSpace: "nowrap" }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>mail</span>
+            Contact Us
+          </button>
+        </a>
+      </div>
     </div>
   );
 }
+

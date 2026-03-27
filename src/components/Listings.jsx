@@ -1,6 +1,7 @@
 ﻿import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "../supabaseClient";
+import AdBanner from './AdBanner';
 
 const TABS = ["PG / Hostels", "Restaurants", "Rentals", "Hangout Spots", "Activities"];
 const TAB_ICONS = { "PG / Hostels": "home", "Restaurants": "restaurant", "Rentals": "two_wheeler", "Hangout Spots": "celebration", "Activities": "directions_run" };
@@ -136,6 +137,14 @@ export default function Listings() {
           </div>
         </motion.div>
       ))}
+
+        {/* Ad grid slots — every 5 items */}
+        {items.length >= 5 && (
+          Array.from({ length: Math.floor(items.length / 5) }).map((_, ai) => (
+            <AdBanner key={`ad-${ai}`} variant="grid" offset={ai + 3} />
+          ))
+        )}
+
         {items.length === 0 && search && <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "48px 0", color: "var(--on-surface-var)" }}>No listings match your search.</div>}
       </div>
     </div>

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 const TIPS = [
     {
         heading: "ECHO PROTOCOL",
-        body: "TEC connects students across all UPES campuses in real time. Join the network, mint your profile.",
+        body: "TEC is an independent student community connecting people in real time. Join the network, mint your profile.",
     },
     {
         heading: "BAZAAR GRID",
