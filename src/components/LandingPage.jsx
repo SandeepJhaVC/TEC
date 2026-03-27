@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 
 const STATS = [
   { value: '500+', label: 'Active Members', color: '#CC97FF' },
-  { value: '12+',  label: 'Partner Deals',  color: '#53DDFC' },
+  { value: '12+', label: 'Partner Deals', color: '#53DDFC' },
   { value: '200+', label: 'Campus Listings', color: '#FF95A0' },
-  { value: '100%', label: 'Student Run',     color: '#a8f0ff' },
+  { value: '100%', label: 'Student Run', color: '#a8f0ff' },
 ];
 
 const TICKER_ITEMS = [
@@ -16,26 +16,26 @@ const TICKER_ITEMS = [
 ];
 
 const STEPS = [
-  { num: '01', icon: 'mark_email_unread', color: '#FF95A0', title: 'Receive an invite',  desc: 'A TEC admin issues a single-use referral code assigned specifically to you. It cannot be shared or reused.' },
-  { num: '02', icon: 'how_to_reg',        color: '#CC97FF', title: 'Register your code', desc: 'Enter the code during sign-up. Your account is created with a permanent unique TEC member ID.' },
-  { num: '03', icon: 'verified',          color: '#53DDFC', title: 'Access everything',  desc: 'Marketplace, feed, deals, map, assignments — all unlocked the moment you join.' },
+  { num: '01', icon: 'mark_email_unread', color: '#FF95A0', title: 'Receive an invite', desc: 'A TEC admin issues a single-use referral code assigned specifically to you. It cannot be shared or reused.' },
+  { num: '02', icon: 'how_to_reg', color: '#CC97FF', title: 'Register your code', desc: 'Enter the code during sign-up. Your account is created with a permanent unique TEC member ID.' },
+  { num: '03', icon: 'verified', color: '#53DDFC', title: 'Access everything', desc: 'Marketplace, feed, deals, map, assignments — all unlocked the moment you join.' },
 ];
 
 /* ─── UI MOCKS ────────────────────────────────────────────────────── */
 
 function MapMock() {
   const zones = [
-    { name: 'Academic Block', left: '18%', top: '22%', w: 130, h: 88,  color: '#CC97FF' },
-    { name: 'Hostels',        left: '58%', top: '50%', w: 110, h: 90,  color: '#53DDFC' },
-    { name: 'Food Court',     left: '10%', top: '58%', w: 92,  h: 66,  color: '#FF95A0' },
-    { name: 'Sports Zone',    left: '55%', top: '14%', w: 96,  h: 70,  color: '#a8f0ff' },
+    { name: 'Academic Block', left: '18%', top: '22%', w: 130, h: 88, color: '#CC97FF' },
+    { name: 'Hostels', left: '58%', top: '50%', w: 110, h: 90, color: '#53DDFC' },
+    { name: 'Food Court', left: '10%', top: '58%', w: 92, h: 66, color: '#FF95A0' },
+    { name: 'Sports Zone', left: '55%', top: '14%', w: 96, h: 70, color: '#a8f0ff' },
   ];
   const pins = [
-    { label: 'Best Chai',    left: '15%', top: '52%', color: '#FF95A0' },
+    { label: 'Best Chai', left: '15%', top: '52%', color: '#FF95A0' },
     { label: 'Main Library', left: '36%', top: '16%', color: '#CC97FF' },
-    { label: 'Shortcut →',  left: '46%', top: '40%', color: '#53DDFC' },
-    { label: 'ATM',          left: '72%', top: '38%', color: '#a8f0ff' },
-    { label: 'Print Shop',   left: '28%', top: '72%', color: '#FF95A0' },
+    { label: 'Shortcut →', left: '46%', top: '40%', color: '#53DDFC' },
+    { label: 'ATM', left: '72%', top: '38%', color: '#a8f0ff' },
+    { label: 'Print Shop', left: '28%', top: '72%', color: '#FF95A0' },
   ];
   return (
     <div style={{ position: 'relative', width: 500, height: 380, flexShrink: 0, background: 'rgba(8,8,16,0.97)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 20, overflow: 'hidden', boxShadow: '0 32px 80px rgba(0,0,0,0.6)' }}>
@@ -81,9 +81,9 @@ function MapMock() {
 
 function FeedMock() {
   const posts = [
-    { avatar: 'A', name: 'Aryan K.',  role: 'BUILDER', roleColor: '#CC97FF', time: '2h', text: 'Looking for a frontend dev to collab on a SaaS project. DM if interested — serious builders only.' },
-    { avatar: 'S', name: 'Shriya M.', role: 'STUDENT',  roleColor: '#FF95A0', time: '5h', text: 'Batch update: Lab slot tomorrow 10am shifted to 2pm per Prof. Rawat. Pass it on.' },
-    { avatar: 'R', name: 'Rohan T.',  role: 'MOD',      roleColor: '#53DDFC', time: '1d', text: 'New vendor deal dropped — 30% off Campus Café for TEC members. Check Deals tab.' },
+    { avatar: 'A', name: 'Aryan K.', role: 'BUILDER', roleColor: '#CC97FF', time: '2h', text: 'Looking for a frontend dev to collab on a SaaS project. DM if interested — serious builders only.' },
+    { avatar: 'S', name: 'Shriya M.', role: 'STUDENT', roleColor: '#FF95A0', time: '5h', text: 'Batch update: Lab slot tomorrow 10am shifted to 2pm per Prof. Rawat. Pass it on.' },
+    { avatar: 'R', name: 'Rohan T.', role: 'MOD', roleColor: '#53DDFC', time: '1d', text: 'New vendor deal dropped — 30% off Campus Café for TEC members. Check Deals tab.' },
   ];
   return (
     <div style={{ width: 360, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -116,10 +116,10 @@ function FeedMock() {
 
 function MarketMock() {
   const items = [
-    { icon: 'laptop_mac',      title: 'MacBook Air M1',     price: '₹55,000', badge: 'Verified', color: '#CC97FF' },
-    { icon: 'menu_book',       title: 'DS&A Textbook Set',  price: '₹350',    badge: 'New',      color: '#53DDFC' },
-    { icon: 'developer_board', title: 'Arduino Starter Kit',price: '₹800',    badge: 'Verified', color: '#FF95A0' },
-    { icon: 'headphones',      title: 'Sony WH-1000XM4',    price: '₹18,000', badge: 'Used',     color: '#a8f0ff' },
+    { icon: 'laptop_mac', title: 'MacBook Air M1', price: '₹55,000', badge: 'Verified', color: '#CC97FF' },
+    { icon: 'menu_book', title: 'DS&A Textbook Set', price: '₹350', badge: 'New', color: '#53DDFC' },
+    { icon: 'developer_board', title: 'Arduino Starter Kit', price: '₹800', badge: 'Verified', color: '#FF95A0' },
+    { icon: 'headphones', title: 'Sony WH-1000XM4', price: '₹18,000', badge: 'Used', color: '#a8f0ff' },
   ];
   return (
     <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10, width: 380 }}>
@@ -149,10 +149,10 @@ function MarketMock() {
 
 function DealsMock() {
   const deals = [
-    { vendor: 'Campus Café',    discount: '30% OFF',   code: 'TEC30',    expires: 'Apr 2026', color: '#FF95A0', icon: 'local_cafe' },
-    { vendor: 'Print House',    discount: '₹1 / page', code: 'TECPRINT', expires: 'Ongoing',  color: '#CC97FF', icon: 'print' },
-    { vendor: 'Stationery Co.', discount: '15% OFF',   code: 'TECSTAT',  expires: 'May 2026', color: '#53DDFC', icon: 'edit' },
-    { vendor: 'Xerox Point',    discount: '₹0.50/pg',  code: 'TECXRX',   expires: 'Ongoing',  color: '#a8f0ff', icon: 'content_copy' },
+    { vendor: 'Campus Café', discount: '30% OFF', code: 'TEC30', expires: 'Apr 2026', color: '#FF95A0', icon: 'local_cafe' },
+    { vendor: 'Print House', discount: '₹1 / page', code: 'TECPRINT', expires: 'Ongoing', color: '#CC97FF', icon: 'print' },
+    { vendor: 'Stationery Co.', discount: '15% OFF', code: 'TECSTAT', expires: 'May 2026', color: '#53DDFC', icon: 'edit' },
+    { vendor: 'Xerox Point', discount: '₹0.50/pg', code: 'TECXRX', expires: 'Ongoing', color: '#a8f0ff', icon: 'content_copy' },
   ];
   return (
     <div style={{ width: 400, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -182,9 +182,9 @@ function DealsMock() {
 
 function AssignmentsMock() {
   const tasks = [
-    { title: 'DSA Assignment 3', due: 'Mar 29', status: 'In Progress', members: ['A','R','S'], color: '#CC97FF', pct: 60  },
-    { title: 'OS Lab Report',    due: 'Apr 1',  status: 'Not Started', members: ['R','T'],     color: '#FF95A0', pct: 0   },
-    { title: 'CN Mini Project',  due: 'Apr 7',  status: 'Done',        members: ['S','P','A'], color: '#53DDFC', pct: 100 },
+    { title: 'DSA Assignment 3', due: 'Mar 29', status: 'In Progress', members: ['A', 'R', 'S'], color: '#CC97FF', pct: 60 },
+    { title: 'OS Lab Report', due: 'Apr 1', status: 'Not Started', members: ['R', 'T'], color: '#FF95A0', pct: 0 },
+    { title: 'CN Mini Project', due: 'Apr 7', status: 'Done', members: ['S', 'P', 'A'], color: '#53DDFC', pct: 100 },
   ];
   return (
     <div style={{ width: 420, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -225,7 +225,7 @@ function MemberCard() {
     <div style={{ width: 300, flexShrink: 0, background: 'linear-gradient(135deg,rgba(123,47,190,0.25) 0%,rgba(18,18,28,0.92) 45%,rgba(83,221,252,0.08) 100%)', border: '1px solid rgba(204,151,255,0.2)', borderRadius: 20, padding: '28px 24px', backdropFilter: 'blur(12px)', position: 'relative', overflow: 'hidden', boxShadow: '0 24px 60px rgba(0,0,0,0.55),0 0 0 1px rgba(255,255,255,0.03)' }}>
       <div style={{ position: 'absolute', top: -60, right: -60, width: 200, height: 200, borderRadius: '50%', background: 'radial-gradient(circle,rgba(204,151,255,0.12) 0%,transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ width: 36, height: 28, borderRadius: 6, background: 'linear-gradient(135deg,rgba(255,220,100,0.28),rgba(255,180,50,0.12))', border: '1px solid rgba(255,200,80,0.22)', marginBottom: 28, display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr', gap: 2, padding: 4 }}>
-        {[0,1,2,3].map(i => <div key={i} style={{ background: 'rgba(255,200,80,0.18)', borderRadius: 2 }} />)}
+        {[0, 1, 2, 3].map(i => <div key={i} style={{ background: 'rgba(255,200,80,0.18)', borderRadius: 2 }} />)}
       </div>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 900, letterSpacing: '-0.03em', background: 'linear-gradient(135deg,#CC97FF,#53DDFC)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', marginBottom: 3 }}>TEC</div>
       <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.28)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 30 }}>The Entrepreneurs Community</div>
@@ -302,7 +302,7 @@ export default function LandingPage() {
   });
 
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100vh', fontFamily: 'var(--font-body)', color: 'var(--on-surface)' }}>
+    <div style={{ background: 'var(--bg)', height: '100vh', overflowY: 'auto', overflowX: 'hidden', fontFamily: 'var(--font-body)', color: 'var(--on-surface)' }}>
 
       {/* NAV */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: 56, padding: '0 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(8,8,14,0.88)', backdropFilter: 'blur(22px) saturate(1.5)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -323,41 +323,63 @@ export default function LandingPage() {
       </nav>
 
       {/* HERO */}
-      <section style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '96px 24px 80px', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', top: '2%', left: '50%', transform: 'translateX(-50%)', width: 900, height: 700, borderRadius: '50%', background: 'radial-gradient(ellipse,rgba(123,47,190,0.14) 0%,transparent 60%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '28%', left: '4%', width: 420, height: 420, borderRadius: '50%', background: 'radial-gradient(circle,rgba(83,221,252,0.07) 0%,transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '14%', right: '4%', width: 320, height: 320, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,149,160,0.06) 0%,transparent 70%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,0.012) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.012) 1px,transparent 1px)', backgroundSize: '64px 64px', pointerEvents: 'none', WebkitMaskImage: 'radial-gradient(ellipse 80% 90% at 50% 50%,black 20%,transparent 100%)', maskImage: 'radial-gradient(ellipse 80% 90% at 50% 50%,black 20%,transparent 100%)' }} />
-        <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <section style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '96px 24px 80px', position: 'relative', overflow: 'hidden', background: '#09090a' }}>
+        {/* Scanlines — identical to splash */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 3, pointerEvents: 'none', backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.18) 2px, rgba(0,0,0,0.18) 4px)' }} />
+        {/* Ambient center glow — identical to splash */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none', background: 'radial-gradient(ellipse 90% 70% at 50% 48%, rgba(204,151,255,0.07) 0%, transparent 68%)' }} />
+        {/* Vignette — identical to splash */}
+        <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none', background: 'radial-gradient(ellipse 100% 100% at 50% 50%, transparent 45%, rgba(0,0,0,0.55) 100%)' }} />
+
+        <div style={{ position: 'relative', zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Badge */}
           <div style={fadeIn(0.05)}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 16px', borderRadius: 40, background: 'rgba(255,149,160,0.06)', border: '1px solid rgba(255,149,160,0.22)', marginBottom: 32 }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 12, color: 'var(--tertiary)', lineHeight: 1, fontStyle: 'normal', userSelect: 'none' }}>lock</span>
-              <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: '0.2em', color: 'var(--tertiary)', textTransform: 'uppercase' }}>Invite-Only Network</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', marginBottom: 36 }}>
+              <span className="material-symbols-outlined" style={{ fontSize: 11, color: 'var(--primary)', lineHeight: 1, fontStyle: 'normal', userSelect: 'none', opacity: 0.6 }}>lock</span>
+              <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 700, letterSpacing: '0.22em', color: 'rgba(255,255,255,0.22)', textTransform: 'uppercase' }}>Invite-Only Network</span>
             </div>
           </div>
+
+          {/* Wordmark — matches splash style */}
           <div style={fadeIn(0.13)}>
-            <h1 style={{ fontSize: 'clamp(90px,22vw,210px)', fontFamily: 'var(--font-display)', fontWeight: 900, lineHeight: 0.84, letterSpacing: '-0.04em', margin: '0 0 16px', background: 'linear-gradient(155deg,#e8d4ff 0%,#CC97FF 25%,#8B9FFF 50%,#53DDFC 72%,#a8f2ff 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>TEC</h1>
+            <h1 style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 'clamp(90px, 20vw, 180px)', color: '#fff', letterSpacing: '-0.05em', fontStyle: 'italic', textShadow: '0 0 40px rgba(204,151,255,0.45), 0 0 100px rgba(204,151,255,0.12)', lineHeight: 1, margin: '0 0 14px' }}>TEC</h1>
           </div>
-          <div style={fadeIn(0.21)}>
-            <p style={{ fontSize: 'clamp(11px,1.8vw,14px)', fontFamily: 'var(--font-display)', fontWeight: 700, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.28em', textTransform: 'uppercase', margin: '0 0 26px' }}>The Entrepreneurs Community</p>
+
+          {/* Subtitle — monospace like splash */}
+          <div style={fadeIn(0.2)}>
+            <p style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'rgba(255,255,255,0.22)', letterSpacing: '0.32em', textTransform: 'uppercase', margin: '0 0 12px' }}>The Echo Community</p>
           </div>
-          <div style={fadeIn(0.28)}>
-            <p style={{ fontSize: 'clamp(15px,1.9vw,19px)', color: 'rgba(255,255,255,0.42)', maxWidth: 520, margin: '0 auto 50px', lineHeight: 1.78, fontWeight: 400 }}>
+
+          {/* Horizontal rule — matches splash */}
+          <div style={fadeIn(0.25)}>
+            <div style={{ width: 'clamp(160px, 30vw, 300px)', height: 1, background: 'linear-gradient(90deg, transparent, rgba(204,151,255,0.3), transparent)', margin: '0 auto 32px' }} />
+          </div>
+
+          {/* Description */}
+          <div style={fadeIn(0.3)}>
+            <p style={{ fontSize: 'clamp(14px,1.8vw,17px)', color: 'rgba(255,255,255,0.34)', maxWidth: 480, margin: '0 auto 48px', lineHeight: 1.85, fontWeight: 400 }}>
               UPES's private inner circle for founders, builders, and doers.<br />We built our own platform — and only the invited get in.
             </p>
           </div>
-          <div style={{ ...fadeIn(0.35), display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+
+          {/* Buttons */}
+          <div style={{ ...fadeIn(0.38), display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <Link to="/login?tab=register" style={{ textDecoration: 'none' }}>
-              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} style={{ padding: '15px 44px', background: 'linear-gradient(135deg,#7B2FBE,#CC97FF)', border: 'none', borderRadius: 12, color: '#fff', fontSize: 13, fontWeight: 900, fontFamily: 'var(--font-display)', letterSpacing: '0.1em', cursor: 'pointer', boxShadow: '0 8px 40px rgba(123,47,190,0.5)' }}>
-                USE REFERRAL CODE
+              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} style={{ padding: '14px 42px', background: 'linear-gradient(90deg, #9c48ea, #cc97ff)', border: 'none', borderRadius: 2, color: '#fff', fontSize: 12, fontWeight: 800, fontFamily: 'var(--font-mono)', letterSpacing: '0.14em', cursor: 'pointer', boxShadow: '0 0 30px rgba(204,151,255,0.35), 0 0 6px rgba(204,151,255,0.6)', textTransform: 'uppercase' }}>
+                Use Referral Code
               </motion.button>
             </Link>
             <Link to="/login?tab=login" style={{ textDecoration: 'none' }}>
-              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} style={{ padding: '15px 38px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: 'rgba(255,255,255,0.44)', fontSize: 13, fontWeight: 700, fontFamily: 'var(--font-display)', letterSpacing: '0.08em', cursor: 'pointer' }}>
-                ALREADY A MEMBER
+              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} style={{ padding: '14px 36px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 2, color: 'rgba(255,255,255,0.38)', fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-mono)', letterSpacing: '0.12em', cursor: 'pointer', textTransform: 'uppercase' }}>
+                Already A Member
               </motion.button>
             </Link>
           </div>
+
+          {/* Scroll hint */}
+          <motion.div animate={{ y: [0, 8, 0] }} transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }} style={{ ...fadeIn(0.55), marginTop: 56 }}>
+            <span className="material-symbols-outlined" style={{ fontSize: 18, color: 'rgba(255,255,255,0.1)', lineHeight: 1, fontStyle: 'normal', userSelect: 'none' }}>expand_more</span>
+          </motion.div>
         </div>
       </section>
 
@@ -524,9 +546,9 @@ export default function LandingPage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, flex: '1 1 280px' }}>
             {[
-              { icon: 'person_off',           text: 'No public registrations' },
-              { icon: 'link_off',             text: 'No open invite links' },
-              { icon: 'group_remove',         text: 'One code per person' },
+              { icon: 'person_off', text: 'No public registrations' },
+              { icon: 'link_off', text: 'No open invite links' },
+              { icon: 'group_remove', text: 'One code per person' },
               { icon: 'admin_panel_settings', text: 'Admin-issued codes only' },
             ].map(r => (
               <div key={r.text} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 10 }}>
