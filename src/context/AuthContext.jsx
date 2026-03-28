@@ -18,53 +18,54 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const [authError, setAuthError] = useState('');
 
-    // On mount — bootstraps from sessionStorage for instant render, then always
-    // refreshes the canonical role from the DB via the live Supabase session.
     useEffect(() => {
-        // Fast path: show cached user immediately so the UI doesn't flash
+        // ── Fast path (synchronous) ───────────────────────────────────────
+        // Restore from sessionStorage immediately so there's zero loading flash.
         const stored = sessionStorage.getItem('tec_user');
         if (stored) {
             try { setUser(JSON.parse(stored)); } catch (_) { sessionStorage.removeItem('tec_user'); }
         }
+        setLoading(false); // UI unblocks here — no waiting for network
 
-        // Authoritative path: always re-read role from members table so a stale
-        // sessionStorage entry (e.g. role changed by admin) gets corrected.
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+        // ── Background role refresh ───────────────────────────────────────
+        // Silently re-validates role from DB after the UI is already rendered.
+        // Corrects stale sessionStorage (e.g. admin changed this user's role).
+        const refreshRoleFromDB = async (session) => {
+            if (!session?.user) return;
+            const { data: memberData } = await supabase
+                .from('members').select('id,name,email,role').eq('auth_id', session.user.id).single();
+            if (!memberData) return;
+            const role = memberData.role || 'student';
+            const displayName = memberData.name || session.user.user_metadata?.name || session.user.email.split('@')[0];
+            const u = {
+                id: session.user.id,
+                email: session.user.email,
+                name: displayName,
+                role,
+                avatarLetter: displayName[0].toUpperCase(),
+                memberCode: memberData.id || null,
+            };
+            setUser(u);
+            sessionStorage.setItem('tec_user', JSON.stringify(u));
+        };
+
+        // Kick off background refresh once on mount (doesn't block render)
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) refreshRoleFromDB(session);
+        });
+
+        // Auth state listener handles sign-in / sign-out events
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_OUT') {
                 setUser(null);
                 sessionStorage.removeItem('tec_user');
-                setLoading(false);
                 return;
             }
-            if (session?.user) {
-                const { data: memberData } = await supabase
-                    .from('members').select('id,name,email,role').eq('auth_id', session.user.id).single();
-                const role = memberData?.role || session.user.user_metadata?.role || 'student';
-                const displayName = memberData?.name || session.user.user_metadata?.name || session.user.email.split('@')[0];
-                const u = {
-                    id: session.user.id,
-                    email: session.user.email,
-                    name: displayName,
-                    role,
-                    avatarLetter: displayName[0].toUpperCase(),
-                    memberCode: memberData?.id || null,
-                };
-                setUser(u);
-                sessionStorage.setItem('tec_user', JSON.stringify(u));
-            } else if (!stored) {
-                setUser(null);
+            // TOKEN_REFRESHED / SIGNED_IN: refresh role in background, no blocking
+            if (session?.user && event !== 'INITIAL_SESSION') {
+                refreshRoleFromDB(session);
             }
-            setLoading(false);
         });
-
-        // If no session at all and nothing in storage, un-stick the loading state
-        if (!stored) {
-            supabase.auth.getSession().then(({ data: { session } }) => {
-                if (!session) setLoading(false);
-            });
-        } else {
-            setLoading(false);
-        }
 
         return () => subscription.unsubscribe();
     }, []);
