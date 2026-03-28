@@ -76,7 +76,7 @@ export default function Home() {
       missionType: 'PULSE',
       xpReward: null, kernel: null, code: null, replyCount: p.reply_count ?? 0,
     });
-    supabase.from('feed_posts').select('*').order('created_at', { ascending: false })
+    supabase.from('feed_posts').select('*').order('created_at', { ascending: false }).limit(100)
       .then(({ data }) => {
         const loaded = (data || []).map(normalizePost);
         setPosts(loaded);

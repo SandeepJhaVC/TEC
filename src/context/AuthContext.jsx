@@ -18,30 +18,54 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const [authError, setAuthError] = useState('');
 
-    // On mount — check Supabase session OR sessionStorage fallback
+    // On mount — bootstraps from sessionStorage for instant render, then always
+    // refreshes the canonical role from the DB via the live Supabase session.
     useEffect(() => {
+        // Fast path: show cached user immediately so the UI doesn't flash
         const stored = sessionStorage.getItem('tec_user');
         if (stored) {
-            try { setUser(JSON.parse(stored)); } catch (_) { }
+            try { setUser(JSON.parse(stored)); } catch (_) { sessionStorage.removeItem('tec_user'); }
         }
 
-        // Real Supabase session listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-            if (session?.user && !stored) {
-                const role = session.user.user_metadata?.role || 'student';
+        // Authoritative path: always re-read role from members table so a stale
+        // sessionStorage entry (e.g. role changed by admin) gets corrected.
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'SIGNED_OUT') {
+                setUser(null);
+                sessionStorage.removeItem('tec_user');
+                setLoading(false);
+                return;
+            }
+            if (session?.user) {
+                const { data: memberData } = await supabase
+                    .from('members').select('id,name,email,role').eq('auth_id', session.user.id).single();
+                const role = memberData?.role || session.user.user_metadata?.role || 'student';
+                const displayName = memberData?.name || session.user.user_metadata?.name || session.user.email.split('@')[0];
                 const u = {
                     id: session.user.id,
                     email: session.user.email,
-                    name: session.user.user_metadata?.name || session.user.email.split('@')[0],
+                    name: displayName,
                     role,
-                    avatarLetter: (session.user.user_metadata?.name || session.user.email)[0].toUpperCase(),
+                    avatarLetter: displayName[0].toUpperCase(),
+                    memberCode: memberData?.id || null,
                 };
                 setUser(u);
                 sessionStorage.setItem('tec_user', JSON.stringify(u));
+            } else if (!stored) {
+                setUser(null);
             }
+            setLoading(false);
         });
 
-        setLoading(false);
+        // If no session at all and nothing in storage, un-stick the loading state
+        if (!stored) {
+            supabase.auth.getSession().then(({ data: { session } }) => {
+                if (!session) setLoading(false);
+            });
+        } else {
+            setLoading(false);
+        }
+
         return () => subscription.unsubscribe();
     }, []);
 
@@ -108,7 +132,9 @@ export function AuthProvider({ children }) {
 
         // 3. Complete registration atomically via RPC (SECURITY DEFINER — works
         //    even when no session exists yet, e.g. email confirmation is ON)
-        const memberCode = 'TEC-' + Math.random().toString(36).substring(2, 6).toUpperCase();
+        const _bytes = new Uint8Array(4);
+        crypto.getRandomValues(_bytes);
+        const memberCode = 'TEC-' + Array.from(_bytes, b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
         const { error: regError } = await supabase.rpc('complete_registration', {
             p_auth_id: data.user.id,
             p_ref_id: refData.id,

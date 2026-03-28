@@ -92,10 +92,10 @@ export default function AdminPanel() {
   };
 
   const generateCode = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '';
-    for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
-    return code;
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 32 chars → 256 % 32 === 0, no modulo bias
+    const arr = new Uint8Array(8);
+    crypto.getRandomValues(arr);
+    return Array.from(arr, b => chars[b % chars.length]).join('');
   };
 
   const createReferral = async () => {
@@ -138,7 +138,7 @@ export default function AdminPanel() {
 
   const fetchMembers = async () => {
     setLoading(true);
-    const { data } = await supabase.from('members').select('*').order('joined_at', { ascending: false });
+    const { data } = await supabase.from('members').select('*').order('joined_at', { ascending: false }).limit(500);
     setMembers(data || []); setLoading(false);
   };
 
@@ -177,10 +177,11 @@ export default function AdminPanel() {
   };
 
   const deleteMember = async (id) => {
-    if (!window.confirm('Delete this member permanently?')) return;
-    await supabase.from('members').delete().eq('id', id);
+    if (!window.confirm('Delete this member permanently? This removes their profile record. Their login credentials must be removed from Supabase Auth separately.')) return;
+    const { error } = await supabase.from('members').delete().eq('id', id);
+    if (error) { showToast('Error deleting member: ' + error.message); return; }
     setMembers(p => p.filter(m => m.id !== id));
-    showToast('Member deleted.');
+    showToast('Member profile deleted. Remember to revoke their auth account in Supabase dashboard.');
   };
 
   const addCertToMember = () => {
@@ -197,19 +198,19 @@ export default function AdminPanel() {
 
   const fetchMktListings = async () => {
     setLoading(true);
-    const { data } = await supabase.from('marketplace_listings').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('marketplace_listings').select('*').order('created_at', { ascending: false }).limit(200);
     setMktListings(data || []); setLoading(false);
   };
 
   const fetchDeals = async () => {
     setLoading(true);
-    const { data } = await supabase.from('deals').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('deals').select('*').order('created_at', { ascending: false }).limit(200);
     setDeals(data || []); setLoading(false);
   };
 
   const fetchAdminListings = async () => {
     setLoading(true);
-    const { data } = await supabase.from('admin_listings').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('admin_listings').select('*').order('created_at', { ascending: false }).limit(200);
     setAdminListings(data || []); setLoading(false);
   };
 
