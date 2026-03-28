@@ -13,7 +13,7 @@ export default function Footer() {
         </span>
       </div>
       <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.28)', textAlign: 'center', letterSpacing: '0.02em' }}>
-        TEC is an independent, student-run community &mdash; not affiliated with, officially recognised by, or endorsed by UPES or any other institution.
+        TEC is an independent, student-run community &mdash; not affiliated with, officially recognised by, or endorsed by any institution.
       </div>
     </footer>
   );

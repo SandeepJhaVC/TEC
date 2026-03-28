@@ -4,12 +4,12 @@ import { supabase } from "../supabaseClient";
 
 const DEALS = [
   { id: 1, name: "Chai Sutta Bar", cat: "Food", discount: "20% OFF", desc: "Show your college ID for 20% off on all beverages. Valid all week.", validity: "Ongoing", code: "STUDENT20", loc: "Rajpur Road, Dehradun", rating: 4.5 },
-  { id: 2, name: "Domino's Pizza", cat: "Food", discount: "30% OFF", desc: "Order online using code for 30% off on medium & large pizzas.", validity: "Weekdays only", code: "UPES30", loc: "Pacific Mall, Doon", rating: 4.2 },
+  { id: 2, name: "Domino's Pizza", cat: "Food", discount: "30% OFF", desc: "Order online using code for 30% off on medium & large pizzas.", validity: "Weekdays only", code: "STUDENT30", loc: "Pacific Mall, Doon", rating: 4.2 },
   { id: 3, name: "Rapido Bike Taxi", cat: "Transport", discount: "50% OFF", desc: "First 5 rides at 50% off for new sign-ups with college email.", validity: "New users", code: "TECRIDER", loc: "App-based", rating: 4.7 },
-  { id: 4, name: "Moustache Hostel", cat: "Food", discount: "15% OFF", desc: "Flat 15% off on café menu for UPES students every day.", validity: "Ongoing", code: "MOUSTEC", loc: "Rajpur Road", rating: 4.8 },
+  { id: 4, name: "Moustache Hostel", cat: "Food", discount: "15% OFF", desc: "Flat 15% off on café menu for students every day.", validity: "Ongoing", code: "MOUSTEC", loc: "Rajpur Road", rating: 4.8 },
   { id: 5, name: "D-Mart Dehradun", cat: "Shopping", discount: "10% OFF", desc: "10% student discount on grocery shopping above ₹500.", validity: "Weekends", code: "DMART10", loc: "Sahastradhara Road", rating: 4.0 },
   { id: 6, name: "Xtreme One Fitness", cat: "Health", discount: "40% OFF", desc: "40% off on a 3-month gym membership for enrolled students.", validity: "Semester-based", code: "XFIT40", loc: "Bidholi, Dehradun", rating: 4.4 },
-  { id: 7, name: "Kitaab Ghar", cat: "Study", discount: "25% OFF", desc: "Discounts on textbooks, stationery and printing for students.", validity: "Ongoing", code: "BOOKS25", loc: "Near UPES Gate", rating: 4.6 },
+  { id: 7, name: "Kitaab Ghar", cat: "Study", discount: "25% OFF", desc: "Discounts on textbooks, stationery and printing for students.", validity: "Ongoing", code: "BOOKS25", loc: "Near Campus Gate", rating: 4.6 },
   { id: 8, name: "OYO Rooms", cat: "Stay", discount: "35% OFF", desc: "Exclusive 35% off for guests with verified student ID.", validity: "Advance booking", code: "OYOSTUD35", loc: "Multiple locations", rating: 3.9 },
   { id: 9, name: "Zomato Gold", cat: "Food", discount: "FREE", desc: "3-month Zomato Gold subscription free with college email.", validity: "Limited slots", code: "ZGOLD3M", loc: "App-based", rating: 4.3 },
   { id: 10, name: "IndiGo Student", cat: "Transport", discount: "15% OFF", desc: "Additional 15% off on booked economy tickets for students.", validity: "Academic year", code: "INDIGO15", loc: "Jolly Grant Airport", rating: 4.1 },
@@ -91,10 +91,10 @@ export default function Discounts() {
             Have a student-friendly <span style={{ color: "var(--secondary)" }}>deal?</span>
           </div>
           <p style={{ fontSize: 13, color: "var(--on-surface-var)", lineHeight: 1.6, maxWidth: 480 }}>
-            Partner with TEC to reach 5,000+ UPES students. Deals added by our admin team appear here and get promoted across the Feed, Listings, and more.
+            Partner with TEC to reach 5,000+ students. Deals added by our admin team appear here and get promoted across the Feed, Listings, and more.
           </p>
         </div>
-        <a href="mailto:tec@upes.ac.in?subject=Partner%20Deal%20Request" style={{ textDecoration: "none", flexShrink: 0 }}>
+        <a href="mailto:?subject=Partner%20Deal%20Request" style={{ textDecoration: "none", flexShrink: 0 }}>
           <button className="btn-ghost-cyan" style={{ fontSize: 12, padding: "10px 24px", whiteSpace: "nowrap" }}>
             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>mail</span>
             Contact Us

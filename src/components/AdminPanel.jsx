@@ -731,7 +731,7 @@ export default function AdminPanel() {
                   {/* ── Contact ── */}
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.1em', color: 'var(--on-surface-var)', textTransform: 'uppercase', opacity: 0.55, marginTop: 4 }}>Contact</div>
                   <input className="neon-input" type="email" placeholder="Personal Email" value={editMember.email || ''} onChange={e => setEditMember({ ...editMember, email: e.target.value })} />
-                  <input className="neon-input" type="email" placeholder="College Email (e.g. name@upes.ac.in)" value={editMember.college_email || ''} onChange={e => setEditMember({ ...editMember, college_email: e.target.value })} />
+                  <input className="neon-input" type="email" placeholder="College Email (e.g. name@college.edu)" value={editMember.college_email || ''} onChange={e => setEditMember({ ...editMember, college_email: e.target.value })} />
                   <input className="neon-input" type="tel" placeholder="Contact Number" value={editMember.phone || ''} onChange={e => setEditMember({ ...editMember, phone: e.target.value })} />
 
                   {/* ── Academic ── */}

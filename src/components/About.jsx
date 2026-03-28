@@ -32,7 +32,7 @@ export default function About() {
         <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 18, padding: "8px 14px", borderRadius: "var(--radius)", background: "rgba(255,149,160,0.07)", border: "1px solid rgba(255,149,160,0.2)" }}>
           <span className="material-symbols-outlined" style={{ fontSize: 14, color: "var(--tertiary)", flexShrink: 0 }}>info</span>
           <span style={{ fontSize: 12, color: "rgba(255,149,160,0.85)", lineHeight: 1.5 }}>
-            TEC is an <strong style={{ color: "var(--tertiary)" }}>independent, student-run</strong> community. We are <strong style={{ color: "var(--tertiary)" }}>not affiliated with, officially recognised by, or endorsed by UPES</strong> or any other institution.
+            TEC is an <strong style={{ color: "var(--tertiary)" }}>independent, student-run</strong> community. We are <strong style={{ color: "var(--tertiary)" }}>not affiliated with, officially recognised by, or endorsed by any institution</strong>.
           </span>
         </div>
       </div>

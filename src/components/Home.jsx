@@ -20,7 +20,7 @@ const LIVE_LOGS = [
   { type: "CONN", msg: "Campus map refreshed" },
 ];
 
-const TRENDING_NODES = ["#placement", "#hackathon", "#hostels", "#assignments", "#cafeteria", "#UPES2025", "#internship", "#exam-prep"];
+const TRENDING_NODES = ["#placement", "#hackathon", "#hostels", "#assignments", "#cafeteria", "#Campus2025", "#internship", "#exam-prep"];
 
 const LOG_COLORS = { CONN: '#53DDFC', TX: '#3fb950', ERR: '#FF6E84', INFO: '#CC97FF' };
 
@@ -54,7 +54,7 @@ export default function Home() {
     Promise.all([
       supabase.from('deals').select('name,cat,discount,desc,loc').limit(4),
       supabase.from('admin_listings').select('name,tab,price,loc').limit(3),
-      supabase.from('pulse_issues').select('title,votes').order('votes', { ascending: false }).limit(1),
+      supabase.from('pulse_issues').select('title,vote_count').order('vote_count', { ascending: false }).limit(1),
     ]).then(([deals, listings, issues]) => {
       const cards = [];
       (deals.data || []).forEach(d => cards.push({ type: 'deal', data: d }));
@@ -530,7 +530,7 @@ export default function Home() {
                             <span style={{ fontSize: 7, fontFamily: 'var(--font-display)', letterSpacing: '0.22em', fontWeight: 800, color: 'rgba(227,179,65,0.55)', background: 'rgba(227,179,65,0.1)', padding: '2px 7px', borderRadius: 4 }}>TRENDING</span>
                             <span style={{ fontSize: 9, fontFamily: 'var(--font-display)', color: '#e3b341', fontWeight: 700, letterSpacing: '0.08em' }}>PULSE ISSUE</span>
                           </div>
-                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#e3b341' }}>{card.data.votes} votes</span>
+                          <span style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: '#e3b341' }}>{card.data.vote_count ?? 0} votes</span>
                         </div>
                         <div style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 13 }}>
                           <div style={{ width: 34, height: 34, borderRadius: 9, background: 'rgba(227,179,65,0.1)', border: '1px solid rgba(227,179,65,0.22)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

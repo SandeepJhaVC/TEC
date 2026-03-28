@@ -8,7 +8,7 @@ const BUILDS = [
     {
         id: 1, name: 'KINETIC_FLOW_ENGINE', status: 'LIVE_DEPLOY', votes: 312,
         tagline: 'A high-velocity animation library optimized for low-latency terminal interfaces.',
-        desc: 'Built with Rust + WASM. Renders 60fps on mid-range devices. Used in 3 production UPES projects this semester.',
+        desc: 'Built with Rust + WASM. Renders 60fps on mid-range devices. Used in 3 production campus projects this semester.',
         tech: ['Rust', 'WASM', 'Canvas API', 'Framer'],
         user: 'cyber_junkie', batch: 'B.Tech CSE 2025', time: '2d ago',
         demo: true, repo: true,
@@ -31,7 +31,7 @@ const BUILDS = [
     },
     {
         id: 4, name: 'CAMPUS_GPT', status: 'BETA_V1.2', votes: 445,
-        tagline: 'LLM fine-tuned on all UPES syllabi up to 2025. Ask it anything about your course.',
+        tagline: 'LLM fine-tuned on all campus syllabi up to 2025. Ask it anything about your course.',
         desc: 'GPT-4 with RAG. Context covers 200+ subjects, exam papers, faculty notes. 94% accuracy in student testing.',
         tech: ['Python', 'LangChain', 'Supabase', 'Next.js'],
         user: 'novax', batch: 'B.Tech CSE 2024', time: '3d ago',

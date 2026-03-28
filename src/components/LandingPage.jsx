@@ -12,7 +12,7 @@ const STATS = [
 const TICKER_ITEMS = [
   'Community Feed', 'Member Marketplace', 'Campus Map', 'Exclusive Deals',
   'Assignment Board', 'Member Profiles', 'Invite Only', 'No Public Access',
-  'UPES Students', 'Verified Members', 'Student Run Network',
+  'Students', 'Verified Members', 'Student Run Network',
 ];
 
 const STEPS = [
@@ -71,7 +71,7 @@ function LiveMapPreview() {
       <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 34, background: 'rgba(8,8,14,0.92)', borderTop: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', padding: '0 14px', gap: 14, zIndex: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <div style={{ width: 32, height: 2, background: 'rgba(255,255,255,0.1)', borderRadius: 1 }} />
-          <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>UPES Campus</span>
+          <span style={{ fontSize: 7, color: 'rgba(255,255,255,0.2)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Campus</span>
         </div>
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ade80', boxShadow: '0 0 6px #4ade8090' }} />
@@ -363,7 +363,7 @@ export default function LandingPage() {
           {/* Description */}
           <div style={fadeIn(0.3)}>
             <p style={{ fontSize: 'clamp(14px,1.8vw,17px)', color: 'rgba(255,255,255,0.34)', maxWidth: 480, margin: '0 auto 48px', lineHeight: 1.85, fontWeight: 400 }}>
-              UPES's private inner circle for founders, builders, and doers.<br />We built our own platform — and only the invited get in.
+              Our private inner circle for founders, builders, and doers.<br />We built our own platform — and only the invited get in.
             </p>
           </div>
 
@@ -409,7 +409,7 @@ export default function LandingPage() {
         tag="Campus Map"
         tagColor="#53DDFC"
         headline="Your campus,<br/>fully mapped."
-        sub="TEC maintains an interactive, member-curated map of the entire UPES campus — every building, food spot, shortcut, lab, ATM, and hidden gem. Updated by members, for members."
+        sub="TEC maintains an interactive, member-curated map of the entire campus — every building, food spot, shortcut, lab, ATM, and hidden gem. Updated by members, for members."
         bullets={[
           '200+ points of interest across the whole campus',
           'Member-submitted food spots, shortcuts, and study zones',
@@ -598,7 +598,7 @@ export default function LandingPage() {
 
       {/* FOOTER */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', padding: '18px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.14)', fontFamily: 'var(--font-display)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>TEC — Independent, student-run — Not affiliated with UPES</span>
+        <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.14)', fontFamily: 'var(--font-display)', letterSpacing: '0.09em', textTransform: 'uppercase' }}>TEC — Independent, student-run — Not affiliated with any institution</span>
         <Link to="/about" style={{ fontSize: 10, color: 'var(--primary)', textDecoration: 'none', fontFamily: 'var(--font-display)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.5 }}>About</Link>
       </div>
 

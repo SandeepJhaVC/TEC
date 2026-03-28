@@ -9,7 +9,7 @@ const TAB_COLOR = { "PG / Hostels": "#e3b341", "Restaurants": "var(--error)", "R
 
 const DATA = {
   "PG / Hostels": [
-    { name: "Sunrise Boys PG", loc: "Bidholi", price: "6,500/mo", rating: 4.4, tags: ["AC", "WiFi", "Meals", "24hr Security"], desc: "Clean rooms, home-cooked meals, 5min from UPES gate.", reviews: 42 },
+    { name: "Sunrise Boys PG", loc: "Bidholi", price: "6,500/mo", rating: 4.4, tags: ["AC", "WiFi", "Meals", "24hr Security"], desc: "Clean rooms, home-cooked meals, 5min from campus gate.", reviews: 42 },
     { name: "Patel Bhawan Girls PG", loc: "Bidholi", price: "7,200/mo", rating: 4.6, tags: ["Fully Furnished", "CCTV", "Meals", "Laundry"], desc: "Safe and comfortable hostel-style PG exclusively for girls.", reviews: 61 },
     { name: "Shiv Shakti Residency", loc: "Pondha", price: "5,200/mo", rating: 4.1, tags: ["Shared Rooms", "WiFi", "Parking"], desc: "Budget-friendly option near Pondha campus.", reviews: 28 },
     { name: "Greenwood Hostel", loc: "Bidholi", price: "6,000/mo", rating: 4.3, tags: ["AC", "Gym", "Mess", "Library Room"], desc: "Modern hostel with 24hr electricity backup.", reviews: 55 },
@@ -19,7 +19,7 @@ const DATA = {
   "Restaurants": [
     { name: "Chai Sutta Bar", loc: "Rajpur Road", price: "50-150", rating: 4.7, tags: ["Chai", "Snacks", "Student Fav", "Late Night"], desc: "The classic student hangout. Unlimited chai and vibe.", reviews: 214 },
     { name: "Moustache Cafe", loc: "Rajpur Road", price: "150-400", rating: 4.8, tags: ["Coffee", "Brunch", "WiFi"], desc: "Best cafe ambiance in Dehradun. Perfect for study sessions.", reviews: 387 },
-    { name: "Bidholi Dhaba", loc: "Near UPES Gate", price: "80-200", rating: 4.2, tags: ["Thali", "North Indian", "Cheap"], desc: "Authentic dal-roti-sabzi at unbeatable prices near campus.", reviews: 119 },
+    { name: "Bidholi Dhaba", loc: "Near Campus Gate", price: "80-200", rating: 4.2, tags: ["Thali", "North Indian", "Cheap"], desc: "Authentic dal-roti-sabzi at unbeatable prices near campus.", reviews: 119 },
     { name: "Crust N Bake", loc: "Bidholi", price: "100-350", rating: 4.4, tags: ["Pizza", "Burgers", "Shakes"], desc: "Best pizzas within 2km of campus. Delivery available.", reviews: 98 },
     { name: "Pondha Food Corner", loc: "Pondha Chowk", price: "60-180", rating: 4.3, tags: ["South Indian", "Dosa", "Breakfast"], desc: "Amazing South Indian breakfast spot open from 7 AM.", reviews: 76 },
     { name: "The Classy Diner", loc: "Maharani Bagh", price: "200-600", rating: 4.5, tags: ["Multi-cuisine", "Date Spot", "AC"], desc: "Great for celebrations and special occasions.", reviews: 143 },
@@ -32,8 +32,8 @@ const DATA = {
     { name: "Flash Scooter Share", loc: "App-based", price: "10/km", rating: 4.3, tags: ["Electric", "Hourly", "App"], desc: "Electric scooter rental by minute via mobile app.", reviews: 156 },
   ],
   "Hangout Spots": [
-    { name: "Sahastradhara Waterfalls", loc: "8km from UPES", price: "Free", rating: 4.8, tags: ["Nature", "Waterfalls", "Weekend"], desc: "Sulphur springs and scenic waterfalls. A must-visit.", reviews: 892 },
-    { name: "Robbers Cave", loc: "7km from UPES", price: "30 entry", rating: 4.7, tags: ["Caves", "Trek", "Adventure"], desc: "Natural cave with cold stream. Popular weekend destination.", reviews: 1203 },
+    { name: "Sahastradhara Waterfalls", loc: "8km from campus", price: "Free", rating: 4.8, tags: ["Nature", "Waterfalls", "Weekend"], desc: "Sulphur springs and scenic waterfalls. A must-visit.", reviews: 892 },
+    { name: "Robbers Cave", loc: "7km from campus", price: "30 entry", rating: 4.7, tags: ["Caves", "Trek", "Adventure"], desc: "Natural cave with cold stream. Popular weekend destination.", reviews: 1203 },
     { name: "Pacific Mall", loc: "GMS Road", price: "Free", rating: 4.2, tags: ["Mall", "Movies", "Shopping"], desc: "Full-day entertainment under one roof.", reviews: 445 },
     { name: "Tapkeshwar Temple", loc: "Garhi Cantonment", price: "Free", rating: 4.6, tags: ["Spiritual", "Caves", "Nature"], desc: "Peaceful cave temple with a river stream.", reviews: 357 },
     { name: "Doon Sports Club", loc: "Raipur Road", price: "100-300", rating: 4.0, tags: ["Cricket", "Badminton", "Pool"], desc: "Multi-sport facility open to students.", reviews: 89 },
@@ -43,7 +43,7 @@ const DATA = {
     { name: "River Rafting - Rishikesh", loc: "Rishikesh 50km", price: "600-2500", rating: 4.9, tags: ["Rafting", "Adventure", "Weekend"], desc: "Grade 3-4 rapids on the Ganges.", reviews: 2100 },
     { name: "Mussoorie Trekking", loc: "Mussoorie 35km", price: "200-500", rating: 4.7, tags: ["Trek", "Hills", "Scenic"], desc: "Routes via Kempty Falls and George Everest Peak.", reviews: 640 },
     { name: "Bungee & Zipline Park", loc: "Mohan Chatti", price: "1800/activity", rating: 4.6, tags: ["Bungee", "Zipline", "Extreme"], desc: "India''s highest bungee jump near Rishikesh.", reviews: 512 },
-    { name: "UPES Cricket League", loc: "UPES Ground", price: "Free", rating: 4.5, tags: ["Cricket", "On-Campus", "Team"], desc: "Intra-campus cricket tournaments with prizes.", reviews: 88 },
+    { name: "Campus Cricket League", loc: "Campus Ground", price: "Free", rating: 4.5, tags: ["Cricket", "On-Campus", "Team"], desc: "Intra-campus cricket tournaments with prizes.", reviews: 88 },
     { name: "Photography Walk", loc: "Doon Valley", price: "100 guided", rating: 4.8, tags: ["Photography", "Sunrise", "Nature"], desc: "Student-led walks at sunrise. Explore Doon Valley.", reviews: 57 },
     { name: "Camping at Dhanaulti", loc: "Dhanaulti 60km", price: "1500/pp", rating: 4.8, tags: ["Camping", "Bonfire", "Hills"], desc: "Overnight camping with bonfires and stargazing.", reviews: 330 },
   ],

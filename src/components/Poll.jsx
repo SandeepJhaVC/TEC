@@ -56,16 +56,19 @@ export default function Poll() {
     const [form, setForm] = useState({ title: "", area: "Bidholi", cat: "Transport", desc: "" });
 
     useEffect(() => {
-        supabase.from('pulse_issues').select('*').order('votes', { ascending: false })
+        supabase.from('pulse_issues').select('*').order('vote_count', { ascending: false })
             .then(({ data }) => setProblems((data || []).map(p => ({ ...p, upvoted: false }))));
     }, []);
 
     const handleVote = async id => {
         const current = problems.find(p => p.id === id);
         if (!current || current.upvoted) return;
-        const newVotes = current.votes + 1;
-        setProblems(ps => ps.map(p => p.id === id ? { ...p, votes: newVotes, upvoted: true } : p));
-        await supabase.from('pulse_issues').update({ votes: newVotes }).eq('id', id);
+        const newVotes = (current.vote_count || 0) + 1;
+        setProblems(ps => ps.map(p => p.id === id ? { ...p, vote_count: newVotes, upvoted: true } : p));
+        await supabase.from('issue_votes').insert({ issue_id: id, user_id: user.id }).catch(() =>
+            // Fallback: direct increment if issue_votes table doesn't exist yet
+            supabase.from('pulse_issues').update({ vote_count: newVotes }).eq('id', id)
+        );
     };
 
     const handlePollVote = (pollId, optIdx) => {
@@ -84,7 +87,7 @@ export default function Poll() {
             area: form.area,
             cat: form.cat,
             description: form.desc,
-            votes: 1,
+            vote_count: 0,
             status: 'Submitted',
             urgent: false,
         }).select().single();
@@ -97,7 +100,7 @@ export default function Poll() {
 
     const filtered = problems
         .filter(p => (activeArea === "All" || p.area === activeArea) && (activeCat === "All" || p.cat === activeCat))
-        .sort((a, b) => sort === "votes" ? b.votes - a.votes : b.id - a.id);
+        .sort((a, b) => sort === "votes" ? (b.vote_count || 0) - (a.vote_count || 0) : b.id - a.id);
 
     return (
         <div className="page-wrap" style={{ maxWidth: 1200 }}>
@@ -164,7 +167,7 @@ export default function Poll() {
                                         <button className="upvote-btn" onClick={() => handleVote(p.id)} style={p.upvoted ? { background: "rgba(204,151,255,0.15)", borderColor: "rgba(204,151,255,0.4)" } : {}}>
                                             <span className="material-symbols-outlined" style={{ fontSize: 16 }}>expand_less</span>
                                         </button>
-                                        <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 13, color: p.upvoted ? "var(--primary)" : "var(--on-surface)" }}>{p.votes}</span>
+                                        <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 13, color: p.upvoted ? "var(--primary)" : "var(--on-surface)" }}>{p.vote_count ?? 0}</span>
                                     </div>
                                     <div style={{ flex: 1, minWidth: 0 }}>
                                         <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6, flexWrap: "wrap" }}>
