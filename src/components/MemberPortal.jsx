@@ -4,10 +4,10 @@ import { supabase } from '../supabaseClient';
 import { useAuth } from '../context/AuthContext';
 
 const ROLE_META = {
-  admin:     { color: '#FF6E84', bg: 'rgba(255,110,132,0.12)', label: 'ADMIN' },
+  admin: { color: '#FF6E84', bg: 'rgba(255,110,132,0.12)', label: 'ADMIN' },
   moderator: { color: '#FF95A0', bg: 'rgba(255,149,160,0.12)', label: 'MODERATOR' },
-  builder:   { color: '#CC97FF', bg: 'rgba(204,151,255,0.12)', label: 'BUILDER' },
-  student:   { color: '#53DDFC', bg: 'rgba(83,221,252,0.12)',  label: 'STUDENT' },
+  builder: { color: '#CC97FF', bg: 'rgba(204,151,255,0.12)', label: 'BUILDER' },
+  student: { color: '#53DDFC', bg: 'rgba(83,221,252,0.12)', label: 'STUDENT' },
 };
 
 function StatCard({ icon, label, value, color = 'var(--primary)' }) {
@@ -133,17 +133,23 @@ function AuthProfile({ user }) {
   const [stats, setStats] = useState({ posts: 0, listings: 0, issues: 0 });
   const [recentPosts, setRecentPosts] = useState([]);
   const [deals, setDeals] = useState([]);
+  const [referralUsed, setReferralUsed] = useState(null);
+  const [referralIssued, setReferralIssued] = useState([]);
+  const [referralAssigned, setReferralAssigned] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedCert, setSelectedCert] = useState(null);
 
   useEffect(() => {
     async function load() {
-      const [memberRes, postsRes, listingsRes, issuesRes, dealsRes] = await Promise.all([
+      const [memberRes, postsRes, listingsRes, issuesRes, dealsRes, refUsedRes, refIssuedRes, refAssignedRes] = await Promise.all([
         supabase.from('members').select('*').eq('auth_id', user.id).single(),
         supabase.from('feed_posts').select('id,body,created_at,votes').eq('user_id', user.id).order('created_at', { ascending: false }).limit(5),
         supabase.from('marketplace_listings').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('pulse_issues').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('deals').select('name,cat,discount,code,validity,loc').not('code', 'is', null).limit(6),
+        supabase.from('referral_codes').select('code,used_at,assigned_to_name').eq('used_by_auth_id', user.id).maybeSingle(),
+        supabase.from('referral_codes').select('code,assigned_to_name,assigned_to_email,used_by_name,used_at,created_at').eq('created_by', user.id).order('created_at', { ascending: false }),
+        supabase.from('referral_codes').select('code,assigned_to_name,used_by_name,used_at,created_at').eq('assigned_to_email', user.email).or(`used_by_auth_id.is.null,used_by_auth_id.neq.${user.id}`).order('created_at', { ascending: false }),
       ]);
       setMember(memberRes.data || null);
       setStats({
@@ -153,10 +159,13 @@ function AuthProfile({ user }) {
       });
       setRecentPosts(postsRes.data || []);
       setDeals((dealsRes.data || []).filter(d => d.code));
+      setReferralUsed(refUsedRes.data || null);
+      setReferralIssued(refIssuedRes.data || []);
+      setReferralAssigned(refAssignedRes.data || []);
       setLoading(false);
     }
     load();
-  }, [user.id]);
+  }, [user.id, user.email]);
 
   const rm = ROLE_META[user.role] || ROLE_META.student;
   const memberCode = user.memberCode || member?.id || '\u2014';
@@ -283,6 +292,77 @@ function AuthProfile({ user }) {
               Copy Code
             </button>
           </div>
+
+          {(referralUsed || referralAssigned.length > 0 || referralIssued.length > 0) && (
+            <div className="neon-card" style={{ padding: 22 }}>
+              <span className="eyebrow" style={{ display: 'block', marginBottom: 14 }}>Referral Codes</span>
+
+              {referralUsed && (
+                <div style={{ marginBottom: (referralAssigned.length > 0 || referralIssued.length > 0) ? 18 : 0 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.07em', color: 'var(--on-surface-var)', fontFamily: 'var(--font-display)', marginBottom: 8 }}>CODE YOU JOINED WITH</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 14px', background: 'rgba(83,221,252,0.06)', border: '1px solid rgba(83,221,252,0.2)', borderRadius: 'var(--radius)' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 16, color: 'var(--secondary)', flexShrink: 0 }}>input</span>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 14, color: 'var(--secondary)', letterSpacing: '0.08em', flex: 1 }}>{referralUsed.code}</span>
+                    <button onClick={() => navigator.clipboard?.writeText(referralUsed.code)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--on-surface-var)', padding: 4, display: 'flex', alignItems: 'center' }} title="Copy code">
+                      <span className="material-symbols-outlined" style={{ fontSize: 14 }}>content_copy</span>
+                    </button>
+                  </div>
+                  {referralUsed.used_at && <div style={{ fontSize: 10, color: 'var(--on-surface-var)', marginTop: 6, paddingLeft: 2 }}>Used on {formatDate(referralUsed.used_at)}</div>}
+                </div>
+              )}
+
+              {referralAssigned.length > 0 && (
+                <div style={{ marginBottom: referralIssued.length > 0 ? 18 : 0 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.07em', color: 'var(--on-surface-var)', fontFamily: 'var(--font-display)', marginBottom: 8, marginTop: referralUsed ? 4 : 0 }}>YOUR INVITE CODES ({referralAssigned.length})</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {referralAssigned.map((r, i) => (
+                      <div key={i} style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius)', borderLeft: `2px solid ${r.used_by_name ? 'rgba(83,221,252,0.4)' : 'rgba(204,151,255,0.4)'}` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: r.used_by_name ? 5 : 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13, color: r.used_by_name ? 'var(--secondary)' : 'var(--primary)', letterSpacing: '0.06em' }}>{r.code}</span>
+                            {!r.used_by_name && (
+                              <button onClick={() => navigator.clipboard?.writeText(r.code)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--on-surface-var)', padding: 2, display: 'flex', alignItems: 'center' }} title="Copy code">
+                                <span className="material-symbols-outlined" style={{ fontSize: 13 }}>content_copy</span>
+                              </button>
+                            )}
+                          </div>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: r.used_by_name ? 'var(--secondary)' : 'var(--on-surface-var)', background: r.used_by_name ? 'rgba(83,221,252,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${r.used_by_name ? 'rgba(83,221,252,0.2)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 4, padding: '2px 7px', fontFamily: 'var(--font-display)', letterSpacing: '0.08em' }}>
+                            {r.used_by_name ? 'USED' : 'AVAILABLE'}
+                          </span>
+                        </div>
+                        {r.used_by_name && <div style={{ fontSize: 11, color: 'var(--on-surface-var)', marginTop: 2 }}>Used by: {r.used_by_name} · {formatDate(r.used_at)}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {referralIssued.length > 0 && (
+                <div>
+                  <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.07em', color: 'var(--on-surface-var)', fontFamily: 'var(--font-display)', marginBottom: 8, marginTop: (referralUsed || referralAssigned.length > 0) ? 4 : 0 }}>CODES YOU'VE ISSUED ({referralIssued.length})</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {referralIssued.map((r, i) => (
+                      <div key={i} style={{ padding: '10px 14px', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius)', borderLeft: `2px solid ${r.used_by_name ? 'rgba(83,221,252,0.4)' : 'rgba(204,151,255,0.4)'}` }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: r.assigned_to_name || r.used_by_name ? 5 : 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: 13, color: r.used_by_name ? 'var(--secondary)' : 'var(--primary)', letterSpacing: '0.06em' }}>{r.code}</span>
+                            <button onClick={() => navigator.clipboard?.writeText(r.code)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--on-surface-var)', padding: 2, display: 'flex', alignItems: 'center' }} title="Copy code">
+                              <span className="material-symbols-outlined" style={{ fontSize: 13 }}>content_copy</span>
+                            </button>
+                          </div>
+                          <span style={{ fontSize: 9, fontWeight: 800, color: r.used_by_name ? 'var(--secondary)' : 'var(--on-surface-var)', background: r.used_by_name ? 'rgba(83,221,252,0.1)' : 'rgba(255,255,255,0.05)', border: `1px solid ${r.used_by_name ? 'rgba(83,221,252,0.2)' : 'rgba(255,255,255,0.1)'}`, borderRadius: 4, padding: '2px 7px', fontFamily: 'var(--font-display)', letterSpacing: '0.08em' }}>
+                            {r.used_by_name ? 'USED' : 'UNUSED'}
+                          </span>
+                        </div>
+                        {r.assigned_to_name && <div style={{ fontSize: 11, color: 'var(--on-surface-var)' }}>For: {r.assigned_to_name}{r.assigned_to_email ? ` · ${r.assigned_to_email}` : ''}</div>}
+                        {r.used_by_name && <div style={{ fontSize: 11, color: 'var(--on-surface-var)', marginTop: 2 }}>Used by: {r.used_by_name} · {formatDate(r.used_at)}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {deals.length > 0 && (
             <div className="neon-card" style={{ padding: 22 }}>

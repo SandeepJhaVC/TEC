@@ -182,10 +182,15 @@ CREATE POLICY "anon_validate" ON public.referral_codes
   FOR SELECT TO anon
   USING (true);
 
--- Authenticated: can see codes they claimed (for MemberPortal) or all if admin
+-- Authenticated: can see codes they claimed, created, or were assigned to their email
 CREATE POLICY "auth_read" ON public.referral_codes
   FOR SELECT TO authenticated
-  USING (used_by_auth_id = auth.uid() OR public.get_my_role() = 'admin');
+  USING (
+    used_by_auth_id = auth.uid()
+    OR created_by = auth.uid()
+    OR assigned_to_email = (SELECT email FROM public.members WHERE auth_id = auth.uid() LIMIT 1)
+    OR public.get_my_role() = 'admin'
+  );
 
 -- Authenticated: can claim an unclaimed code (set themselves as the user)
 CREATE POLICY "claim_code" ON public.referral_codes

@@ -174,6 +174,22 @@ BEGIN
 END $$;
 
 -- ─────────────────────────────────────────────────────────────────────────
+-- 7. REFERRAL CODE RLS — allow users to see codes they created or were assigned
+--    Original policy only showed codes they *used*. This update also lets
+--    users see codes they generated (created_by) or that were assigned to
+--    their email by an admin (assigned_to_email).
+-- ─────────────────────────────────────────────────────────────────────────
+DROP POLICY IF EXISTS "auth_read" ON public.referral_codes;
+CREATE POLICY "auth_read" ON public.referral_codes
+  FOR SELECT TO authenticated
+  USING (
+    used_by_auth_id = auth.uid()
+    OR created_by = auth.uid()
+    OR assigned_to_email = (SELECT email FROM public.members WHERE auth_id = auth.uid() LIMIT 1)
+    OR public.get_my_role() = 'admin'
+  );
+
+-- ─────────────────────────────────────────────────────────────────────────
 -- DONE.
 -- After running this patch, verify in Supabase dashboard:
 --   Authentication > Rate Limits — set sensible limits on signUp/signIn
