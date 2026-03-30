@@ -238,7 +238,7 @@ export default function Poll() {
                                 <label style={{ fontSize: 10, fontFamily: "var(--font-display)", fontWeight: 800, letterSpacing: "0.07em", color: "var(--on-surface-var)", display: "block", marginBottom: 6 }}>ISSUE TITLE</label>
                                 <input className="neon-input" required placeholder="Describe the problem" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} style={{ width: "100%", boxSizing: "border-box" }} />
                             </div>
-                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                            <div className="modal-form-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
                                 <div>
                                     <label style={{ fontSize: 10, fontFamily: "var(--font-display)", fontWeight: 800, letterSpacing: "0.07em", color: "var(--on-surface-var)", display: "block", marginBottom: 6 }}>AREA</label>
                                     <select className="neon-select" value={form.area} onChange={e => setForm({ ...form, area: e.target.value })} style={{ width: "100%" }}>

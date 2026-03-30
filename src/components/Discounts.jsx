@@ -42,7 +42,7 @@ export default function Discounts() {
           <button key={c} onClick={() => setActive(c)} style={{ padding: "6px 16px", borderRadius: 9999, fontFamily: "var(--font-display)", fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", cursor: "pointer", border: "none", background: active === c ? (CAT_COLOR[c] || "var(--primary)") : "var(--surface-highest)", color: active === c ? "#000" : "var(--on-surface-var)", opacity: active === c ? 1 : 0.75, transition: "all 0.14s" }}>{c}</button>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,280px),1fr))", gap: 12 }}>
         {filtered.length === 0 && (
           <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 0', color: 'var(--on-surface-var)' }}>
             <span className="material-symbols-outlined" style={{ fontSize: 40, opacity: 0.25, display: 'block', marginBottom: 12 }}>sell</span>

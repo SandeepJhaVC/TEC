@@ -107,7 +107,7 @@ export default function Listings() {
           </button>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 12 }}>        {items.length === 0 && (
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(min(100%,300px),1fr))", gap: 12 }}>        {items.length === 0 && (
         <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '60px 0', color: 'var(--on-surface-var)' }}>
           <span className="material-symbols-outlined" style={{ fontSize: 40, opacity: 0.25, display: 'block', marginBottom: 12 }}>{TAB_ICONS[tab]}</span>
           No listings in this category yet.

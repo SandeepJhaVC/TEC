@@ -111,11 +111,11 @@ export default function Assignments() {
 
                     {/* Search + filter bar */}
                     <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-                        <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
+                        <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
                             <span className="material-symbols-outlined" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 18, color: 'var(--on-surface-var)' }}>search</span>
                             <input className="neon-input" placeholder="Search listings…" value={search} onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 40, width: '100%' }} />
                         </div>
-                        <select className="neon-select" value={condition} onChange={e => setCondition(e.target.value)} style={{ minWidth: 120 }}>
+                        <select className="neon-select" value={condition} onChange={e => setCondition(e.target.value)} style={{ minWidth: 100, flex: '0 0 auto' }}>
                             {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
                         </select>
                     </div>

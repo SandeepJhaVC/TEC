@@ -307,7 +307,7 @@ export default function Home() {
                 {postError}
               </div>
             )}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.05)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: postText.length > 900 ? '#e3b341' : 'var(--on-surface-var)', opacity: 0.65, transition: 'color 0.2s' }}>
                   {postText.length}/1000

@@ -126,6 +126,8 @@
       margin-left: 0;
       padding-top: var(--topnav-h);
       height: 100vh;
+      width: 100%;
+      max-width: 100vw;
       overflow-y: auto;
       overflow-x: hidden;
       overscroll-behavior: contain;
@@ -160,6 +162,12 @@
         margin-top: 24px;
       }
 
+      /* Kill sticky on sidebars when stacked — they become weird mid-page anchors */
+      .two-col>div:last-child {
+        position: static !important;
+        top: auto !important;
+      }
+
       .map-main-row {
         flex-direction: column !important;
       }
@@ -187,11 +195,28 @@
     @media (max-width: 640px) {
       .page-wrap {
         padding: 16px 12px 64px !important;
+        overflow-x: hidden !important;
+      }
+
+      /* Prevent any grid from creating cells wider than viewport */
+      .page-wrap * {
+        max-width: 100%;
+        min-width: 0;
+      }
+
+      /* But restore min-width for flex items that need it */
+      button,
+      input,
+      select,
+      textarea {
+        min-width: unset;
       }
 
       .modal-box {
         padding: 20px 14px !important;
         border-radius: var(--radius) !important;
+        margin: 12px !important;
+        max-width: calc(100vw - 24px) !important;
       }
 
       .modal-form-grid {
@@ -204,6 +229,17 @@
       .topbar-signin-link,
       .topbar-join-btn {
         display: none !important;
+      }
+
+      /* Ensure neon-cards don't overflow their container */
+      .neon-card {
+        box-sizing: border-box;
+        min-width: 0;
+      }
+
+      /* Stacked filter bars should fill width */
+      .neon-select {
+        width: 100%;
       }
     }
 
