@@ -312,7 +312,7 @@ export default function LandingPage() {
       {/* NAV */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, height: 56, padding: '0 28px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(8,8,14,0.88)', backdropFilter: 'blur(22px) saturate(1.5)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-          <img src="/download.jpeg" alt="TEC" style={{ width: 26, height: 26, borderRadius: '50%', objectFit: 'cover', outline: '1px solid rgba(204,151,255,0.28)' }} />
+          <img src="/logo.png" alt="TEC" style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'contain', outline: '1px solid rgba(204,151,255,0.28)' }} />
           <span style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 900, letterSpacing: '-0.03em', background: 'linear-gradient(135deg,#CC97FF,#53DDFC)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>TEC</span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -337,6 +337,11 @@ export default function LandingPage() {
         <div style={{ position: 'absolute', inset: 0, zIndex: 1, pointerEvents: 'none', background: 'radial-gradient(ellipse 100% 100% at 50% 50%, transparent 45%, rgba(0,0,0,0.55) 100%)' }} />
 
         <div style={{ position: 'relative', zIndex: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          {/* Logo */}
+          <div style={fadeIn(0.0)}>
+            <img src="/logo.png" alt="TEC Logo" style={{ width: 80, height: 80, marginBottom: 40, objectFit: 'contain', filter: 'drop-shadow(0 0 20px rgba(204,151,255,0.4))' }} />
+          </div>
+
           {/* Badge */}
           <div style={fadeIn(0.05)}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '5px 14px', marginBottom: 36 }}>

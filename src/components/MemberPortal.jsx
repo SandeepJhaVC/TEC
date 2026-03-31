@@ -178,8 +178,11 @@ function AuthProfile({ user }) {
       <div style={{ position: 'relative', background: 'linear-gradient(135deg, rgba(204,151,255,0.07) 0%, rgba(83,221,252,0.04) 100%)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-lg)', padding: '32px 32px 28px', marginBottom: 28, overflow: 'hidden' }}>
         <div style={{ position: 'absolute', top: -60, right: -40, width: 200, height: 200, borderRadius: '50%', background: 'rgba(204,151,255,0.05)', filter: 'blur(60px)', pointerEvents: 'none' }} />
         <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-          <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(204,151,255,0.18)', border: '2px solid rgba(204,151,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 30, color: 'var(--primary)', flexShrink: 0 }}>
-            {(user.name || 'U')[0].toUpperCase()}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <img src="/logo.png" alt="TEC Logo" style={{ width: 56, height: 56, objectFit: 'contain', filter: 'drop-shadow(0 0 12px rgba(204,151,255,0.4))' }} />
+            <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(204,151,255,0.18)', border: '2px solid rgba(204,151,255,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 30, color: 'var(--primary)', flexShrink: 0 }}>
+              {(user.name || 'U')[0].toUpperCase()}
+            </div>
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 6 }}>

@@ -209,17 +209,20 @@ export default function Header() {
             }}>
 
                 {/* Logo */}
-                <Link to="/feed" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', textDecoration: 'none', marginRight: 28, flexShrink: 0, gap: 0 }}>
-                    <span style={{
-                        fontFamily: "'Bebas Neue', sans-serif", fontSize: 34, fontStyle: 'italic',
-                        color: '#CC97FF', letterSpacing: '0.03em', lineHeight: 1,
-                        textShadow: '0 0 28px rgba(204,151,255,0.55), 0 0 64px rgba(204,151,255,0.18)',
-                    }}>TEC</span>
-                    <span style={{
-                        fontFamily: "'Barlow Condensed', sans-serif", fontSize: 7.5, fontWeight: 700,
-                        letterSpacing: '0.28em', color: 'rgba(255,255,255,0.18)', textTransform: 'uppercase',
-                        marginTop: -1,
-                    }}>The Echo Community</span>
+                <Link to="/feed" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', marginRight: 28, flexShrink: 0, gap: 10 }}>
+                    <img src="/logo.png" alt="TEC Logo" style={{ height: 44, width: 44, objectFit: 'contain' }} />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                        <span style={{
+                            fontFamily: "'Bebas Neue', sans-serif", fontSize: 24, fontStyle: 'italic',
+                            color: '#CC97FF', letterSpacing: '0.03em', lineHeight: 1,
+                            textShadow: '0 0 28px rgba(204,151,255,0.55), 0 0 64px rgba(204,151,255,0.18)',
+                        }}>TEC</span>
+                        <span style={{
+                            fontFamily: "'Barlow Condensed', sans-serif", fontSize: 6.5, fontWeight: 700,
+                            letterSpacing: '0.28em', color: 'rgba(255,255,255,0.18)', textTransform: 'uppercase',
+                            marginTop: -2,
+                        }}>Echo</span>
+                    </div>
                 </Link>
 
                 {/* Divider */}

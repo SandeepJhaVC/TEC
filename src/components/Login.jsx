@@ -26,7 +26,7 @@ function Field({ label, type = "text", value, onChange, placeholder, required, m
 }
 
 export default function Login() {
-  const { login, register, authError } = useAuth();
+  const { login, register, resetPassword, authError } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -35,10 +35,12 @@ export default function Login() {
   const [mode, setMode] = useState(searchParams.get("tab") === "login" ? "login" : "register");
   const [submitting, setSubmitting] = useState(false);
   const [localError, setLocalError] = useState("");
+  const [resetSent, setResetSent] = useState(false);
 
   // Sign-in state
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
 
   // Register state
   const [regName, setRegName] = useState("");
@@ -63,22 +65,51 @@ export default function Login() {
     navigate(from, { replace: true });
   };
 
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    setLocalError("");
+    if (!resetEmail.trim()) { setLocalError("Please enter your email address."); return; }
+    setSubmitting(true);
+    const { ok, error } = await resetPassword(resetEmail);
+    setSubmitting(false);
+    if (!ok) { setLocalError(error || "Failed to send reset email. Please try again."); return; }
+    setResetSent(true);
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setLocalError("");
-    if (regPassword !== regConfirm) { setLocalError("Passwords don't match."); return; }
-    if (regPassword.length < 8) { setLocalError("Password must be at least 8 characters."); return; }
-    if (!regReferral.trim()) { setLocalError("A referral code is required."); return; }
+
+    if (regPassword !== regConfirm) {
+      setLocalError("Passwords do not match.");
+      return;
+    }
+    if (regPassword.length < 8) {
+      setLocalError("Password must be at least 8 characters.");
+      return;
+    }
+
     setSubmitting(true);
-    const { ok, error } = await register(regEmail, regPassword, regName, regReferral, {
-      sap_id: regSapId.trim() || null,
-      batch: regBatch.trim() || null,
-      course: regCourse.trim() || null,
-      college_email: regCollegeEmail.trim() || null,
-      phone: regPhone.trim() || null,
-    });
+    const { ok, error } = await register(
+      regEmail,
+      regPassword,
+      regName,
+      regReferral,
+      {
+        sap_id: regSapId,
+        batch: regBatch,
+        course: regCourse,
+        college_email: regCollegeEmail,
+        phone: regPhone,
+      }
+    );
     setSubmitting(false);
-    if (!ok) { setLocalError(error || "Registration failed. Try again."); return; }
+
+    if (!ok) {
+      setLocalError(error || "Registration failed. Please try again.");
+      return;
+    }
+
     setRegSuccess(true);
   };
 
@@ -135,15 +166,84 @@ export default function Login() {
                     )}
                   </AnimatePresence>
 
+                  {mode === "login" && !resetSent ? (
+                    <>
+                      <motion.button variants={fade} type="submit" disabled={submitting} className="btn-primary" style={{ width: "100%", justifyContent: "center", opacity: submitting ? 0.7 : 1 }}>
+                        {submitting ? "Signing in…" : "Sign In"}
+                      </motion.button>
+
+                      <motion.p variants={fade} style={{ textAlign: "center", fontSize: 12, color: "var(--on-surface-var)", marginTop: 16 }}>
+                        <button onClick={() => { setMode("forgot"); setLocalError(""); setResetEmail(""); }} style={{ background: "none", border: "none", color: "var(--primary)", fontSize: 12, cursor: "pointer", padding: 0, fontFamily: "inherit", fontWeight: 700 }}>Forgot password?</button>
+                      </motion.p>
+                    </>
+                  ) : mode === "login" && resetSent ? (
+                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: "center" }}>
+                      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(83,221,252,0.1)", border: "1px solid rgba(83,221,252,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                        <span className="material-symbols-outlined" style={{ fontSize: 30, color: "var(--secondary)" }}>mail</span>
+                      </div>
+                      <h3 style={{ fontSize: 18, fontFamily: "var(--font-display)", fontWeight: 900, color: "var(--on-surface)", marginBottom: 8, letterSpacing: "-0.02em" }}>Check your email</h3>
+                      <p style={{ fontSize: 13, color: "var(--on-surface-var)", marginBottom: 24, lineHeight: 1.6 }}>We've sent a password reset link to <strong style={{ color: "var(--on-surface)" }}>{resetEmail}</strong>. Click the link to set a new password.</p>
+                      <button className="btn-secondary" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setMode("login"); setResetSent(false); setResetEmail(""); }}>
+                        Back to Sign In
+                      </button>
+                    </motion.div>
+                  ) : null}
+                </form>
+
+                {mode === "login" && !resetSent && (
+                  <motion.p variants={fade} style={{ textAlign: "center", fontSize: 12, color: "var(--on-surface-var)", marginTop: 20 }}>
+                    Don't have an account?{" "}
+                    <button onClick={() => { setMode("register"); setLocalError(""); }} style={{ background: "none", border: "none", color: "var(--primary)", fontSize: 12, cursor: "pointer", padding: 0, fontFamily: "inherit", fontWeight: 700 }}>Register with a code</button>
+                  </motion.p>
+                )}
+              </motion.div>
+            )}
+
+            {/* -- FORGOT PASSWORD -- */}
+            {mode === "forgot" && !resetSent && (
+              <motion.div key="forgot" initial="hidden" animate="show" exit={{ opacity: 0, y: -10, transition: { duration: 0.18 } }} variants={stag}>
+                <motion.div variants={fade} style={{ textAlign: "center", marginBottom: 36 }}>
+                  <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.16em", color: "var(--on-surface-var)", textTransform: "uppercase", marginBottom: 12 }}>Reset Password</div>
+                  <h1 style={{ fontSize: 28, fontFamily: "var(--font-display)", fontWeight: 900, color: "var(--on-surface)", letterSpacing: "-0.02em", marginBottom: 8 }}>Recover your account</h1>
+                  <p style={{ fontSize: 13, color: "var(--on-surface-var)" }}>Enter your email and we'll send you a reset link.</p>
+                </motion.div>
+
+                <form onSubmit={handlePasswordReset}>
+                  <motion.div variants={stag} initial="hidden" animate="show">
+                    <Field label="Email" type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="you@example.com" required />
+                  </motion.div>
+
+                  <AnimatePresence>
+                    {err && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
+                        style={{ background: "rgba(255,110,132,0.08)", border: "1px solid rgba(255,110,132,0.25)", borderRadius: 8, padding: "10px 14px", fontSize: 12, color: "var(--error)", marginBottom: 16 }}>
+                        {err}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
                   <motion.button variants={fade} type="submit" disabled={submitting} className="btn-primary" style={{ width: "100%", justifyContent: "center", opacity: submitting ? 0.7 : 1 }}>
-                    {submitting ? "Signing in�" : "Sign In"}
+                    {submitting ? "Sending…" : "Send Reset Link"}
                   </motion.button>
                 </form>
 
                 <motion.p variants={fade} style={{ textAlign: "center", fontSize: 12, color: "var(--on-surface-var)", marginTop: 20 }}>
-                  Don't have an account?{" "}
-                  <button onClick={() => { setMode("register"); setLocalError(""); }} style={{ background: "none", border: "none", color: "var(--primary)", fontSize: 12, cursor: "pointer", padding: 0, fontFamily: "inherit", fontWeight: 700 }}>Register with a code</button>
+                  <button onClick={() => { setMode("login"); setLocalError(""); setResetEmail(""); }} style={{ background: "none", border: "none", color: "var(--primary)", fontSize: 12, cursor: "pointer", padding: 0, fontFamily: "inherit", fontWeight: 700 }}>Return to sign in</button>
                 </motion.p>
+              </motion.div>
+            )}
+
+            {/* -- FORGOT PASSWORD CONFIRMATION -- */}
+            {mode === "forgot" && resetSent && (
+              <motion.div key="forgot-confirm" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: "center" }}>
+                <div style={{ width: 64, height: 64, borderRadius: "50%", background: "rgba(83,221,252,0.1)", border: "1px solid rgba(83,221,252,0.3)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: 30, color: "var(--secondary)" }}>mail</span>
+                </div>
+                <h3 style={{ fontSize: 18, fontFamily: "var(--font-display)", fontWeight: 900, color: "var(--on-surface)", marginBottom: 8, letterSpacing: "-0.02em" }}>Check your email</h3>
+                <p style={{ fontSize: 13, color: "var(--on-surface-var)", marginBottom: 24, lineHeight: 1.6 }}>We've sent a password reset link to <strong style={{ color: "var(--on-surface)" }}>{resetEmail}</strong>. Click the link to set a new password.</p>
+                <button className="btn-secondary" style={{ width: "100%", justifyContent: "center" }} onClick={() => { setMode("login"); setResetSent(false); setResetEmail(""); }}>
+                  Back to Sign In
+                </button>
               </motion.div>
             )}
 

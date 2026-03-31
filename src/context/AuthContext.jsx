@@ -174,6 +174,22 @@ export function AuthProvider({ children }) {
         return { ok: true, data, memberCode };
     };
 
+    /**
+     * resetPassword(email)
+     * Sends a password reset link to the user's email via Supabase.
+     */
+    const resetPassword = async (email) => {
+        setAuthError('');
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+        });
+        if (error) {
+            setAuthError(error.message);
+            return { ok: false, error: error.message };
+        }
+        return { ok: true };
+    };
+
     const logout = async () => {
         sessionStorage.removeItem('tec_user');
         setUser(null);
@@ -191,7 +207,7 @@ export function AuthProvider({ children }) {
     const isBuilder = () => hasRole('builder');
 
     return (
-        <AuthContext.Provider value={{ user, loading, authError, login, register, logout, hasRole, isAdmin, isModerator, isBuilder }}>
+        <AuthContext.Provider value={{ user, loading, authError, login, register, logout, resetPassword, hasRole, isAdmin, isModerator, isBuilder }}>
             {children}
         </AuthContext.Provider>
     );
