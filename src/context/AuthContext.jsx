@@ -70,6 +70,25 @@ export function AuthProvider({ children }) {
         return () => subscription.unsubscribe();
     }, []);
 
+    // ── Realtime Presence ── broadcast online status for all logged-in users
+    useEffect(() => {
+        if (!user) return;
+        const channel = supabase.channel('tec-presence', {
+            config: { presence: { key: user.id } },
+        });
+        channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await channel.track({
+                    user_id: user.id,
+                    name: user.name,
+                    role: user.role,
+                    online_at: new Date().toISOString(),
+                });
+            }
+        });
+        return () => { supabase.removeChannel(channel); };
+    }, [user?.id]);
+
     /**
      * login(email, password)
      * Authenticates via Supabase. Reads canonical role & member code from members table.

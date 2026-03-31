@@ -17,6 +17,7 @@ const TABS = [
   { id: 'listings', icon: 'location_city', label: 'Listings' },
   { id: 'members', icon: 'people', label: 'Members' },
   { id: 'referrals', icon: 'card_giftcard', label: 'Referrals' },
+  { id: 'analytics', icon: 'analytics', label: 'Analytics' },
 ];
 
 const CAT_COLOR = {
@@ -68,6 +69,10 @@ export default function AdminPanel() {
   const [showRefForm, setShowRefForm] = useState(false);
   const [refLoading, setRefLoading] = useState(false);
   const [refMembersList, setRefMembersList] = useState([]);
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsWindow, setAnalyticsWindow] = useState('24h');
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 3000); };
 
@@ -78,6 +83,22 @@ export default function AdminPanel() {
     if (tab === 'listings') fetchAdminListings();
     if (tab === 'members') fetchMembers();
     if (tab === 'referrals') fetchReferrals();
+    if (tab === 'analytics') fetchAnalytics();
+  }, [tab]);
+
+  useEffect(() => { if (tab === 'analytics') fetchAnalytics(); }, [analyticsWindow]);
+
+  // Observe who is online via Realtime Presence
+  useEffect(() => {
+    if (tab !== 'analytics') return;
+    const observer = supabase.channel('tec-presence');
+    observer
+      .on('presence', { event: 'sync' }, () => {
+        const users = Object.values(observer.presenceState()).flat();
+        setOnlineUsers(users);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(observer); };
   }, [tab]);
 
   const fetchReferrals = async () => {
@@ -134,6 +155,38 @@ export default function AdminPanel() {
       supabase.from('deals').select('*', { count: 'exact', head: true }),
     ]);
     setStats({ members: m.count || 0, posts: p.count || 0, listings: l.count || 0, issues: i.count || 0, deals: d.count || 0 });
+  };
+
+  const fetchAnalytics = async () => {
+    setAnalyticsLoading(true);
+    const now = new Date();
+    const windowMs = { '1h': 3600000, '24h': 86400000, '7d': 604800000, '30d': 2592000000 }[analyticsWindow];
+    const windowStart = new Date(now - windowMs).toISOString();
+    const [
+      { count: newPosts }, { count: newVotes }, { count: newIssues },
+      { count: newListings }, { count: newMembers },
+      { data: recentMembers }, { data: allMembers },
+      { count: referralTotal }, { count: referralUsed },
+    ] = await Promise.all([
+      supabase.from('feed_posts').select('*', { count: 'exact', head: true }).gte('created_at', windowStart),
+      supabase.from('post_votes').select('*', { count: 'exact', head: true }).gte('created_at', windowStart),
+      supabase.from('pulse_issues').select('*', { count: 'exact', head: true }).gte('created_at', windowStart),
+      supabase.from('marketplace_listings').select('*', { count: 'exact', head: true }).gte('created_at', windowStart),
+      supabase.from('members').select('*', { count: 'exact', head: true }).gte('joined_at', windowStart),
+      supabase.from('members').select('id, name, role, joined_at').order('joined_at', { ascending: false }).limit(5),
+      supabase.from('members').select('role'),
+      supabase.from('referral_codes').select('*', { count: 'exact', head: true }),
+      supabase.from('referral_codes').select('*', { count: 'exact', head: true }).not('used_by_auth_id', 'is', null),
+    ]);
+    const roleDist = { admin: 0, moderator: 0, builder: 0, student: 0 };
+    (allMembers || []).forEach(m => { const r = m.role || 'student'; roleDist[r] = (roleDist[r] || 0) + 1; });
+    setAnalyticsData({
+      newPosts: newPosts || 0, newVotes: newVotes || 0, newIssues: newIssues || 0,
+      newListings: newListings || 0, newMembers: newMembers || 0,
+      recentMembers: recentMembers || [], roleDist,
+      referralTotal: referralTotal || 0, referralUsed: referralUsed || 0,
+    });
+    setAnalyticsLoading(false);
   };
 
   const fetchMembers = async () => {
@@ -699,6 +752,167 @@ export default function AdminPanel() {
                 );
               })}
             </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── ANALYTICS TAB ── */}
+      <AnimatePresence>
+        {tab === 'analytics' && (
+          <motion.div key="analytics" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+            {/* Header + time window selector */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20, gap: 12, flexWrap: 'wrap' }}>
+              <div>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 4 }}>
+                  Platform <span style={{ color: 'var(--primary)' }}>Analytics</span>
+                </h2>
+                <p style={{ fontSize: 12, color: 'var(--on-surface-var)' }}>Real-time activity and platform health.</p>
+              </div>
+              <div style={{ display: 'flex', gap: 4, background: 'var(--surface-highest)', borderRadius: 10, padding: 3, flexShrink: 0 }}>
+                {[['1h', '1 HR'], ['24h', '24 HR'], ['7d', '7 DAYS'], ['30d', '30 DAYS']].map(([id, label]) => (
+                  <button key={id} onClick={() => setAnalyticsWindow(id)} style={{
+                    padding: '6px 12px', borderRadius: 7, border: 'none', cursor: 'pointer',
+                    fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 10, letterSpacing: '0.06em',
+                    background: analyticsWindow === id ? 'var(--primary)' : 'transparent',
+                    color: analyticsWindow === id ? '#000' : 'var(--on-surface-var)',
+                    transition: 'all 0.14s',
+                  }}>{label}</button>
+                ))}
+              </div>
+            </div>
+
+            {analyticsLoading && (
+              <div style={{ textAlign: 'center', padding: 60, color: 'var(--on-surface-var)' }}>Loading analytics…</div>
+            )}
+
+            {!analyticsLoading && analyticsData && (
+              <>
+                {/* Online Users */}
+                <div className="neon-card" style={{ padding: 20, marginBottom: 16, borderTop: '2px solid var(--secondary)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <div className="eyebrow">Currently Online</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--secondary)', display: 'inline-block', boxShadow: '0 0 8px var(--secondary)', animation: 'pulse 2s infinite' }} />
+                      <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22, color: 'var(--secondary)' }}>{onlineUsers.length}</span>
+                    </div>
+                  </div>
+                  {onlineUsers.length > 0 ? (
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {onlineUsers.map((u, i) => {
+                        const rm = ROLE_META[u.role] || ROLE_META.student;
+                        return (
+                          <div key={u.user_id || i} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 10px', background: 'var(--surface-highest)', borderRadius: 8, border: `1px solid ${rm.border}` }}>
+                            <div style={{ width: 26, height: 26, borderRadius: 7, background: rm.bg, border: `1px solid ${rm.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 11, color: rm.color, flexShrink: 0 }}>
+                              {(u.name || '?')[0].toUpperCase()}
+                            </div>
+                            <span style={{ fontSize: 12, fontWeight: 700, fontFamily: 'var(--font-display)' }}>{u.name || 'Unknown'}</span>
+                            <RoleBadge role={u.role || 'student'} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: 'var(--on-surface-var)', opacity: 0.6 }}>No users online right now — presence updates live.</div>
+                  )}
+                </div>
+
+                {/* Activity stat cards */}
+                <div className="eyebrow" style={{ marginBottom: 10 }}>
+                  Activity — last {analyticsWindow === '1h' ? '1 hour' : analyticsWindow === '24h' ? '24 hours' : analyticsWindow === '7d' ? '7 days' : '30 days'}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 155px), 1fr))', gap: 12, marginBottom: 24 }}>
+                  {[
+                    { label: 'New Posts', value: analyticsData.newPosts, icon: 'forum', color: 'var(--primary)' },
+                    { label: 'New Votes', value: analyticsData.newVotes, icon: 'thumb_up', color: 'var(--secondary)' },
+                    { label: 'New Issues', value: analyticsData.newIssues, icon: 'how_to_vote', color: '#e3b341' },
+                    { label: 'New Listings', value: analyticsData.newListings, icon: 'storefront', color: 'var(--tertiary)' },
+                    { label: 'New Members', value: analyticsData.newMembers, icon: 'person_add', color: '#a3e635' },
+                  ].map(s => (
+                    <div key={s.label} className="neon-card" style={{ padding: '16px 18px', borderTop: `2px solid ${s.color}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: 8 }}>
+                        <div className="eyebrow" style={{ fontSize: 9 }}>{s.label}</div>
+                        <span className="material-symbols-outlined" style={{ fontSize: 15, color: s.color, opacity: 0.55 }}>{s.icon}</span>
+                      </div>
+                      <div style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 28, letterSpacing: '-0.04em', color: s.color }}>{s.value}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Bottom: Role Distribution + Recent Members + Referral Funnel */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: 16 }}>
+
+                  {/* Role distribution bar chart */}
+                  <div className="neon-card" style={{ padding: 20 }}>
+                    <div className="eyebrow" style={{ marginBottom: 14 }}>Member Roles</div>
+                    {Object.entries(analyticsData.roleDist).sort((a, b) => b[1] - a[1]).map(([role, count]) => {
+                      const rm = ROLE_META[role] || ROLE_META.student;
+                      const total = Object.values(analyticsData.roleDist).reduce((a, b) => a + b, 0);
+                      const pct = total > 0 ? (count / total) * 100 : 0;
+                      return (
+                        <div key={role} style={{ marginBottom: 12 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                            <span style={{ fontSize: 11, fontFamily: 'var(--font-display)', fontWeight: 700, color: rm.color, textTransform: 'uppercase', letterSpacing: '0.07em' }}>{role}</span>
+                            <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--on-surface-var)' }}>{count}</span>
+                          </div>
+                          <div style={{ height: 6, background: 'var(--surface-highest)', borderRadius: 3, overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${pct}%`, background: rm.color, borderRadius: 3, transition: 'width 0.5s' }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Recent members */}
+                  <div className="neon-card" style={{ padding: 20 }}>
+                    <div className="eyebrow" style={{ marginBottom: 14 }}>Recent Members</div>
+                    {analyticsData.recentMembers.length === 0 && (
+                      <div style={{ fontSize: 12, color: 'var(--on-surface-var)' }}>No members yet.</div>
+                    )}
+                    {analyticsData.recentMembers.map(m => (
+                      <div key={m.id} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
+                        <div style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(204,151,255,0.1)', border: '1.5px solid rgba(204,151,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: 13, color: 'var(--primary)', flexShrink: 0 }}>
+                          {(m.name || '?')[0].toUpperCase()}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.name || 'Unknown'}</div>
+                          <div style={{ fontSize: 10, color: 'var(--on-surface-var)', marginTop: 1 }}>{m.joined_at ? new Date(m.joined_at).toLocaleDateString() : '—'}</div>
+                        </div>
+                        <RoleBadge role={m.role || 'student'} />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Referral funnel */}
+                  <div className="neon-card" style={{ padding: 20 }}>
+                    <div className="eyebrow" style={{ marginBottom: 14 }}>Referral Funnel</div>
+                    {[
+                      { label: 'Codes Issued', value: analyticsData.referralTotal, color: 'var(--primary)' },
+                      { label: 'Redeemed', value: analyticsData.referralUsed, color: 'var(--secondary)' },
+                      { label: 'Still Available', value: analyticsData.referralTotal - analyticsData.referralUsed, color: 'var(--on-surface-var)' },
+                    ].map(s => (
+                      <div key={s.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                        <span style={{ fontSize: 12, color: 'var(--on-surface-var)' }}>{s.label}</span>
+                        <span style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: 22, color: s.color }}>{s.value}</span>
+                      </div>
+                    ))}
+                    <div style={{ height: 8, background: 'var(--surface-highest)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
+                      <div style={{
+                        height: '100%',
+                        width: `${analyticsData.referralTotal > 0 ? (analyticsData.referralUsed / analyticsData.referralTotal) * 100 : 0}%`,
+                        background: 'linear-gradient(90deg, var(--secondary), var(--primary))',
+                        borderRadius: 4, transition: 'width 0.5s',
+                      }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, fontSize: 10, color: 'var(--on-surface-var)' }}>
+                      <span>Conversion rate</span>
+                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--secondary)' }}>
+                        {analyticsData.referralTotal > 0 ? Math.round((analyticsData.referralUsed / analyticsData.referralTotal) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
