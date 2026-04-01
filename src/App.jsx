@@ -17,15 +17,16 @@ import Poll from './components/Poll';
 import MemberPortal from './components/MemberPortal';
 import SplashScreen from './components/SplashScreen';
 import LandingPage from './components/LandingPage';
+import AuthCallback from './components/AuthCallback';
 
 /* Routes where the page is full-viewport (no footer, no outer scroll) */
 const FULLSCREEN_ROUTES = ['/map'];
 
 /* Public routes accessible without login */
-const PUBLIC_ROUTES = ['/', '/login', '/about'];
+const PUBLIC_ROUTES = ['/', '/login', '/about', '/auth/callback'];
 
 /* Routes that render their own nav — suppress the global Header */
-const NO_HEADER_ROUTES = ['/login'];
+const NO_HEADER_ROUTES = ['/login', '/auth/callback'];
 
 function AppShell() {
   const location = useLocation();
@@ -58,6 +59,11 @@ function AppShell() {
   // Login page — standalone, no header, no app-content padding
   if (location.pathname === '/login') {
     return <Login />;
+  }
+
+  // Auth callback (e.g. password recovery)
+  if (location.pathname === '/auth/callback') {
+    return <AuthCallback />;
   }
 
   return (
