@@ -27,8 +27,10 @@
     "@supabase/supabase-js": "^2.52.1",
     "add-to-calendar-button-react": "^2.9.1",
     "framer-motion": "^6.5.1",
+    "leaflet": "^1.9.4",
     "lucide-react": "^1.7.0",
     "react-icons": "^5.4.0",
+    "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.1.1",
     "recharts": "^3.8.1"
   }
